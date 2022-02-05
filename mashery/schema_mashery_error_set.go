@@ -1,7 +1,7 @@
 package mashery
 
 import (
-	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -114,7 +114,7 @@ func (esi *ErrorSetIdentifier) IsIdentified() bool {
 	return len(esi.ServiceId) > 0 && len(esi.ErrorSetId) > 0
 }
 
-func findMessageById(inp *[]v3client.MasheryErrorMessage, id string) *v3client.MasheryErrorMessage {
+func findMessageById(inp *[]masherytypes.MasheryErrorMessage, id string) *masherytypes.MasheryErrorMessage {
 	for _, val := range *inp {
 		if id == val.Id {
 			return &val
@@ -124,7 +124,7 @@ func findMessageById(inp *[]v3client.MasheryErrorMessage, id string) *v3client.M
 	return nil
 }
 
-func convertExistingErrorSubset(errSet *v3client.MasheryErrorSet, d *schema.ResourceData) []map[string]interface{} {
+func convertExistingErrorSubset(errSet *masherytypes.MasheryErrorSet, d *schema.ResourceData) []map[string]interface{} {
 	rv := []map[string]interface{}{}
 
 	defined := V3ErrorSetMessages(d)
@@ -137,7 +137,7 @@ func convertExistingErrorSubset(errSet *v3client.MasheryErrorSet, d *schema.Reso
 	return rv
 }
 
-func V3ErrorSetToResourceData(errSet *v3client.MasheryErrorSet, d *schema.ResourceData) diag.Diagnostics {
+func V3ErrorSetToResourceData(errSet *masherytypes.MasheryErrorSet, d *schema.ResourceData) diag.Diagnostics {
 	data := map[string]interface{}{
 		MashObjName:              errSet.Name,
 		MashSvcErrorSetJsonp:     errSet.JSONP,
@@ -152,12 +152,12 @@ func V3ErrorSetToResourceData(errSet *v3client.MasheryErrorSet, d *schema.Resour
 	return SetResourceFields(data, d)
 }
 
-func V3ErrorSetUpsertable(d *schema.ResourceData) v3client.MasheryErrorSet {
+func V3ErrorSetUpsertable(d *schema.ResourceData) masherytypes.MasheryErrorSet {
 	setIdent := ErrorSetIdentifier{}
 	setIdent.From(d.Id())
 
-	rv := v3client.MasheryErrorSet{
-		AddressableV3Object: v3client.AddressableV3Object{
+	rv := masherytypes.MasheryErrorSet{
+		AddressableV3Object: masherytypes.AddressableV3Object{
 			Id:   setIdent.ErrorSetId,
 			Name: extractString(d, MashObjName, "Terraform-managed error set"),
 		},
@@ -187,8 +187,8 @@ func extractIntKeyFromMap(inp map[string]interface{}, key string, receiver *int)
 
 var errorParsePattern = regexp.MustCompile("ERR_(\\d{3})_.*")
 
-func V3ErrorSetMessage(d interface{}) v3client.MasheryErrorMessage {
-	rv := v3client.MasheryErrorMessage{}
+func V3ErrorSetMessage(d interface{}) masherytypes.MasheryErrorMessage {
+	rv := masherytypes.MasheryErrorMessage{}
 
 	if mp, ok := d.(map[string]interface{}); ok {
 		extractKeyFromMap(mp, MashObjId, &rv.Id)
@@ -206,7 +206,7 @@ func V3ErrorSetMessage(d interface{}) v3client.MasheryErrorMessage {
 	return rv
 }
 
-func V3ErrorMessageForResourceData(inp v3client.MasheryErrorMessage) map[string]interface{} {
+func V3ErrorMessageForResourceData(inp masherytypes.MasheryErrorMessage) map[string]interface{} {
 	return map[string]interface{}{
 		MashObjId:                          inp.Id,
 		MashSvrErrorSetMessageStatus:       inp.Status,
@@ -217,10 +217,10 @@ func V3ErrorMessageForResourceData(inp v3client.MasheryErrorMessage) map[string]
 	}
 }
 
-func V3ErrorSetMessages(d *schema.ResourceData) []v3client.MasheryErrorMessage {
+func V3ErrorSetMessages(d *schema.ResourceData) []masherytypes.MasheryErrorMessage {
 	if rawSet, ok := d.GetOk(MashSvcErrorSetMessage); ok {
 		if msgSet, ok := rawSet.(*schema.Set); ok {
-			rv := make([]v3client.MasheryErrorMessage, msgSet.Len())
+			rv := make([]masherytypes.MasheryErrorMessage, msgSet.Len())
 			for i, iMsg := range msgSet.List() {
 				rv[i] = V3ErrorSetMessage(iMsg)
 			}
@@ -229,5 +229,5 @@ func V3ErrorSetMessages(d *schema.ResourceData) []v3client.MasheryErrorMessage {
 		}
 	}
 
-	return []v3client.MasheryErrorMessage{}
+	return []masherytypes.MasheryErrorMessage{}
 }

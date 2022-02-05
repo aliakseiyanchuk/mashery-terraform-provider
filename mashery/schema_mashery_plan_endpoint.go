@@ -2,7 +2,7 @@ package mashery
 
 import (
 	"fmt"
-	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -55,7 +55,7 @@ func (pei *PlanEndpointIdentifier) IsIdentified() bool {
 	return pei.PlanServiceIdentifier.IsIdentified() && len(pei.EndpointId) > 0
 }
 
-func V3MasheryPlanEndpointUpsertable(d *schema.ResourceData) (v3client.MasheryPlanServiceEndpoint, diag.Diagnostics) {
+func V3MasheryPlanEndpointUpsertable(d *schema.ResourceData) (masherytypes.MasheryPlanServiceEndpoint, diag.Diagnostics) {
 	refPlanService := PlanServiceIdentifier{}
 	refPlanService.From(extractString(d, MashPlanServiceId, ""))
 
@@ -63,7 +63,7 @@ func V3MasheryPlanEndpointUpsertable(d *schema.ResourceData) (v3client.MasheryPl
 	planEndpoint.From(extractString(d, MashEndpointId, ""))
 
 	if refPlanService.ServiceId != planEndpoint.ServiceId {
-		return v3client.MasheryPlanServiceEndpoint{}, diag.Diagnostics{diag.Diagnostic{
+		return masherytypes.MasheryPlanServiceEndpoint{}, diag.Diagnostics{diag.Diagnostic{
 			Severity: diag.Error,
 			Summary:  "Incompatible V3 object hierarchy",
 			Detail: fmt.Sprintf("Endpoint %s belonging to service %s cannot be added to plan %s service %s",
@@ -75,8 +75,8 @@ func V3MasheryPlanEndpointUpsertable(d *schema.ResourceData) (v3client.MasheryPl
 		}}
 	}
 
-	return v3client.MasheryPlanServiceEndpoint{
-		MasheryPlanService: v3client.MasheryPlanService{
+	return masherytypes.MasheryPlanServiceEndpoint{
+		MasheryPlanService: masherytypes.MasheryPlanService{
 			PackageId: refPlanService.PackageId,
 			PlanId:    refPlanService.PlanId,
 			ServiceId: refPlanService.ServiceId,

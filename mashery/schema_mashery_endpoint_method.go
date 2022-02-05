@@ -1,7 +1,7 @@
 package mashery
 
 import (
-	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -9,8 +9,8 @@ import (
 const (
 	MashServiceEndpointMethodSampleJson = "sample_json"
 	MashServiceEndpointMethodSampleXml  = "sample_xml"
-	MashServiceEndpointMethodId         = "method_id"         // Shared, to be moved
-	MashServiceEndpointMethodRef        = "service_method_id" // Shared, to be moved
+	MashServiceEndpointMethodId         = "method_id" // Shared, to be moved
+	MashServiceEndpointMethodRef        = "method_id" // Shared, to be moved
 )
 
 var EndpointMethodSchema = map[string]*schema.Schema{
@@ -45,12 +45,12 @@ func (emi *ServiceEndpointMethodIdentifier) IsIdentified() bool {
 	return emi.ServiceEndpointIdentifier.IsIdentified() && len(emi.MethodId) > 0
 }
 
-func MashEndpointMethodUpsertable(d *schema.ResourceData) v3client.MasheryMethod {
+func MashEndpointMethodUpsertable(d *schema.ResourceData) masherytypes.MasheryMethod {
 	ident := ServiceEndpointMethodIdentifier{}
 	ident.From(d.Id())
 
-	return v3client.MasheryMethod{
-		AddressableV3Object: v3client.AddressableV3Object{
+	return masherytypes.MasheryMethod{
+		AddressableV3Object: masherytypes.AddressableV3Object{
 			Id:   ident.MethodId,
 			Name: extractString(d, MashObjName, ""),
 		},
@@ -59,7 +59,7 @@ func MashEndpointMethodUpsertable(d *schema.ResourceData) v3client.MasheryMethod
 	}
 }
 
-func V3EndpointMethodToResourceState(inp *v3client.MasheryMethod, d *schema.ResourceData) diag.Diagnostics {
+func V3EndpointMethodToResourceState(inp *masherytypes.MasheryMethod, d *schema.ResourceData) diag.Diagnostics {
 	data := map[string]interface{}{
 		MashServiceEndpointMethodId:         inp.Id,
 		MashObjCreated:                      inp.Created.ToString(),

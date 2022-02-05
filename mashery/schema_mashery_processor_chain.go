@@ -2,7 +2,7 @@ package mashery
 
 import (
 	"fmt"
-	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"strings"
 )
@@ -40,8 +40,8 @@ func adapterPrefixed(adapter string, cfg []string) []string {
 	return rv
 }
 
-func ComputeChain(d *schema.ResourceData) v3client.Processor {
-	mergedCfg := v3client.Processor{
+func ComputeChain(d *schema.ResourceData) masherytypes.Processor {
+	mergedCfg := masherytypes.Processor{
 		Adapter: "Mashery_Proxy_Processor_Chain",
 	}
 

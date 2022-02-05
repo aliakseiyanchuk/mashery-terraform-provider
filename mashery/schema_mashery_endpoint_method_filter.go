@@ -2,7 +2,7 @@ package mashery
 
 import (
 	"fmt"
-	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -100,14 +100,14 @@ func (emfi *ServiceEndpointMethodFilterIdentifier) IsIdentified() bool {
 	return emfi.ServiceEndpointMethodIdentifier.IsIdentified() && len(emfi.FilterId) > 0
 }
 
-func MashEndpointMethodFilterUpsertable(d *schema.ResourceData) (v3client.MasheryResponseFilter, diag.Diagnostics) {
+func MashEndpointMethodFilterUpsertable(d *schema.ResourceData) (masherytypes.MasheryResponseFilter, diag.Diagnostics) {
 	emfi := ServiceEndpointMethodFilterIdentifier{}
 	emfi.From(d.Id())
 
 	rvd := diag.Diagnostics{}
 
-	rv := v3client.MasheryResponseFilter{
-		AddressableV3Object: v3client.AddressableV3Object{
+	rv := masherytypes.MasheryResponseFilter{
+		AddressableV3Object: masherytypes.AddressableV3Object{
 			Id:   emfi.FilterId,
 			Name: extractString(d, MashObjName, "Terraform filter"),
 		},
@@ -137,7 +137,7 @@ func MashEndpointMethodFilterUpsertable(d *schema.ResourceData) (v3client.Masher
 	return rv, rvd
 }
 
-func V3EndpointMethodFilterToResourceData(inp *v3client.MasheryResponseFilter, d *schema.ResourceData) diag.Diagnostics {
+func V3EndpointMethodFilterToResourceData(inp *masherytypes.MasheryResponseFilter, d *schema.ResourceData) diag.Diagnostics {
 	data := map[string]interface{}{
 		MashEndpointMethodFilterId:                inp.Id,
 		MashObjName:                               inp.Name,

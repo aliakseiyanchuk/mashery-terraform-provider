@@ -2,7 +2,7 @@ package mashery_test
 
 import (
 	"fmt"
-	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/stretchr/testify/assert"
 	"terraform-provider-mashery/mashery"
 	"testing"
@@ -12,9 +12,9 @@ import (
 func TestV3MashRoleToResourceData(t *testing.T) {
 	d := NewResourceData(&mashery.DataSourceRoleSchema)
 
-	now := v3client.MasheryJSONTime(time.Now())
-	orig := v3client.MasheryRole{
-		AddressableV3Object: v3client.AddressableV3Object{
+	now := masherytypes.MasheryJSONTime(time.Now())
+	orig := masherytypes.MasheryRole{
+		AddressableV3Object: masherytypes.AddressableV3Object{
 			Id:      "roleId",
 			Name:    "Name",
 			Created: &now,

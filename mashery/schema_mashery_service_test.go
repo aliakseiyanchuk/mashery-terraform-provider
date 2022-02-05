@@ -1,7 +1,7 @@
 package mashery_test
 
 import (
-	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/stretchr/testify/assert"
 	"terraform-provider-mashery/mashery"
 	"testing"
@@ -9,17 +9,17 @@ import (
 )
 
 func TestV3ServiceRolesToTerraform(t *testing.T) {
-	now := v3client.MasheryJSONTime(time.Now())
-	inp := []v3client.MasheryRolePermission{
+	now := masherytypes.MasheryJSONTime(time.Now())
+	inp := []masherytypes.MasheryRolePermission{
 		{
-			MasheryRole: v3client.MasheryRole{
-				AddressableV3Object: v3client.AddressableV3Object{Id: "r1", Name: "n1", Created: &now, Updated: &now},
+			MasheryRole: masherytypes.MasheryRole{
+				AddressableV3Object: masherytypes.AddressableV3Object{Id: "r1", Name: "n1", Created: &now, Updated: &now},
 			},
 			Action: "read",
 		},
 		{
-			MasheryRole: v3client.MasheryRole{
-				AddressableV3Object: v3client.AddressableV3Object{Id: "r2", Name: "n2"},
+			MasheryRole: masherytypes.MasheryRole{
+				AddressableV3Object: masherytypes.AddressableV3Object{Id: "r2", Name: "n2"},
 			},
 			Action: "read",
 		},
@@ -37,7 +37,7 @@ func TestV3ServiceRolesToTerraform(t *testing.T) {
 	assert.GreaterOrEqual(t, indexOfServiceRolePermission(&upsert, "r2", "read"), 0)
 }
 
-func indexOfServiceRolePermission(inp *[]v3client.MasheryRolePermission, id, action string) int {
+func indexOfServiceRolePermission(inp *[]masherytypes.MasheryRolePermission, id, action string) int {
 	for idx, v := range *inp {
 		if id == v.Id && action == v.Action {
 			return idx
@@ -50,11 +50,11 @@ func indexOfServiceRolePermission(inp *[]v3client.MasheryRolePermission, id, act
 func TestV3ServiceToTerraform(t *testing.T) {
 	d := NewResourceData(&mashery.ServiceSchema)
 
-	now := v3client.MasheryJSONTime(time.Now())
+	now := masherytypes.MasheryJSONTime(time.Now())
 	var limitOverall int64 = -1
 
-	cache := v3client.MasheryServiceCache{CacheTtl: 30}
-	secProfile := v3client.MasherySecurityProfile{OAuth: v3client.MasheryOAuth{
+	cache := masherytypes.MasheryServiceCache{CacheTtl: 30}
+	secProfile := masherytypes.MasherySecurityProfile{OAuth: masherytypes.MasheryOAuth{
 		AccessTokenTtlEnabled:       true,
 		AccessTokenTtl:              3600,
 		AccessTokenType:             "bearer",
@@ -75,8 +75,8 @@ func TestV3ServiceToTerraform(t *testing.T) {
 		SecureTokensEnabled:         true,
 	}}
 
-	v3Obj := v3client.MasheryService{
-		AddressableV3Object: v3client.AddressableV3Object{
+	v3Obj := masherytypes.MasheryService{
+		AddressableV3Object: masherytypes.AddressableV3Object{
 			Id:      "id",
 			Name:    "name",
 			Created: &now,

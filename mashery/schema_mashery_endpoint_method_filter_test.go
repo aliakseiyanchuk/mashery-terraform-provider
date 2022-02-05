@@ -1,7 +1,7 @@
 package mashery_test
 
 import (
-	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"terraform-provider-mashery/mashery"
 	"testing"
 	"time"
@@ -14,14 +14,14 @@ func TestJsonPattern(t *testing.T) {
 }
 
 func TestV3EndpointMethodFilterToResourceData(t *testing.T) {
-	now := v3client.MasheryJSONTime(time.Now())
+	now := masherytypes.MasheryJSONTime(time.Now())
 
 	d := NewResourceData(&mashery.EndpointMethodFilterSchema)
 	assertOk(t, d.Set(mashery.MashObjName, "DefaultFilter"))
 	assertOk(t, d.Set(mashery.MashServiceEndpointMethodRef, "service::endpoint::methodId"))
 
-	ref := v3client.MasheryResponseFilter{
-		AddressableV3Object: v3client.AddressableV3Object{
+	ref := masherytypes.MasheryResponseFilter{
+		AddressableV3Object: masherytypes.AddressableV3Object{
 			Id:      "filterId",
 			Name:    "DefaultFilter",
 			Created: &now,

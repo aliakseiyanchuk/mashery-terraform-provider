@@ -2,14 +2,14 @@ package mashery_test
 
 import (
 	"context"
-	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/stretchr/testify/assert"
 	"terraform-provider-mashery/mashery"
 	"testing"
 )
 
 func TestProcessChainOperation(t *testing.T) {
-	adapterA := v3client.Processor{
+	adapterA := masherytypes.Processor{
 		PreProcessEnabled:  true,
 		PostProcessEnabled: false,
 		PostInputs:         nil,
@@ -17,7 +17,7 @@ func TestProcessChainOperation(t *testing.T) {
 		Adapter:            "adapter_a",
 	}
 
-	adapterB := v3client.Processor{
+	adapterB := masherytypes.Processor{
 		PreProcessEnabled:  false,
 		PostProcessEnabled: true,
 		PostInputs:         []string{"d:4", "e:5", "f:6"},

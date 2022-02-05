@@ -1,7 +1,7 @@
 package mashery
 
 import (
-	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -33,12 +33,12 @@ func (pemi *PlanEndpointMethodIdentifier) IsIdentified() bool {
 	return pemi.PlanEndpointIdentifier.IsIdentified() && len(pemi.MethodId) > 0
 }
 
-func MashPlanServiceEndpointUpsert(d *schema.ResourceData) v3client.MasheryPlanServiceEndpoint {
+func MashPlanServiceEndpointUpsert(d *schema.ResourceData) masherytypes.MasheryPlanServiceEndpoint {
 	ident := PlanEndpointIdentifier{}
 	ident.From(extractString(d, PlanEndpointRef, ""))
 
-	return v3client.MasheryPlanServiceEndpoint{
-		MasheryPlanService: v3client.MasheryPlanService{
+	return masherytypes.MasheryPlanServiceEndpoint{
+		MasheryPlanService: masherytypes.MasheryPlanService{
 			PackageId: ident.PackageId,
 			PlanId:    ident.PlanId,
 			ServiceId: ident.ServiceId,
@@ -47,13 +47,13 @@ func MashPlanServiceEndpointUpsert(d *schema.ResourceData) v3client.MasheryPlanS
 	}
 }
 
-func MashPlanMethodIdentifier(d *schema.ResourceData) (v3client.MasheryPlanServiceEndpointMethod, diag.Diagnostics) {
+func MashPlanMethodIdentifier(d *schema.ResourceData) (masherytypes.MasheryPlanServiceEndpointMethod, diag.Diagnostics) {
 	ident := PlanEndpointMethodIdentifier{}
 	ident.From(d.Id())
 
-	v3Id := v3client.MasheryPlanServiceEndpointMethod{
-		MasheryPlanServiceEndpoint: v3client.MasheryPlanServiceEndpoint{
-			MasheryPlanService: v3client.MasheryPlanService{
+	v3Id := masherytypes.MasheryPlanServiceEndpointMethod{
+		MasheryPlanServiceEndpoint: masherytypes.MasheryPlanServiceEndpoint{
+			MasheryPlanService: masherytypes.MasheryPlanService{
 				PackageId: ident.PackageId,
 				PlanId:    ident.PlanId,
 				ServiceId: ident.ServiceId,
@@ -76,13 +76,13 @@ func MashPlanMethodIdentifier(d *schema.ResourceData) (v3client.MasheryPlanServi
 	return v3Id, rvd
 }
 
-func MashServiceMethodIdentifier(d *schema.ResourceData) (v3client.MasheryServiceMethodFilter, diag.Diagnostics) {
+func MashServiceMethodIdentifier(d *schema.ResourceData) (masherytypes.MasheryServiceMethodFilter, diag.Diagnostics) {
 	ident := ServiceEndpointMethodFilterIdentifier{}
 	ident.From(extractString(d, MashServiceEndpointMethodFilterRef, ""))
 
-	v3Id := v3client.MasheryServiceMethodFilter{
-		MasheryServiceMethod: v3client.MasheryServiceMethod{
-			MasheryServiceEndpoint: v3client.MasheryServiceEndpoint{
+	v3Id := masherytypes.MasheryServiceMethodFilter{
+		MasheryServiceMethod: masherytypes.MasheryServiceMethod{
+			MasheryServiceEndpoint: masherytypes.MasheryServiceEndpoint{
 				ServiceId:  ident.ServiceId,
 				EndpointId: ident.EndpointId,
 			},

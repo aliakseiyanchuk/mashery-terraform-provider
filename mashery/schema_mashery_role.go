@@ -1,7 +1,7 @@
 package mashery
 
 import (
-	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -17,7 +17,7 @@ const (
 	MashRoleAction = "action"
 )
 
-func V3MashRoleToResourceData(inp *v3client.MasheryRole, d *schema.ResourceData) diag.Diagnostics {
+func V3MashRoleToResourceData(inp *masherytypes.MasheryRole, d *schema.ResourceData) diag.Diagnostics {
 	data := map[string]interface{}{
 		MashObjCreated:         inp.Created.ToString(),
 		MashObjUpdated:         inp.Updated.ToString(),
@@ -32,21 +32,21 @@ func V3MashRoleToResourceData(inp *v3client.MasheryRole, d *schema.ResourceData)
 	return SetResourceFields(data, d)
 }
 
-func V3RoleRefenceWithPermissionToTerraform(inp *v3client.MasheryRole, perm string) map[string]interface{} {
+func V3RoleRefenceWithPermissionToTerraform(inp *masherytypes.MasheryRole, perm string) map[string]interface{} {
 	return map[string]interface{}{
 		MashObjId:      inp.Id,
 		MashRoleAction: perm,
 	}
 }
 
-func V3MashRolePermissionToTerraform(permission v3client.MasheryRolePermission) map[string]interface{} {
+func V3MashRolePermissionToTerraform(permission masherytypes.MasheryRolePermission) map[string]interface{} {
 	return map[string]interface{}{
 		MashObjId:      permission.Id,
 		MashRoleAction: permission.Action,
 	}
 }
 
-func V3RolesPermissionsToTerraform(inp []v3client.MasheryRolePermission) []map[string]interface{} {
+func V3RolesPermissionsToTerraform(inp []masherytypes.MasheryRolePermission) []map[string]interface{} {
 	rv := make([]map[string]interface{}, len(inp))
 	for idx, v := range inp {
 		rv[idx] = V3MashRolePermissionToTerraform(v)
@@ -55,10 +55,10 @@ func V3RolesPermissionsToTerraform(inp []v3client.MasheryRolePermission) []map[s
 	return rv
 }
 
-func V3RolePermissionUpsertable(inp map[string]interface{}) v3client.MasheryRolePermission {
-	return v3client.MasheryRolePermission{
-		MasheryRole: v3client.MasheryRole{
-			AddressableV3Object: v3client.AddressableV3Object{
+func V3RolePermissionUpsertable(inp map[string]interface{}) masherytypes.MasheryRolePermission {
+	return masherytypes.MasheryRolePermission{
+		MasheryRole: masherytypes.MasheryRole{
+			AddressableV3Object: masherytypes.AddressableV3Object{
 				Id: inp[MashObjId].(string),
 			},
 		},

@@ -1,7 +1,7 @@
 package mashery
 
 import (
-	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -72,12 +72,12 @@ var PackageKeySchema = map[string]*schema.Schema{
 	},
 }
 
-func MashPackageKeyUpsertable(d *schema.ResourceData) v3client.MasheryPackageKey {
+func MashPackageKeyUpsertable(d *schema.ResourceData) masherytypes.MasheryPackageKey {
 	plnIdent := PlanIdentifier{}
 	plnIdent.From(extractString(d, MashPlanId, ""))
 
-	return v3client.MasheryPackageKey{
-		AddressableV3Object: v3client.AddressableV3Object{
+	return masherytypes.MasheryPackageKey{
+		AddressableV3Object: masherytypes.AddressableV3Object{
 			Id: d.Id(),
 		},
 		Apikey: ExtractStringPointer(d, MashPackageKeyIdent),
@@ -91,20 +91,20 @@ func MashPackageKeyUpsertable(d *schema.ResourceData) v3client.MasheryPackageKey
 
 		Status: extractString(d, MashPackageKeyStatus, "waiting"),
 
-		Package: &v3client.MasheryPackage{
-			AddressableV3Object: v3client.AddressableV3Object{
+		Package: &masherytypes.MasheryPackage{
+			AddressableV3Object: masherytypes.AddressableV3Object{
 				Id: plnIdent.PackageId,
 			},
 		},
-		Plan: &v3client.MasheryPlan{
-			AddressableV3Object: v3client.AddressableV3Object{
+		Plan: &masherytypes.MasheryPlan{
+			AddressableV3Object: masherytypes.AddressableV3Object{
 				Id: plnIdent.PlanId,
 			},
 		},
 	}
 }
 
-func v3LimitToTerraform(inp *v3client.MasheryPackageKey) interface{} {
+func v3LimitToTerraform(inp *masherytypes.MasheryPackageKey) interface{} {
 	if inp.Limits != nil {
 		rv := make([]interface{}, len(*inp.Limits))
 		for idx, v := range *inp.Limits {
@@ -121,7 +121,7 @@ func v3LimitToTerraform(inp *v3client.MasheryPackageKey) interface{} {
 	}
 }
 
-func V3PackageKeyToResourceData(inp *v3client.MasheryPackageKey, d *schema.ResourceData) diag.Diagnostics {
+func V3PackageKeyToResourceData(inp *masherytypes.MasheryPackageKey, d *schema.ResourceData) diag.Diagnostics {
 	data := map[string]interface{}{
 		MashPackageKeyIdent:            inp.Apikey,
 		MashPackageKeySecret:           inp.Secret,

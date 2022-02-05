@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -90,7 +91,7 @@ func serviceCreate(ctx context.Context, d *schema.ResourceData, m interface{}) d
 
 func trySetServiceRoles(ctx context.Context, d *schema.ResourceData, mashV3Cl v3client.Client) diag.Diagnostics {
 	opDiagnostic := diag.Diagnostics{}
-	if d.Get(MashSvcInteractiveDocsRoles) != nil {
+	if getSetLength(d.Get(MashSvcInteractiveDocsRoles)) > 0 {
 		roles := V3ServiceRolePermissionUpsertable(d)
 		doLogJson("Will attempt to set service roles with this upsertable", roles)
 
@@ -155,7 +156,7 @@ func serviceUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) d
 			}
 		} else {
 			requestedProfile := V3SecurityProfileUpsertable(d)
-			if actualOAuth, err := mashV3Cl.UpdateServiceOAuthSecurityProfile(ctx, d.Id(), requestedProfile.OAuth); err != nil {
+			if actualOAuth, err := mashV3Cl.UpdateServiceOAuthSecurityProfile(ctx, d.Id(), *requestedProfile.OAuth); err != nil {
 				updateDiagnostic = append(updateDiagnostic, diag.Diagnostic{
 					Severity: diag.Error,
 					Summary:  "could not update oauth security profile",
@@ -171,7 +172,7 @@ func serviceUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) d
 	}
 
 	if d.HasChange(MashSvcCacheTtl) {
-		serviceCache := v3client.MasheryServiceCache{CacheTtl: d.Get(MashSvcCacheTtl).(int)}
+		serviceCache := masherytypes.MasheryServiceCache{CacheTtl: d.Get(MashSvcCacheTtl).(int)}
 		if _, err := mashV3Cl.UpdateServiceCache(ctx, d.Id(), serviceCache); err != nil {
 			updateDiagnostic = append(updateDiagnostic, diag.Diagnostic{
 				Severity: diag.Error,

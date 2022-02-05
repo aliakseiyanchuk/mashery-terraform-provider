@@ -1,7 +1,7 @@
 package mashery_test
 
 import (
-	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"terraform-provider-mashery/mashery"
 	"testing"
@@ -11,8 +11,8 @@ import (
 // BUG: not sending data on concurrent requests.
 
 func TestV3EndpointToResourceDataWithEmptyCache(t *testing.T) {
-	source := v3client.MasheryEndpoint{
-		Cache: &v3client.Cache{
+	source := masherytypes.MasheryEndpoint{
+		Cache: &masherytypes.Cache{
 			ClientSurrogateControlEnabled: false,
 			ContentCacheKeyHeaders:        []string{},
 		},
@@ -23,7 +23,7 @@ func TestV3EndpointToResourceDataWithEmptyCache(t *testing.T) {
 	}
 }
 
-func storeEndpointAndGet(endp *v3client.MasheryEndpoint, key string) (interface{}, bool) {
+func storeEndpointAndGet(endp *masherytypes.MasheryEndpoint, key string) (interface{}, bool) {
 	res := schema.Resource{
 		Schema: mashery.EndpointSchema,
 	}
@@ -35,8 +35,8 @@ func storeEndpointAndGet(endp *v3client.MasheryEndpoint, key string) (interface{
 }
 
 func TestV3EndpointToResourceDataWithEmptyProcessor(t *testing.T) {
-	source := v3client.MasheryEndpoint{
-		Processor: &v3client.Processor{
+	source := masherytypes.MasheryEndpoint{
+		Processor: &masherytypes.Processor{
 			PreProcessEnabled:  false,
 			PostProcessEnabled: false,
 			PostInputs:         []string{},
@@ -52,7 +52,7 @@ func TestV3EndpointToResourceDataWithEmptyProcessor(t *testing.T) {
 
 // Test full save/restore to/from the Terraform state.
 func TestV3EndpointToResourceData(t *testing.T) {
-	tm := v3client.MasheryJSONTime(time.Now())
+	tm := masherytypes.MasheryJSONTime(time.Now())
 
 	custAdapter := "custom-adapter"
 	user := "user"
@@ -62,8 +62,8 @@ func TestV3EndpointToResourceData(t *testing.T) {
 	sysCredsKey := "sysCredsKey"
 	sysCredsPass := "sysCredsPass"
 
-	source := v3client.MasheryEndpoint{
-		AddressableV3Object: v3client.AddressableV3Object{
+	source := masherytypes.MasheryEndpoint{
+		AddressableV3Object: masherytypes.AddressableV3Object{
 			Id:      "endpointId",
 			Name:    "endpName",
 			Created: &tm,
@@ -74,14 +74,14 @@ func TestV3EndpointToResourceData(t *testing.T) {
 		ApiKeyValueLocations:        []string{"apiKeyValueLocs"},
 		ApiMethodDetectionKey:       "1 2 3",
 		ApiMethodDetectionLocations: []string{"methDetectLocs"},
-		Cache: &v3client.Cache{
+		Cache: &masherytypes.Cache{
 			ClientSurrogateControlEnabled: true,
 			ContentCacheKeyHeaders:        []string{"header-a", "header-b"},
 		},
 		ConnectionTimeoutForSystemDomainRequest:  5,
 		ConnectionTimeoutForSystemDomainResponse: 6,
 		CookiesDuringHttpRedirectsEnabled:        true,
-		Cors: &v3client.Cors{
+		Cors: &masherytypes.Cors{
 			AllDomainsEnabled: true,
 			MaxAge:            40,
 		},
@@ -103,7 +103,7 @@ func TestV3EndpointToResourceData(t *testing.T) {
 		OutboundRequestTargetPath:                  "/a",
 		OutboundRequestTargetQueryParameters:       "?ef",
 		OutboundTransportProtocol:                  "https",
-		Processor: &v3client.Processor{
+		Processor: &masherytypes.Processor{
 			PreProcessEnabled:  true,
 			PostProcessEnabled: true,
 			PostInputs: []string{
@@ -114,20 +114,20 @@ func TestV3EndpointToResourceData(t *testing.T) {
 			},
 			Adapter: "adapter",
 		},
-		PublicDomains:             []v3client.Domain{{Address: "addr"}},
+		PublicDomains:             []masherytypes.Domain{{Address: "addr"}},
 		RequestAuthenticationType: "req-auth",
 		RequestPathAlias:          "req-path-alias",
 		RequestProtocol:           "req-proto",
 		OAuthGrantTypes:           []string{"oauth-gt"},
 		StringsToTrimFromApiKey:   "bba",
 		SupportedHttpMethods:      []string{"support-methds"},
-		SystemDomainAuthentication: &v3client.SystemDomainAuthentication{
+		SystemDomainAuthentication: &masherytypes.SystemDomainAuthentication{
 			Type:        "ff",
 			Username:    &user,
 			Certificate: &cert,
 			Password:    &pwd,
 		},
-		SystemDomains:                []v3client.Domain{{Address: "dom-addr"}},
+		SystemDomains:                []masherytypes.Domain{{Address: "dom-addr"}},
 		TrafficManagerDomain:         "tm-doamin",
 		UseSystemDomainCredentials:   true,
 		SystemDomainCredentialKey:    &sysCredsKey,

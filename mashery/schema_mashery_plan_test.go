@@ -1,7 +1,7 @@
 package mashery_test
 
 import (
-	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"terraform-provider-mashery/mashery"
@@ -43,27 +43,27 @@ func TestV3PlanUpsertableFromMinimalInputs(t *testing.T) {
 func TestV3PlanUpsertable_OnNilInputs(t *testing.T) {
 	d := NewResourceData(&mashery.PlanSchema)
 
-	diags := mashery.V3PlanToResourceData(&v3client.MasheryPlan{}, d)
+	diags := mashery.V3PlanToResourceData(&masherytypes.MasheryPlan{}, d)
 	LogErrorDiagnostics(t, "V3 with minimal data", &diags)
 
 	assertResourceDoesNotHaveKey(t, d, mashery.MashPlanEmailTemplateSetId)
 }
 
 func TestV3PlanUpsertable(t *testing.T) {
-	tm := v3client.MasheryJSONTime(time.Now())
+	tm := masherytypes.MasheryJSONTime(time.Now())
 
 	var qpsCeiling int64 = 4
 	var rateCeiling int64 = 5
 
-	orig := v3client.MasheryPlan{
-		AddressableV3Object: v3client.AddressableV3Object{
+	orig := masherytypes.MasheryPlan{
+		AddressableV3Object: masherytypes.AddressableV3Object{
 			Id:      "planId",
 			Name:    "planName",
 			Created: &tm,
 			Updated: &tm,
 		},
 		Description:                       "planDesc",
-		Eav:                               &v3client.EAV{"a": "b"},
+		Eav:                               &masherytypes.EAV{"a": "b"},
 		SelfServiceKeyProvisioningEnabled: false,
 		AdminKeyProvisioningEnabled:       false,
 		Notes:                             "notes",
@@ -87,7 +87,7 @@ func TestV3PlanUpsertable(t *testing.T) {
 		},
 		func(d *schema.ResourceData) interface{} {
 			return mashery.V3PlanUpsertable(d)
-		}).(v3client.MasheryPlan)
+		}).(masherytypes.MasheryPlan)
 
 	assertSameString(t, "Id", &orig.Id, &reverse.Id)
 	assertSameString(t, "Name", &orig.Name, &reverse.Name)

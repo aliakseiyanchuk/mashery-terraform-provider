@@ -2,6 +2,7 @@ package mashery
 
 import (
 	"context"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -32,7 +33,7 @@ func dataSourceMasheryServiceRead(ctx context.Context, d *schema.ResourceData, m
 	}
 }
 
-func DataSourceSvcReadReturned(srv []v3client.MasheryService, d *schema.ResourceData) diag.Diagnostics {
+func DataSourceSvcReadReturned(srv []masherytypes.MasheryService, d *schema.ResourceData) diag.Diagnostics {
 	if len(srv) > 0 {
 		nameExpr := ExtractStringArray(d, MashDataSourceNameFilterRegexp, &EmptyStringArray)
 		if len(nameExpr) > 0 {
@@ -98,10 +99,10 @@ func DataSourceSvcReadReturned(srv []v3client.MasheryService, d *schema.Resource
 	}
 }
 
-func FilterMasherySvcName(rv *[]v3client.MasheryService, exp []string) []v3client.MasheryService {
+func FilterMasherySvcName(rv *[]masherytypes.MasheryService, exp []string) []masherytypes.MasheryService {
 	rgxArr := toRegexpArray(exp)
 
-	filtered := []v3client.MasheryService{}
+	filtered := []masherytypes.MasheryService{}
 	for _, v := range *rv {
 		for _, rgx := range rgxArr {
 			if rgx.MatchString(v.Name) {

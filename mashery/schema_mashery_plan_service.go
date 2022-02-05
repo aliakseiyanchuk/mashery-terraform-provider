@@ -1,7 +1,7 @@
 package mashery
 
 import (
-	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -42,12 +42,12 @@ var PlanService = map[string]*schema.Schema{
 	},
 }
 
-func V3MasheryPlanServiceUpsertable(d *schema.ResourceData) v3client.MasheryPlanService {
+func V3MasheryPlanServiceUpsertable(d *schema.ResourceData) masherytypes.MasheryPlanService {
 	if d.Id() == "" {
 		planId := PlanIdentifier{}
 		planId.From(extractString(d, MashPlanId, ""))
 
-		return v3client.MasheryPlanService{
+		return masherytypes.MasheryPlanService{
 			PackageId: planId.PackageId,
 			PlanId:    planId.PlanId,
 			ServiceId: extractString(d, MashSvcId, ""),
@@ -56,7 +56,7 @@ func V3MasheryPlanServiceUpsertable(d *schema.ResourceData) v3client.MasheryPlan
 		ident := PlanServiceIdentifier{}
 		ident.From(d.Id())
 
-		return v3client.MasheryPlanService{
+		return masherytypes.MasheryPlanService{
 			PackageId: ident.PackageId,
 			PlanId:    ident.PlanId,
 			ServiceId: ident.ServiceId,

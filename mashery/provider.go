@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/transport"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -15,7 +16,7 @@ import (
 
 // Provider schema configuration settings
 //
-// The provide accepts three types of access credentials:
+// The provider accepts three types of access credentials:
 // - the token value passed to either from Vault secret engine, or by reading  <code>TF_MASHERY_V3_ACCESS_TOKEN</code>
 //   environment variable;
 // - by specifying a path to the token file created previously with the <code>mash-connect</code> command. The token
@@ -27,7 +28,19 @@ import (
 // retrieving all package key/secret combination.
 
 const (
-	envCredentialPass = "TF_MASHERY_CREDS_PASS"
+	envVaultToken = "TF_MASHERY_VAULT_TOKEN"
+	envV3Token    = "TF_MASHERY_V3_ACCESS_TOKEN"
+	envV3QPS      = "TF_MASHERY_V3_QPS"
+	envV3Latency  = "TF_MASHERY_V3_NETWORK_LATENCY"
+
+	vaultAddrField      = "vault_addr"
+	vaultMountPathField = "vault_mount"
+	vaultRoleField      = "vault_role"
+	vaultTokenField     = "vault_token"
+
+	providerQPSField            = "qps"
+	providerNetworkLatencyField = "network_latency"
+	providerV3Token             = "v3_token"
 )
 
 var providerConfigSchema = map[string]*schema.Schema{
@@ -36,43 +49,90 @@ var providerConfigSchema = map[string]*schema.Schema{
 		Optional:    true,
 		Description: "Log file where detailed Mashery session information will be saved",
 	},
-	"qps": {
+	vaultAddrField: {
+		Type:        schema.TypeString,
+		Optional:    true,
+		Description: "Vault server address that will function as a V3 proxy",
+		Default:     "",
+	},
+	vaultMountPathField: {
+		Type:        schema.TypeString,
+		Optional:    true,
+		Description: "Vault server mount path",
+		Default:     "mash-creds",
+	},
+	vaultRoleField: {
+		Type:        schema.TypeString,
+		Optional:    true,
+		Description: "Role name to use with this provider",
+		Default:     "",
+	},
+	vaultTokenField: {
+		Type:        schema.TypeString,
+		Optional:    true,
+		Description: "Vault token that the provider should use to authenticate to Vault",
+		DefaultFunc: schema.EnvDefaultFunc(envVaultToken, ""),
+	},
+	providerQPSField: {
 		Type:        schema.TypeInt,
 		Optional:    true,
-		DefaultFunc: intValueFromVariable("TF_MASHERY_V3_QPS", 2),
+		DefaultFunc: intValueFromVariable(envV3QPS, 2),
 		Description: "Queries per second to observe. Default to 2 queries per second",
 	},
-	"deploy_duration": {
+	providerNetworkLatencyField: {
 		Type:        schema.TypeString,
 		Optional:    true,
-		DefaultFunc: schema.EnvDefaultFunc("TF_MASHERY_DEPLOY_DURATION", "3m"),
-		Description: "Typical duration required to perform deployment. Defaults to 3 minutes",
-	},
-	"network_latency": {
-		Type:        schema.TypeString,
-		Optional:    true,
-		DefaultFunc: schema.EnvDefaultFunc("TF_MASHERY_V3_NETWORK_LATENCY", "173ms"),
+		DefaultFunc: schema.EnvDefaultFunc(envV3Latency, "173ms"),
 		Description: "Mean travel time between machine where the Terraform is running and Mashery API. Defaults to 173 (milliseconds).",
 	},
 	"token": {
 		Type:        schema.TypeString,
 		Optional:    true,
-		DefaultFunc: schema.EnvDefaultFunc("TF_MASHERY_V3_ACCESS_TOKEN", ""),
+		DefaultFunc: schema.EnvDefaultFunc(envV3Token, ""),
 		Description: "Actual access token to be used. For best use, obtain this from Vault",
 	},
-	"token_file": {
-		Type:        schema.TypeString,
-		Optional:    true,
-		DefaultFunc: schema.EnvDefaultFunc("TF_MASHERY_V3_TOKEN_FILE", v3client.DefaultSavedAccessTokenFilePath()),
-		Description: "Read access token from the local file system",
-	},
-	"creds_file": {
-		Type:        schema.TypeString,
-		Optional:    true,
-		DefaultFunc: schema.EnvDefaultFunc("TF_MASHERY_V3_CREDS", v3client.DefaultCredentialsFile()),
-		Description: "Load long-term V3 credentials from file to obtain V3 access tokens",
-	},
 }
+
+// ----------------------------------------------------------------------------------------------
+// Vault proxy mode configuration
+
+type VaultProxyModeConfiguration struct {
+	addr     string
+	mount    string
+	roleName string
+	token    string
+}
+
+func (vpm *VaultProxyModeConfiguration) isComplete() bool {
+	return len(vpm.addr) > 0 && len(vpm.mount) > 0 && len(vpm.roleName) > 0 && len(vpm.token) > 0
+}
+
+func (vpm *VaultProxyModeConfiguration) fullAddress() string {
+	return fmt.Sprintf("%s/v1/%s/roles/%s/proxy/v3", vpm.addr, vpm.mount, vpm.roleName)
+}
+
+// --------------------------------------------------------------------------------------------
+// Vault authorizer
+
+type VaultAuthorizer struct {
+	transport.Authorizer
+
+	vaultAuth map[string]string
+}
+
+func (va VaultAuthorizer) HeaderAuthorization() (map[string]string, error) {
+	return va.vaultAuth, nil
+}
+func (va VaultAuthorizer) QueryStringAuthorization() (map[string]string, error) {
+	return nil, nil
+}
+
+func (va VaultAuthorizer) Close() {
+	// Do nothing
+}
+
+// -----------------------------------------------------------------------------
+// Implementation
 
 func intValueFromVariable(envVar string, defaultVal int) schema.SchemaDefaultFunc {
 	return func() (interface{}, error) {
@@ -109,6 +169,51 @@ func doLogJson(msg string, obj interface{}) {
 	}
 }
 
+func vaultProxyConfiguration(d *schema.ResourceData) VaultProxyModeConfiguration {
+	rv := VaultProxyModeConfiguration{
+		addr:     d.Get(vaultAddrField).(string),
+		mount:    d.Get(vaultMountPathField).(string),
+		roleName: d.Get(vaultRoleField).(string),
+		token:    d.Get(vaultTokenField).(string),
+	}
+
+	return rv
+}
+
+func transportLogging(ctx context.Context, wrq *transport.WrappedRequest, wrs *transport.WrappedResponse, err error) {
+	doLogf("-> %s %s", wrq.Request.Method, wrq.Request.URL)
+	for k, v := range wrq.Request.Header {
+		doLogf("H> %s = %s", k, v)
+	}
+	if wrq.Body != nil {
+		bodyOut := wrq.Body
+
+		if str, err := json.MarshalIndent(wrq.Body, "|>", "  "); err == nil {
+			bodyOut = str
+		}
+
+		doLogf("B>\n%s", bodyOut)
+	}
+
+	if wrs != nil {
+		doLogf("<- %d", wrs.StatusCode)
+		for k, v := range wrs.Header {
+			doLogf("<H %s = %s", k, v)
+		}
+
+		if body, err := wrs.Body(); err != nil {
+			doLogf("<H Can't read body: %s", err.Error())
+		} else if len(body) > 0 {
+			doLogf("<H Response body:%s\n", string(body))
+		}
+
+	}
+
+	if err != nil {
+		doLogf("Error: %s", err.Error())
+	}
+}
+
 func providerConfigure(_ context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
 
 	var diags diag.Diagnostics
@@ -123,13 +228,39 @@ func providerConfigure(_ context.Context, d *schema.ResourceData) (interface{}, 
 	}
 
 	var tokenProvider v3client.V3AccessTokenProvider
-	qps := d.Get("qps").(int)
+	qps := d.Get(providerQPSField).(int)
 
-	cfgNetLatency := d.Get("network_latency").(string)
-	cfgDeployDuration := d.Get("deploy_duration").(string)
+	// Prefer to use Vault proxy mode, if sufficiently configured.
+	if vaultProxyMode := vaultProxyConfiguration(d); vaultProxyMode.isComplete() {
+		doLogf("Provider was initialized with the Vault proxy mode, proxy=%s", vaultProxyMode.fullAddress())
+
+		clParams := v3client.Params{
+			HTTPClientParams: transport.HTTPClientParams{
+				// Since the connection is made to Vault, the client will trust whatever the system
+				// is trusting.
+				TLSConfigDelegateSystem: true,
+				ExchangeListener:        transportLogging,
+			},
+			Authorizer: VaultAuthorizer{
+				vaultAuth: map[string]string{
+					"X-Vault-Token": vaultProxyMode.token,
+				},
+			},
+			QPS:          int64(qps),
+			MashEndpoint: vaultProxyMode.fullAddress(),
+		}
+
+		cl := v3client.NewHttpClient(clParams)
+		return cl, diags
+	} else {
+		doLogf("Provider configuration does not meet Vault proxy mode requirements")
+	}
+
+	// If Vault proxy mode is not configured, then Mashery V3 token should be supplied
+
+	cfgNetLatency := d.Get(providerNetworkLatencyField).(string)
 
 	travelComp, latErr := time.ParseDuration(cfgNetLatency)
-	deployDur, deplErr := time.ParseDuration(cfgDeployDuration)
 
 	if latErr != nil {
 		diags = append(diags, diag.Diagnostic{
@@ -138,68 +269,38 @@ func providerConfigure(_ context.Context, d *schema.ResourceData) (interface{}, 
 		})
 	}
 
-	if deplErr != nil {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  fmt.Sprintf("Not a valid deployment duration: %s (%s)", deployDur, deplErr),
-		})
-	}
-
 	// 1. Give preference to explicitly specified token
-	tkn := d.Get("token").(string)
+	tkn := d.Get(providerV3Token).(string)
 	// Mashery tokens is 24 characters long. This condition is a built-in protection for the
 	// developer passing invalid tokens
 	if len(tkn) > 20 {
 		tokenProvider = v3client.NewFixedTokenProvider(tkn)
-		doLogf("Initialized static token supplied vy the configuration")
 	} else {
-		// 2. Explicitly specified token is not available. Second preference is to read the
-		// token data from file, if its available.
-		savedTknFile := d.Get("token_file").(string)
-		doLogf("Saved token file is %s", savedTknFile)
-
-		savedTknDat, err := v3client.ReadSavedV3TokenData(savedTknFile)
-		if savedTknDat != nil {
-			doLogf("Time left in this token: %d", savedTknDat.TimeLeft())
-		}
-		if err != nil {
-			doLogf("Error reading saved token file: %s", err)
-		}
-
-		if err == nil && savedTknDat != nil && savedTknDat.TimeLeft() > int(deployDur.Seconds()) {
-			tokenProvider = v3client.NewFileSystemTokenProviderFrom(savedTknFile)
-			doLogf("Initialized file system token from provider the saved token file")
-		} else {
-			// 3. The pre-fetched token is not found. At this point, the last remaining option for the
-			// developer is to supply the credentials, either within the file, or by supplying environmental
-			// variables/
-			credentialsFile := d.Get("creds_file").(string)
-			mashCredentials := v3client.DeriveAccessCredentials(credentialsFile, os.Getenv(envCredentialPass), nil)
-			if !mashCredentials.FullySpecified() {
-				doLogf("insufficient token credentials loaded from credentials file; most likely because of incorrect decryption password")
-			} else {
-				tokenProvider = v3client.NewClientCredentialsProvider(mashCredentials)
-				doLogf("Initialized token from mashery credentials")
-
-				// Default max-QPS to 2 queries per second, which is Mashery's default QPS assigned when
-				// the Mashery credentials are obtained. If the developer has different (larger) credentials,
-				// the agreed QPS value need to be supplied
-				if mashCredentials.MaxQPS > 0 {
-					qps = mashCredentials.MaxQPS
-				}
-			}
-		}
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  fmt.Sprintf("insufficient V3 token for connecting directly (%d chars supplied)", len(tkn)),
+		})
 	}
 
-	if tokenProvider == nil {
-		return nil, diag.Errorf("no mashery authentication method supplied")
+	var cl v3client.Client
+
+	if len(diags) == 0 {
+		clParams := v3client.Params{
+			Authorizer:    tokenProvider,
+			QPS:           int64(qps),
+			AvgNetLatency: travelComp,
+		}
+
+		cl = v3client.NewHttpClient(clParams)
+		doLogf("Provider is initialized with explicitly supplied token")
+	} else {
+		doLogf("WARN: no suitable provider authentication methods exist")
 	}
 
-	cl := v3client.NewHttpClient(tokenProvider, int64(qps), travelComp)
 	return cl, diags
 }
 
-// Mashery Terraform Provider schema definition
+// Provider Mashery Terraform Provider schema definition
 func Provider() *schema.Provider {
 	return &schema.Provider{
 		Schema: providerConfigSchema,

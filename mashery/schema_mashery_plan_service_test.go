@@ -1,7 +1,7 @@
 package mashery_test
 
 import (
-	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"terraform-provider-mashery/mashery"
 	"testing"
@@ -53,7 +53,7 @@ func TestV3MasheryPlanServiceUpsertable_fromRefs(t *testing.T) {
 	assertMasheryPlanServiceUpsert(t, &upsert, "a", "b", "c")
 }
 
-func assertMasheryPlanServiceUpsert(t *testing.T, upsert *v3client.MasheryPlanService, packageId, planId, serviceId string) {
+func assertMasheryPlanServiceUpsert(t *testing.T, upsert *masherytypes.MasheryPlanService, packageId, planId, serviceId string) {
 	if upsert.PackageId != packageId {
 		t.Errorf("Unexpected package id")
 	}

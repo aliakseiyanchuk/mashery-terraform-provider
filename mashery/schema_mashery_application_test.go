@@ -1,7 +1,7 @@
 package mashery_test
 
 import (
-	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"terraform-provider-mashery/mashery"
 	"testing"
@@ -29,13 +29,13 @@ func TestMashAppUpsertable(t *testing.T) {
 	d := res.TestResourceData()
 	_ = d.Set(mashery.MashAppOwner, "mid::m_username")
 
-	now := v3client.MasheryJSONTime(time.Now())
-	eav := v3client.EAV(map[string]string{
+	now := masherytypes.MasheryJSONTime(time.Now())
+	eav := masherytypes.EAV(map[string]string{
 		"A": "B",
 	})
 
-	orig := v3client.MasheryApplication{
-		AddressableV3Object: v3client.AddressableV3Object{
+	orig := masherytypes.MasheryApplication{
+		AddressableV3Object: masherytypes.AddressableV3Object{
 			Id:      "appId",
 			Name:    "appName",
 			Created: &now,

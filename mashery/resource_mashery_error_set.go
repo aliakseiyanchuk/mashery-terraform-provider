@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -109,8 +110,8 @@ func serviceErrorSetCreate(ctx context.Context, d *schema.ResourceData, m interf
 	}
 }
 
-func modifiedMessages(inp *v3client.MasheryErrorSet, rawMsg []v3client.MasheryErrorMessage) []v3client.MasheryErrorMessage {
-	var rv []v3client.MasheryErrorMessage
+func modifiedMessages(inp *masherytypes.MasheryErrorSet, rawMsg []masherytypes.MasheryErrorMessage) []masherytypes.MasheryErrorMessage {
+	var rv []masherytypes.MasheryErrorMessage
 
 	for _, m := range rawMsg {
 		if inp.ErrorMessages != nil {
@@ -153,7 +154,7 @@ func serviceErrorSetUpdate(ctx context.Context, d *schema.ResourceData, m interf
 	retVal := diag.Diagnostics{}
 	v3cl := m.(v3client.Client)
 
-	var updInst *v3client.MasheryErrorSet
+	var updInst *masherytypes.MasheryErrorSet
 	var err error
 
 	if updInst, err = v3cl.UpdateErrorSet(ctx, setId.ServiceId, upsert); err != nil {

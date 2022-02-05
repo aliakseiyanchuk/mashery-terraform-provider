@@ -1,19 +1,19 @@
 package mashery_test
 
 import (
-	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"terraform-provider-mashery/mashery"
 	"testing"
 	"time"
 )
 
 func TestV3MasheryEndpointMethodToResourceState(t *testing.T) {
-	now := v3client.MasheryJSONTime(time.Now())
+	now := masherytypes.MasheryJSONTime(time.Now())
 	d := NewResourceData(&mashery.EndpointMethodSchema)
 	assertOk(t, d.Set(mashery.MashObjName, "name"))
 
-	refInput := v3client.MasheryMethod{
-		AddressableV3Object: v3client.AddressableV3Object{
+	refInput := masherytypes.MasheryMethod{
+		AddressableV3Object: masherytypes.AddressableV3Object{
 			Id:      "methodId",
 			Name:    "name",
 			Created: &now,

@@ -1,7 +1,7 @@
 package mashery
 
 import (
-	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -185,7 +185,7 @@ var PlanSchema = map[string]*schema.Schema{
 	},
 }
 
-func V3PlanUpsertable(d *schema.ResourceData) v3client.MasheryPlan {
+func V3PlanUpsertable(d *schema.ResourceData) masherytypes.MasheryPlan {
 	plnIdent := PlanIdentifier{}
 	plnIdent.From(d.Id())
 
@@ -193,8 +193,8 @@ func V3PlanUpsertable(d *schema.ResourceData) v3client.MasheryPlan {
 		plnIdent.PackageId = extractString(d, MashPackagekId, "")
 	}
 
-	rv := v3client.MasheryPlan{
-		AddressableV3Object: v3client.AddressableV3Object{
+	rv := masherytypes.MasheryPlan{
+		AddressableV3Object: masherytypes.AddressableV3Object{
 			Id:   plnIdent.PlanId,
 			Name: extractString(d, MashPlanName, "Default"),
 		},
@@ -221,7 +221,7 @@ func V3PlanUpsertable(d *schema.ResourceData) v3client.MasheryPlan {
 	return rv
 }
 
-func V3PlanToResourceData(pln *v3client.MasheryPlan, d *schema.ResourceData) diag.Diagnostics {
+func V3PlanToResourceData(pln *masherytypes.MasheryPlan, d *schema.ResourceData) diag.Diagnostics {
 	data := map[string]interface{}{
 		MashPlanId:          pln.Id,
 		MashPlanCreated:     pln.Created.ToString(),

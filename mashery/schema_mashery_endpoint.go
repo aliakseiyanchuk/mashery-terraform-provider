@@ -2,7 +2,7 @@ package mashery
 
 import (
 	"fmt"
-	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -43,6 +43,7 @@ const (
 	MashEndpointHighSecurity                               = "high_security"
 	MashEndpointHostPassthroughIncludedInBackendCallHeader = "host_passthrough_included_in_backend_call_header"
 	MashEndpointInboundSslRequired                         = "inbound_ssl_required"
+	MashEndpointInboundMutualSslRequired                   = "inbound_mutila_ssl_required"
 	MashEndpointJsonpCallbackParameter                     = "jsonp_callback_parameter"
 	MashEndpointJsonpCallbackParameterValue                = "jsonp_callback_parameter_value"
 	MashEndpointScheduledMaintenanceEvent                  = "scheduled_maintenance_event"
@@ -307,9 +308,16 @@ var EndpointSchema = map[string]*schema.Schema{
 		Default:  true,
 	},
 	MashEndpointInboundSslRequired: {
-		Type:     schema.TypeBool,
-		Optional: true,
-		Default:  true,
+		Type:        schema.TypeBool,
+		Optional:    true,
+		Default:     true,
+		Description: "Whether SSL is required when receiving traffic",
+	},
+	MashEndpointInboundMutualSslRequired: {
+		Type:        schema.TypeBool,
+		Optional:    true,
+		Default:     false,
+		Description: "Whether mutual SSL is required for this endpoint",
 	},
 	MashEndpointJsonpCallbackParameter: {
 		Type:        schema.TypeString,
@@ -532,7 +540,7 @@ func initDataSourceSvcEndpointsSchema() {
 var impliedKeyValueLocations = []string{"request-header"}
 var impliedMethodDetectionLocations = []string{"request-path"}
 
-func V3ProcessorConfigurationToTerraform(inp v3client.Processor) map[string]interface{} {
+func V3ProcessorConfigurationToTerraform(inp masherytypes.Processor) map[string]interface{} {
 	return map[string]interface{}{
 		MashEndpointProcessorAdapter:            inp.Adapter,
 		MashEndpointProcessorPreProcessEnabled:  inp.PreProcessEnabled,
@@ -542,8 +550,8 @@ func V3ProcessorConfigurationToTerraform(inp v3client.Processor) map[string]inte
 	}
 }
 
-func V3ProcessorConfigurationFrom(inp map[string]interface{}) v3client.Processor {
-	return v3client.Processor{
+func V3ProcessorConfigurationFrom(inp map[string]interface{}) masherytypes.Processor {
+	return masherytypes.Processor{
 		Adapter:            inp[MashEndpointProcessorAdapter].(string),
 		PreProcessEnabled:  inp[MashEndpointProcessorPreProcessEnabled].(bool),
 		PostProcessEnabled: inp[MashEndpointProcessorPostProcessEnabled].(bool),
@@ -552,12 +560,12 @@ func V3ProcessorConfigurationFrom(inp map[string]interface{}) v3client.Processor
 	}
 }
 
-func mashEndpointCacheUpsertable(d *schema.ResourceData) *v3client.Cache {
+func mashEndpointCacheUpsertable(d *schema.ResourceData) *masherytypes.Cache {
 	if cacheSet, exists := d.GetOk(MashEndpointCache); exists {
 		tfCache := unwrapStructFromTerraformSet(cacheSet)
 
 		// TODO: unsafe lookups from the map. Should be extracted to avoid panic
-		rv := v3client.Cache{
+		rv := masherytypes.Cache{
 			ClientSurrogateControlEnabled: tfCache[MashEndpointCacheClientSurrogateControlEnabled].(bool),
 			ContentCacheKeyHeaders:        schemaSetToStringArray(tfCache[MashEndpointCacheContentCacheKeyHeaders]),
 		}
@@ -568,11 +576,11 @@ func mashEndpointCacheUpsertable(d *schema.ResourceData) *v3client.Cache {
 	}
 }
 
-func mashEndpointCorsUpsertable(d *schema.ResourceData) *v3client.Cors {
+func mashEndpointCorsUpsertable(d *schema.ResourceData) *masherytypes.Cors {
 	if corsSet, exists := d.GetOk(MashEndpointCors); exists {
 		tfCors := unwrapStructFromTerraformSet(corsSet)
 
-		rv := v3client.Cors{
+		rv := masherytypes.Cors{
 			AllDomainsEnabled: tfCors[MashEndpointCorsAllDomainsEnabled].(bool),
 			MaxAge:            tfCors[MashEndpointCorsMaxAge].(int),
 		}
@@ -583,13 +591,13 @@ func mashEndpointCorsUpsertable(d *schema.ResourceData) *v3client.Cors {
 	}
 }
 
-func mashEndpointProcessorUpsertable(d *schema.ResourceData) *v3client.Processor {
+func mashEndpointProcessorUpsertable(d *schema.ResourceData) *masherytypes.Processor {
 	if procSet, exists := d.GetOk(MashEndpointProcessor); exists {
 		tfProcMap := unwrapStructFromTerraformSet(procSet)
 
 		// TODO: Unsafe lookup from map
 		// Maybe this conversion won't event work.
-		rv := v3client.Processor{
+		rv := masherytypes.Processor{
 			PreProcessEnabled:  tfProcMap[MashEndpointProcessorPreProcessEnabled].(bool),
 			PostProcessEnabled: tfProcMap[MashEndpointProcessorPostProcessEnabled].(bool),
 			//PreInputs:          schemaMapToStringMap(tfProcMap[MashEndpointProcessorPreConfig]),
@@ -608,23 +616,23 @@ func mashEndpointProcessorUpsertable(d *schema.ResourceData) *v3client.Processor
 	}
 }
 
-func mashEndpointDomainsArrayUpsertable(d *schema.ResourceData, key string) []v3client.Domain {
+func mashEndpointDomainsArrayUpsertable(d *schema.ResourceData, key string) []masherytypes.Domain {
 	defDomains := ExtractStringArray(d, key, &EmptyStringArray)
 
-	rv := make([]v3client.Domain, len(defDomains))
+	rv := make([]masherytypes.Domain, len(defDomains))
 	for idx, v := range defDomains {
-		rv[idx] = v3client.Domain{Address: v}
+		rv[idx] = masherytypes.Domain{Address: v}
 	}
 
 	return rv
 }
 
-func mashEndpointSystemDomainAuthenticationUpsertable(d *schema.ResourceData) *v3client.SystemDomainAuthentication {
+func mashEndpointSystemDomainAuthenticationUpsertable(d *schema.ResourceData) *masherytypes.SystemDomainAuthentication {
 	if sysDomainSet, exists := d.GetOk(MashEndpointSystemDomainAuthentication); exists {
 		tfSysDomain := unwrapStructFromTerraformSet(sysDomainSet)
 
 		// TODO: Unsafe lookups
-		rv := v3client.SystemDomainAuthentication{
+		rv := masherytypes.SystemDomainAuthentication{
 			Type:        tfSysDomain[MashEndpointSystemDomainAuthenticationType].(string),
 			Username:    safeLookupStringPointer(&tfSysDomain, MashEndpointSystemDomainAuthenticationUsername),
 			Certificate: safeLookupStringPointer(&tfSysDomain, MashEndpointSystemDomainAuthenticationCertificate),
@@ -638,13 +646,13 @@ func mashEndpointSystemDomainAuthenticationUpsertable(d *schema.ResourceData) *v
 }
 
 // Create V3 Mashery Endpoint data structure from the resource data
-func MashEndpointUpsertable(d *schema.ResourceData) (v3client.MasheryEndpoint, diag.Diagnostics) {
+func MashEndpointUpsertable(d *schema.ResourceData) (masherytypes.MasheryEndpoint, diag.Diagnostics) {
 
 	enpdIdent := ServiceEndpointIdentifier{}
 	enpdIdent.From(d.Id())
 
-	rv := v3client.MasheryEndpoint{
-		AddressableV3Object: v3client.AddressableV3Object{
+	rv := masherytypes.MasheryEndpoint{
+		AddressableV3Object: masherytypes.AddressableV3Object{
 			Id:   enpdIdent.EndpointId,
 			Name: extractString(d, MashEndpointName, resource.UniqueId()),
 		},
@@ -666,6 +674,7 @@ func MashEndpointUpsertable(d *schema.ResourceData) (v3client.MasheryEndpoint, d
 		HighSecurity:                               extractBool(d, MashEndpointHighSecurity, false),
 		HostPassthroughIncludedInBackendCallHeader: extractBool(d, MashEndpointHostPassthroughIncludedInBackendCallHeader, true),
 		InboundSslRequired:                         extractBool(d, MashEndpointInboundSslRequired, true),
+		InboundMutualSslRequired:                   extractBool(d, MashEndpointInboundMutualSslRequired, true),
 		JsonpCallbackParameter:                     extractString(d, MashEndpointJsonpCallbackParameter, ""),
 		JsonpCallbackParameterValue:                extractString(d, MashEndpointJsonpCallbackParameterValue, ""),
 		ScheduledMaintenanceEvent:                  nil,
@@ -698,7 +707,7 @@ func MashEndpointUpsertable(d *schema.ResourceData) (v3client.MasheryEndpoint, d
 	return rv, rvDiag
 }
 
-func v3EndpointCacheToTerraform(cache *v3client.Cache) []interface{} {
+func v3EndpointCacheToTerraform(cache *masherytypes.Cache) []interface{} {
 	if !cache.IsEmpty() {
 		return []interface{}{
 			map[string]interface{}{
@@ -711,7 +720,7 @@ func v3EndpointCacheToTerraform(cache *v3client.Cache) []interface{} {
 	}
 }
 
-func v3EndpointCorsToTerraform(cors *v3client.Cors) []interface{} {
+func v3EndpointCorsToTerraform(cors *masherytypes.Cors) []interface{} {
 	if cors != nil {
 		return []interface{}{
 			map[string]interface{}{
@@ -724,7 +733,7 @@ func v3EndpointCorsToTerraform(cors *v3client.Cors) []interface{} {
 	}
 }
 
-func v3EndpointProcessorToTerraform(processor *v3client.Processor) []interface{} {
+func v3EndpointProcessorToTerraform(processor *masherytypes.Processor) []interface{} {
 	// We will persist the processor in the state only if will contain useful information.
 	// Mashery V3 API will reuturn processor data structure also when the call transformation is not enabled.
 	if processor != nil && !processor.IsEmpty() {
@@ -746,7 +755,7 @@ func v3EndpointProcessorToTerraform(processor *v3client.Processor) []interface{}
 	}
 }
 
-func v3EndpointDomainsToTerraform(d []v3client.Domain) []string {
+func v3EndpointDomainsToTerraform(d []masherytypes.Domain) []string {
 	if d != nil {
 		rv := make([]string, len(d))
 
@@ -760,7 +769,7 @@ func v3EndpointDomainsToTerraform(d []v3client.Domain) []string {
 	}
 }
 
-func v3EndpointSystemDomainAuthenticationToTerraform(d *v3client.SystemDomainAuthentication) []interface{} {
+func v3EndpointSystemDomainAuthenticationToTerraform(d *masherytypes.SystemDomainAuthentication) []interface{} {
 	if d != nil {
 		return []interface{}{
 			map[string]interface{}{
@@ -775,7 +784,7 @@ func v3EndpointSystemDomainAuthenticationToTerraform(d *v3client.SystemDomainAut
 	}
 }
 
-func V3EndpointToResourceData(endpoint *v3client.MasheryEndpoint, d *schema.ResourceData) diag.Diagnostics {
+func V3EndpointToResourceData(endpoint *masherytypes.MasheryEndpoint, d *schema.ResourceData) diag.Diagnostics {
 	data := map[string]interface{}{
 		MashEndpointId:                                         endpoint.Id,
 		MashEndpointAllowMissingApiKey:                         endpoint.AllowMissingApiKey,

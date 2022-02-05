@@ -1,7 +1,7 @@
 package mashery
 
 import (
-	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -26,7 +26,7 @@ var DataSourceEmailTemplateSetSchema = map[string]*schema.Schema{
 	},
 }
 
-func V3EmailTemplateSetIdToResourceData(set *v3client.MasheryEmailTemplateSet, d *schema.ResourceData) diag.Diagnostics {
+func V3EmailTemplateSetIdToResourceData(set *masherytypes.MasheryEmailTemplateSet, d *schema.ResourceData) diag.Diagnostics {
 	data := map[string]interface{}{
 		MashEmailTemplateSetId:   set.Id,
 		MashObjCreated:           set.Created.ToString(),

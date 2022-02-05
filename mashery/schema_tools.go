@@ -3,7 +3,7 @@ package mashery
 import (
 	"context"
 	"fmt"
-	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -266,6 +266,16 @@ func inheritAll(source *map[string]*schema.Schema, dest *map[string]*schema.Sche
 	}
 }
 
+func getSetLength(inp interface{}) int {
+	if inpAsSet, ok := inp.(*schema.Set); ok {
+		return inpAsSet.Len()
+	} else if inpAsArr, ok := inp.([]interface{}); ok {
+		return len(inpAsArr)
+	} else {
+		return -1
+	}
+}
+
 // Unwraps a struct -- or, effectively, map[string]interface{} from terraform-encoded
 // set input.
 func unwrapStructFromTerraformSet(inp interface{}) map[string]interface{} {
@@ -422,10 +432,10 @@ func extractStringMap(d *schema.ResourceData, key string) map[string]string {
 	return map[string]string{}
 }
 
-func extractEAVPointer(d *schema.ResourceData, key string) *v3client.EAV {
+func extractEAVPointer(d *schema.ResourceData, key string) *masherytypes.EAV {
 	if v, exists := d.GetOk(key); exists {
 		if mp, ok := v.(map[string]interface{}); ok {
-			rv := v3client.EAV{}
+			rv := masherytypes.EAV{}
 
 			for k, v := range mp {
 				if str, ok := v.(string); ok {

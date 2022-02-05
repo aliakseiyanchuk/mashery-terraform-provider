@@ -1,7 +1,7 @@
 package mashery_test
 
 import (
-	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"terraform-provider-mashery/mashery"
 	"testing"
@@ -27,7 +27,7 @@ func TestV3PackageKeyToResourceData(t *testing.T) {
 	res := schema.Resource{
 		Schema: mashery.PackageKeySchema,
 	}
-	var tm v3client.MasheryJSONTime = v3client.MasheryJSONTime(time.Now())
+	var tm masherytypes.MasheryJSONTime = masherytypes.MasheryJSONTime(time.Now())
 
 	apiKey := "apiKey"
 	secret := "secret"
@@ -35,8 +35,8 @@ func TestV3PackageKeyToResourceData(t *testing.T) {
 	var qps int64 = 10
 	var rate int64 = 20
 
-	orig := v3client.MasheryPackageKey{
-		AddressableV3Object: v3client.AddressableV3Object{
+	orig := masherytypes.MasheryPackageKey{
+		AddressableV3Object: masherytypes.AddressableV3Object{
 			Id:      "packId",
 			Created: &tm,
 			Updated: &tm,
@@ -48,7 +48,7 @@ func TestV3PackageKeyToResourceData(t *testing.T) {
 		QpsLimitCeiling:  &qps,
 		QpsLimitExempt:   true,
 		Status:           "active",
-		Limits: &[]v3client.Limit{
+		Limits: &[]masherytypes.Limit{
 			{
 				Period:  "second",
 				Source:  "plan",
@@ -91,7 +91,7 @@ func TestV3PackageKeyToResourceData(t *testing.T) {
 	assertSameLimit(t, (*orig.Limits)[1], lims[1].(map[string]interface{}))
 }
 
-func assertSameLimit(t *testing.T, limit v3client.Limit, tf map[string]interface{}) {
+func assertSameLimit(t *testing.T, limit masherytypes.Limit, tf map[string]interface{}) {
 	mashPeriod := tf[mashery.MashPackageKeyLimitPeriod].(string)
 	mashSource := tf[mashery.MashPackageKeyLimitSource].(string)
 	mashCeiling := int64(tf[mashery.MashPackageKeyLimitCeiling].(int))

@@ -2,6 +2,7 @@ package mashery
 
 import (
 	"context"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -71,11 +72,11 @@ func readDataSourceMasheryServiceEndpoints(ctx context.Context, d *schema.Resour
 	}
 }
 
-func filterEndpoints(inp []v3client.MasheryEndpoint, name, path []string) []v3client.MasheryEndpoint {
+func filterEndpoints(inp []masherytypes.MasheryEndpoint, name, path []string) []masherytypes.MasheryEndpoint {
 	nameRx := toRegexpArray(name)
 	pathRx := toRegexpArray(path)
 
-	rv := []v3client.MasheryEndpoint{}
+	rv := []masherytypes.MasheryEndpoint{}
 
 	for _, v := range inp {
 		nameMatched := false

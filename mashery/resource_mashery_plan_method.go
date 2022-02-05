@@ -2,6 +2,7 @@ package mashery
 
 import (
 	"context"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -55,8 +56,8 @@ func CreatePlanMethod(ctx context.Context, d *schema.ResourceData, m interface{}
 
 	v3cl := m.(v3client.Client)
 
-	mashMeth := v3client.MasheryMethod{
-		AddressableV3Object: v3client.AddressableV3Object{
+	mashMeth := masherytypes.MasheryMethod{
+		AddressableV3Object: masherytypes.AddressableV3Object{
 			Id: methIdent.MethodId,
 		},
 	}
@@ -84,9 +85,9 @@ func CreatePlanMethod(ctx context.Context, d *schema.ResourceData, m interface{}
 		data[PlanEndpointMethodId] = meth.Id
 
 		if uFilter != nil {
-			v3Meth := v3client.MasheryPlanServiceEndpointMethod{
-				MasheryPlanServiceEndpoint: v3client.MasheryPlanServiceEndpoint{
-					MasheryPlanService: v3client.MasheryPlanService{
+			v3Meth := masherytypes.MasheryPlanServiceEndpointMethod{
+				MasheryPlanServiceEndpoint: masherytypes.MasheryPlanServiceEndpoint{
+					MasheryPlanService: masherytypes.MasheryPlanService{
 						PackageId: endpointIdent.PackageId,
 						PlanId:    endpointIdent.PlanId,
 						ServiceId: endpointIdent.ServiceId,
@@ -96,7 +97,7 @@ func CreatePlanMethod(ctx context.Context, d *schema.ResourceData, m interface{}
 				MethodId: meth.Id,
 			}
 
-			filterRef := v3client.MasheryServiceMethodFilter{
+			filterRef := masherytypes.MasheryServiceMethodFilter{
 				FilterId: uFilter.FilterId,
 			}
 

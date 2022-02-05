@@ -1,7 +1,7 @@
 package mashery
 
 import (
-	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -125,7 +125,7 @@ func (m *MemberIdentifier) From(id string) {
 	ParseCompoundId(id, &m.MemberId, &m.Username)
 }
 
-func MashMemberUpsertable(d *schema.ResourceData) v3client.MasheryMember {
+func MashMemberUpsertable(d *schema.ResourceData) masherytypes.MasheryMember {
 	mid := MemberIdentifier{}
 	mid.From(d.Id())
 
@@ -133,8 +133,8 @@ func MashMemberUpsertable(d *schema.ResourceData) v3client.MasheryMember {
 		mid.Username = extractSetOrPrefixedString(d, MashMemberUserName, MashMemberUserNamePrefix)
 	}
 
-	return v3client.MasheryMember{
-		AddressableV3Object: v3client.AddressableV3Object{
+	return masherytypes.MasheryMember{
+		AddressableV3Object: masherytypes.AddressableV3Object{
 			Id: mid.MemberId,
 		},
 		Username:    mid.Username,
@@ -159,7 +159,7 @@ func MashMemberUpsertable(d *schema.ResourceData) v3client.MasheryMember {
 	}
 }
 
-func V3MemberToResourceData(inp *v3client.MasheryMember, d *schema.ResourceData) diag.Diagnostics {
+func V3MemberToResourceData(inp *masherytypes.MasheryMember, d *schema.ResourceData) diag.Diagnostics {
 	data := map[string]interface{}{
 		MashMemberUserName: inp.Username,
 		MashMemberCreated:  inp.Created.ToString(),

@@ -2,6 +2,7 @@ package mashery_test
 
 import (
 	"context"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 	"terraform-provider-mashery/mashery"
 	"testing"
@@ -14,7 +15,7 @@ type MasheryPlanMethodMockClient struct {
 	mock.Mock
 }
 
-func (m *MasheryPlanMethodMockClient) DeletePackagePlanMethod(ctx context.Context, id v3client.MasheryPlanServiceEndpointMethod) error {
+func (m *MasheryPlanMethodMockClient) DeletePackagePlanMethod(ctx context.Context, id masherytypes.MasheryPlanServiceEndpointMethod) error {
 	args := m.Called(ctx, id)
 	return args.Error(0)
 }
@@ -23,9 +24,9 @@ func TestDeletePlanMethod(t *testing.T) {
 	d := NewResourceData(&mashery.PlanMethodSchema)
 	d.SetId("packageId::planId::serviceId::endpointId::methodGUID")
 
-	expId := v3client.MasheryPlanServiceEndpointMethod{
-		MasheryPlanServiceEndpoint: v3client.MasheryPlanServiceEndpoint{
-			MasheryPlanService: v3client.MasheryPlanService{
+	expId := masherytypes.MasheryPlanServiceEndpointMethod{
+		MasheryPlanServiceEndpoint: masherytypes.MasheryPlanServiceEndpoint{
+			MasheryPlanService: masherytypes.MasheryPlanService{
 				PackageId: "packageId",
 				PlanId:    "planId",
 				ServiceId: "serviceId",

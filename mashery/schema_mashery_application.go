@@ -1,7 +1,7 @@
 package mashery
 
 import (
-	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -81,15 +81,15 @@ func (a *ApplicationIdentifier) IsIdentified() bool {
 	return len(a.MemberId) > 0 && len(a.Username) > 0 && len(a.AppId) > 0
 }
 
-func MashAppUpsertable(d *schema.ResourceData) v3client.MasheryApplication {
+func MashAppUpsertable(d *schema.ResourceData) masherytypes.MasheryApplication {
 	mid := MemberIdentifier{}
 	mid.From(extractString(d, MashAppOwner, ""))
 
 	appId := ApplicationIdentifier{}
 	appId.From(d.Id())
 
-	return v3client.MasheryApplication{
-		AddressableV3Object: v3client.AddressableV3Object{
+	return masherytypes.MasheryApplication{
+		AddressableV3Object: masherytypes.AddressableV3Object{
 			Id:   appId.AppId,
 			Name: extractSetOrPrefixedString(d, MashAppName, MashAppNamePrefix),
 		},
@@ -112,7 +112,7 @@ func MashAppUpsertable(d *schema.ResourceData) v3client.MasheryApplication {
 	}
 }
 
-func V3AppToResourceData(inp *v3client.MasheryApplication, d *schema.ResourceData) diag.Diagnostics {
+func V3AppToResourceData(inp *masherytypes.MasheryApplication, d *schema.ResourceData) diag.Diagnostics {
 	data := map[string]interface{}{
 		MashAppId:                inp.Id,
 		MashAppName:              inp.Name,

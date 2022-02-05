@@ -2,7 +2,7 @@ package mashery
 
 import (
 	"fmt"
-	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -406,7 +406,7 @@ func durationToSeconds(dur string) int64 {
 	}
 }
 
-func MapV3OAuthPolicyToTerraform(inp *v3client.MasheryOAuth) map[string]interface{} {
+func MapV3OAuthPolicyToTerraform(inp *masherytypes.MasheryOAuth) map[string]interface{} {
 	return map[string]interface{}{
 		MashSvcOAuthAccessTokenTtlEnabled:       inp.AccessTokenTtlEnabled,
 		MashSvcOAuthAccessTokenTtl:              toDurationFormat(int64(inp.AccessTokenTtl)),
@@ -433,10 +433,10 @@ func MashSvcHasDirectUpsertableModifications(d *schema.ResourceData) bool {
 	return d.HasChanges(MashSvcName, MashSvcDescription, MashSvcQpsLimitOverall, MashSvcServiceRFC3986Encode, MashSvcVersion)
 }
 
-func V3ServiceRolePermissionUpsertable(d *schema.ResourceData) []v3client.MasheryRolePermission {
+func V3ServiceRolePermissionUpsertable(d *schema.ResourceData) []masherytypes.MasheryRolePermission {
 	if setRaw, ok := d.GetOk(MashSvcInteractiveDocsRoles); ok {
 		set, _ := setRaw.(*schema.Set)
-		rv := make([]v3client.MasheryRolePermission, set.Len())
+		rv := make([]masherytypes.MasheryRolePermission, set.Len())
 
 		for idx, vRaw := range set.List() {
 			v, _ := vRaw.(map[string]interface{})
@@ -445,11 +445,11 @@ func V3ServiceRolePermissionUpsertable(d *schema.ResourceData) []v3client.Masher
 
 		return rv
 	} else {
-		return []v3client.MasheryRolePermission{}
+		return []masherytypes.MasheryRolePermission{}
 	}
 }
 
-func V3ServiceOAuthProfileToTerraform(inp *v3client.MasheryOAuth, d *schema.ResourceData) diag.Diagnostics {
+func V3ServiceOAuthProfileToTerraform(inp *masherytypes.MasheryOAuth, d *schema.ResourceData) diag.Diagnostics {
 	data := map[string]interface{}{
 		MashSvcOAuth: MapV3OAuthPolicyToTerraform(inp),
 	}
@@ -457,7 +457,7 @@ func V3ServiceOAuthProfileToTerraform(inp *v3client.MasheryOAuth, d *schema.Reso
 	return SetResourceFields(data, d)
 }
 
-func V3ServiceToTerraform(inp *v3client.MasheryService, d *schema.ResourceData) diag.Diagnostics {
+func V3ServiceToTerraform(inp *masherytypes.MasheryService, d *schema.ResourceData) diag.Diagnostics {
 	data := map[string]interface{}{
 		MashSvcId:                   inp.Id,
 		MashSvcName:                 inp.Name,
@@ -473,9 +473,9 @@ func V3ServiceToTerraform(inp *v3client.MasheryService, d *schema.ResourceData) 
 		MashSvcVersion:              inp.Version,
 	}
 
-	if inp.SecurityProfile != nil {
+	if inp.SecurityProfile != nil && inp.SecurityProfile.OAuth != nil {
 		data[MashSvcOAuth] = []interface{}{
-			MapV3OAuthPolicyToTerraform(&inp.SecurityProfile.OAuth),
+			MapV3OAuthPolicyToTerraform(inp.SecurityProfile.OAuth),
 		}
 	} else {
 		data[MashSvcOAuth] = nil
@@ -490,7 +490,7 @@ func V3ServiceToTerraform(inp *v3client.MasheryService, d *schema.ResourceData) 
 	return SetResourceFields(data, d)
 }
 
-func V3ServiceRolesToTerraform(inp []v3client.MasheryRolePermission, d *schema.ResourceData) diag.Diagnostics {
+func V3ServiceRolesToTerraform(inp []masherytypes.MasheryRolePermission, d *schema.ResourceData) diag.Diagnostics {
 	conv := V3RolesPermissionsToTerraform(inp)
 	if err := d.Set(MashSvcInteractiveDocsRoles, conv); err != nil {
 		return diag.FromErr(err)
@@ -502,8 +502,8 @@ func V3ServiceRolesToTerraform(inp []v3client.MasheryRolePermission, d *schema.R
 // -----------------------------------------------------------------------
 // Terraform -> V3 conversion routines
 
-func V3SecurityProfileUpsertable(d *schema.ResourceData) v3client.MasherySecurityProfile {
-	oauth := v3client.MasheryOAuth{}
+func V3SecurityProfileUpsertable(d *schema.ResourceData) masherytypes.MasherySecurityProfile {
+	oauth := masherytypes.MasheryOAuth{}
 
 	if inpRaw, ok := d.GetOk(MashSvcOAuth); ok {
 		tfOauth := unwrapStructFromTerraformSet(inpRaw)
@@ -528,8 +528,8 @@ func V3SecurityProfileUpsertable(d *schema.ResourceData) v3client.MasherySecurit
 		oauth.SecureTokensEnabled = tfOauth[MashSvcOAuthSecureTokensEnabled].(bool)
 	}
 
-	return v3client.MasherySecurityProfile{
-		OAuth: oauth,
+	return masherytypes.MasherySecurityProfile{
+		OAuth: &oauth,
 	}
 }
 
@@ -540,10 +540,10 @@ func ClearServiceOAuthProfile(d *schema.ResourceData) diag.Diagnostics {
 	return SetResourceFields(data, d)
 }
 
-func V3ServiceUpsertable(d *schema.ResourceData, includeCache, includeProfile bool) v3client.MasheryService {
+func V3ServiceUpsertable(d *schema.ResourceData, includeCache, includeProfile bool) masherytypes.MasheryService {
 
-	mashServ := v3client.MasheryService{
-		AddressableV3Object: v3client.AddressableV3Object{
+	mashServ := masherytypes.MasheryService{
+		AddressableV3Object: masherytypes.AddressableV3Object{
 			Name: extractSetOrPrefixedString(d, MashSvcName, MashSvcNamePrefix),
 		},
 		Description:     extractString(d, MashSvcDescription, "Managed by Terraform"),
@@ -554,10 +554,10 @@ func V3ServiceUpsertable(d *schema.ResourceData, includeCache, includeProfile bo
 
 	if includeCache {
 		ttl := extractInt(d, MashSvcCacheTtl, 0)
-		mashServ.Cache = &v3client.MasheryServiceCache{CacheTtl: ttl}
+		mashServ.Cache = &masherytypes.MasheryServiceCache{CacheTtl: ttl}
 	}
 
-	if includeProfile && d.Get(MashSvcOAuth) != nil {
+	if includeProfile && getSetLength(d.Get(MashSvcOAuth)) > 0 {
 		profile := V3SecurityProfileUpsertable(d)
 		mashServ.SecurityProfile = &profile
 	}

@@ -1,7 +1,7 @@
 package mashery
 
 import (
-	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -189,9 +189,9 @@ var PackageSchema = map[string]*schema.Schema{
 	},
 }
 
-func mashPackageUpsertable(d *schema.ResourceData) v3client.MasheryPackage {
-	rv := v3client.MasheryPackage{
-		AddressableV3Object: v3client.AddressableV3Object{
+func mashPackageUpsertable(d *schema.ResourceData) masherytypes.MasheryPackage {
+	rv := masherytypes.MasheryPackage{
+		AddressableV3Object: masherytypes.AddressableV3Object{
 			Id:   d.Id(),
 			Name: extractSetOrPrefixedString(d, MashPackName, MashPackNamePrefix),
 		},
@@ -231,7 +231,7 @@ func splitAddressToSet(str string) []interface{} {
 	return rv
 }
 
-func v3PackageToResourceData(pack *v3client.MasheryPackage, d *schema.ResourceData) diag.Diagnostics {
+func v3PackageToResourceData(pack *masherytypes.MasheryPackage, d *schema.ResourceData) diag.Diagnostics {
 	data := map[string]interface{}{
 		MashPackagekId:      pack.Id,
 		MashPackCreated:     pack.Created.ToString(),

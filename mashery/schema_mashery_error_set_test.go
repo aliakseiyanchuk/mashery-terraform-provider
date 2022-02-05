@@ -1,7 +1,7 @@
 package mashery_test
 
 import (
-	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/stretchr/testify/assert"
 	"terraform-provider-mashery/mashery"
 	"testing"
@@ -9,11 +9,11 @@ import (
 )
 
 func TestV3ErrorSetConversion(t *testing.T) {
-	now := v3client.MasheryJSONTime(time.Now())
+	now := masherytypes.MasheryJSONTime(time.Now())
 	d := NewResourceData(&mashery.ServiceErrorSetSchema)
 
-	v3 := v3client.MasheryErrorSet{
-		AddressableV3Object: v3client.AddressableV3Object{
+	v3 := masherytypes.MasheryErrorSet{
+		AddressableV3Object: masherytypes.AddressableV3Object{
 			Id:      "id",
 			Name:    "name",
 			Created: &now,
@@ -46,7 +46,7 @@ func TestV3ErrorMessageExtraction(t *testing.T) {
 
 	passedSet := map[string]interface{}{
 		mashery.MashSvcErrorSetMessage: []map[string]interface{}{
-			mashery.V3ErrorMessageForResourceData(v3client.MasheryErrorMessage{
+			mashery.V3ErrorMessageForResourceData(masherytypes.MasheryErrorMessage{
 				Id:           "ERR_403_anything",
 				Code:         999,
 				Status:       "status",
