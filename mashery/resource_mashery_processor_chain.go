@@ -5,20 +5,21 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"terraform-provider-mashery/mashschema"
 )
 
 func resourceMasheryProcessorChain() *schema.Resource {
 	return &schema.Resource{
-		ReadContext:   noopResourceOperation,
-		DeleteContext: noopResourceOperation,
+		ReadContext:   schema.NoopContext,
+		DeleteContext: schema.NoopContext,
 		UpdateContext: ProcessorChainCreateUpdate,
 		CreateContext: ProcessorChainCreateUpdate,
-		Schema:        EndpointProcessorChainSchema,
+		Schema:        mashschema.ProcessorChainMapper.TerraformSchema(),
 	}
 }
 
-func ProcessorChainCreateUpdate(_ context.Context, d *schema.ResourceData, _ interface{}) diag.Diagnostics {
-	proc := ComputeChain(d)
+func ProcessorChainCreateUpdate(ctx context.Context, d *schema.ResourceData, _ interface{}) diag.Diagnostics {
+	proc := mashschema.ProcessorChainMapper.ComputeChain(d)
 	doLogJson("Computed processor chain", proc)
 
 	if len(d.Id()) == 0 {
@@ -26,12 +27,6 @@ func ProcessorChainCreateUpdate(_ context.Context, d *schema.ResourceData, _ int
 		doLogf("Assigned ID to the resource")
 	}
 
-	data := V3ProcessorConfigurationToTerraform(proc)
-
-	data[MashEndpointCompiledProcessorChain] = []interface{}{
-		//V3ProcessorConfigurationToTerraform(proc),
-	}
-
-	doLogJson("Processor chain output", data)
-	return SetResourceFields(data, d)
+	mashschema.ProcessorChainMapper.PersistTyped(ctx, d)
+	return nil
 }

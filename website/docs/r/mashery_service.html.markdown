@@ -8,19 +8,18 @@ Defines Mashery service
 
 # Resource: mashery_service
 
+The resource represents [`/services/{serviceId}`](https://developer.mashery.com/docs/read/mashery_api/30/resources/services)
+Mashery V3 API resource. The resource allows configuring:
+- basic attributes;
+- service cache (`/services/{serviceId}/cache`)
+- security profile (`/services/{serviceId}/securityProfile/oauth`)
+- service roles (`/services/{serviceId}/roles`)
+
+The error sets (`/services/{serviceId}/errorSets`) and (`/services/{serviceId}/endpoints/{endpointId}`)
+are configured as a separate resources.
+
 The service (called API Definition in Mashery control center UI) is the starting point for exposing
 an API. The service is effectively a collection of endpoints. 
-
-> Note: Mashery is best viewed as a [north-south traffic management](https://en.wikipedia.org/wiki/North-south_traffic)
-> device that performs caller authentication, and a coarse-grained authorization e.g. using package plans,
-> quota/throttle constraints. API back-ends could (and, in some circumstances, should) provide 
-> further *authorization* for the API call at hand.
-
-The service has the following building blocks:
-- service configuration;
-- cache configuration (if enabled for your area);
-- optional oauth configuration;
-- portal access groups that will have access to the service' IODocs on Mashery portal.
 
 ## Example Usage
 
@@ -51,14 +50,14 @@ resource mashery_service "demo-service" {
 
   oauth {
     access_token_ttl_enabled = true
-    access_token_ttl = 3600
+    access_token_ttl = "1h"
     access_token_type = "bearer"
     allow_multiple_token = true
     authorization_code_ttl = 300
     forwarded_headers = toset(["access-token", "client-id", "scope", "user-context"])
     mashery_token_api_enabled = false
     refresh_token_enabled = true
-    refresh_token_ttl = 36000
+    refresh_token_ttl = "345h"
     enable_refresh_token_ttl = true
     token_based_rate_limits_enabled = true
     force_oauth_redirect_url = true

@@ -5,12 +5,13 @@ import (
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"terraform-provider-mashery/mashschema"
 )
 
 func dataSourceMasherySystemDomains() *schema.Resource {
 	return &schema.Resource{
 		ReadContext: readSystemDomains,
-		Schema:      DomainsSchema,
+		Schema:      mashschema.DomainsMapper.TerraformSchema(),
 	}
 }
 
@@ -22,6 +23,6 @@ func readSystemDomains(ctx context.Context, d *schema.ResourceData, m interface{
 	} else {
 		d.SetId("system_domains")
 		doLogf("received %d system domains", len(rv))
-		return V3DomainsToResourceData(rv, d)
+		return mashschema.DomainsMapper.PersistTyped(ctx, rv, d)
 	}
 }

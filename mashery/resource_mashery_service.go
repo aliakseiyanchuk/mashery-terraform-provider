@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"terraform-provider-mashery/mashschema"
 )
 
 func resourceMasheryService() *schema.Resource {
@@ -19,7 +19,7 @@ func resourceMasheryService() *schema.Resource {
 		UpdateContext: serviceUpdate,
 		DeleteContext: serviceDelete,
 		// Schema
-		Schema: ServiceSchema,
+		Schema: mashschema.ServiceSchema,
 		// Importer by ID
 		Importer: &schema.ResourceImporter{
 			StateContext: importMasheryService,
@@ -35,7 +35,7 @@ func importMasheryService(ctx context.Context, d *schema.ResourceData, m interfa
 	} else if service == nil {
 		return []*schema.ResourceData{}, errors.New("No such service")
 	} else {
-		V3ServiceToTerraform(service, d)
+		mashschema.ServiceMapper.PersistTyped(ctx, service, d)
 
 		roleDiags := serviceReadRoles(ctx, d, mashV3Cl)
 		if roleDiags.HasError() {
@@ -57,16 +57,12 @@ func serviceReadRoles(ctx context.Context, d *schema.ResourceData, v3cl v3client
 			Detail:   err.Error(),
 		}}
 	} else {
-		if rv != nil {
-			return V3ServiceRolesToTerraform(rv, d)
-		} else {
-			return diag.Diagnostics{}
-		}
+		return mashschema.ServiceMapper.PersisRoles(rv, d)
 	}
 }
 
 func serviceCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	mashSvcUpsert := V3ServiceUpsertable(d, true, true)
+	mashSvcUpsert, _ := mashschema.ServiceMapper.UpsertableTyped(d)
 
 	doLogJson("Will attempt to create new service with this upsertable", mashSvcUpsert)
 
@@ -76,9 +72,9 @@ func serviceCreate(ctx context.Context, d *schema.ResourceData, m interface{}) d
 	} else {
 		d.SetId(rv.Id)
 
-		opDiagnostic := V3ServiceToTerraform(rv, d)
+		opDiagnostic := mashschema.ServiceMapper.PersistTyped(ctx, rv, d)
 
-		// After the service has been created, portal access groups need to be pushed. Otherwise default
+		// After the service has been created, portal access groups need to be pushed. Otherwise, default
 		// pre-populated list needs to be read.
 		roleDiags := trySetServiceRoles(ctx, d, mashV3Cl)
 		if len(roleDiags) > 0 {
@@ -91,11 +87,12 @@ func serviceCreate(ctx context.Context, d *schema.ResourceData, m interface{}) d
 
 func trySetServiceRoles(ctx context.Context, d *schema.ResourceData, mashV3Cl v3client.Client) diag.Diagnostics {
 	opDiagnostic := diag.Diagnostics{}
-	if getSetLength(d.Get(MashSvcInteractiveDocsRoles)) > 0 {
-		roles := V3ServiceRolePermissionUpsertable(d)
+
+	if mashschema.ServiceMapper.IODocsRolesDefined(d) {
+		roles := mashschema.ServiceMapper.UpsertableServiceRoles(d)
 		doLogJson("Will attempt to set service roles with this upsertable", roles)
 
-		err := mashV3Cl.SetServiceRoles(ctx, d.Id(), roles)
+		err := mashV3Cl.SetServiceRoles(ctx, d.Id(), *roles)
 		if err != nil {
 			doLogf("Returned error: %s", err)
 			opDiagnostic = append(opDiagnostic, diag.Diagnostic{
@@ -114,7 +111,7 @@ func serviceRead(ctx context.Context, d *schema.ResourceData, m interface{}) dia
 	if rv, err := mashV3Cl.GetService(ctx, d.Id()); err != nil {
 		return diag.FromErr(err)
 	} else {
-		servDiags := V3ServiceToTerraform(rv, d)
+		servDiags := mashschema.ServiceMapper.PersistTyped(ctx, rv, d)
 		rolesDiags := serviceReadRoles(ctx, d, mashV3Cl)
 
 		return append(servDiags, rolesDiags...)
@@ -125,21 +122,21 @@ func serviceUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) d
 	mashV3Cl := m.(v3client.Client)
 	updateDiagnostic := diag.Diagnostics{}
 
-	if MashSvcHasDirectUpsertableModifications(d) {
-		mashServ := V3ServiceUpsertable(d, false, false)
+	if mashschema.ServiceMapper.HasDirectUpsertableChanges(d) {
+		mashServ, _ := mashschema.ServiceMapper.DirectlyUpdateable(d)
 
 		if rv, err := mashV3Cl.UpdateService(ctx, mashServ); err != nil {
 			return diag.FromErr(err)
 		} else {
-			upd := V3ServiceToTerraform(rv, d)
+			upd := mashschema.ServiceMapper.PersistTyped(ctx, rv, d)
 			if len(upd) > 0 {
 				updateDiagnostic = append(updateDiagnostic, upd...)
 			}
 		}
 	}
 
-	if d.HasChange(MashSvcOAuth) {
-		curSet := d.Get(MashSvcOAuth)
+	if mashschema.ServiceMapper.OAuthProfileChanged(d) {
+		curSet := mashschema.ServiceMapper.SecurityProfileUpsertable(d)
 		if curSet == nil {
 			if err := mashV3Cl.DeleteServiceOAuthSecurityProfile(ctx, d.Id()); err != nil {
 				updateDiagnostic = append(updateDiagnostic, diag.Diagnostic{
@@ -149,13 +146,10 @@ func serviceUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) d
 				})
 			} else {
 				// OAuth profile has been deleted.
-				clearDiags := ClearServiceOAuthProfile(d)
-				if len(clearDiags) > 0 {
-					updateDiagnostic = append(updateDiagnostic, clearDiags...)
-				}
+				_ = mashschema.ServiceMapper.ClearServiceOAuthProfile(ctx, d)
 			}
 		} else {
-			requestedProfile := V3SecurityProfileUpsertable(d)
+			requestedProfile := mashschema.ServiceMapper.SecurityProfileUpsertable(d)
 			if actualOAuth, err := mashV3Cl.UpdateServiceOAuthSecurityProfile(ctx, d.Id(), *requestedProfile.OAuth); err != nil {
 				updateDiagnostic = append(updateDiagnostic, diag.Diagnostic{
 					Severity: diag.Error,
@@ -163,7 +157,7 @@ func serviceUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) d
 					Detail:   err.Error(),
 				})
 			} else {
-				oauthSave := V3ServiceOAuthProfileToTerraform(actualOAuth, d)
+				oauthSave := mashschema.ServiceMapper.PersistOAuthProfile(ctx, actualOAuth, d)
 				if len(oauthSave) > 0 {
 					updateDiagnostic = append(updateDiagnostic, oauthSave...)
 				}
@@ -171,25 +165,45 @@ func serviceUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) d
 		}
 	}
 
-	if d.HasChange(MashSvcCacheTtl) {
-		serviceCache := masherytypes.MasheryServiceCache{CacheTtl: d.Get(MashSvcCacheTtl).(int)}
-		if _, err := mashV3Cl.UpdateServiceCache(ctx, d.Id(), serviceCache); err != nil {
-			updateDiagnostic = append(updateDiagnostic, diag.Diagnostic{
-				Severity: diag.Error,
-				Summary:  "could not update cache ttl",
-				Detail:   err.Error(),
-			})
+	if mashschema.ServiceMapper.CacheTTLChanged(d) {
+		serviceCache := mashschema.ServiceMapper.CacheUpsertable(d)
+		if serviceCache != nil {
+			if _, err := mashV3Cl.UpdateServiceCache(ctx, d.Id(), *serviceCache); err != nil {
+				updateDiagnostic = append(updateDiagnostic, diag.Diagnostic{
+					Severity: diag.Error,
+					Summary:  "could not update cache ttl",
+					Detail:   err.Error(),
+				})
+			}
+		} else {
+			if err := mashV3Cl.DeleteServiceCache(ctx, d.Id()); err != nil {
+				updateDiagnostic = append(updateDiagnostic, diag.Diagnostic{
+					Severity: diag.Error,
+					Summary:  "could not delete cache ttl",
+					Detail:   err.Error(),
+				})
+			}
 		}
 	}
 
-	if d.HasChange(MashSvcInteractiveDocsRoles) {
-		roleUpsert := V3ServiceRolePermissionUpsertable(d)
-		if err := mashV3Cl.SetServiceRoles(ctx, d.Id(), roleUpsert); err != nil {
-			updateDiagnostic = append(updateDiagnostic, diag.Diagnostic{
-				Severity: diag.Error,
-				Summary:  "could not emit roles",
-				Detail:   err.Error(),
-			})
+	if mashschema.ServiceMapper.IODocsRolesChanged(d) {
+		if roleUpsert := mashschema.ServiceMapper.UpsertableServiceRoles(d); roleUpsert != nil {
+			if err := mashV3Cl.SetServiceRoles(ctx, d.Id(), *roleUpsert); err != nil {
+				updateDiagnostic = append(updateDiagnostic, diag.Diagnostic{
+					Severity: diag.Error,
+					Summary:  "could not emit roles",
+					Detail:   err.Error(),
+				})
+			}
+		} else {
+			if err := mashV3Cl.DeleteServiceRoles(ctx, d.Id()); err != nil {
+				updateDiagnostic = append(updateDiagnostic, diag.Diagnostic{
+					Severity: diag.Error,
+					Summary:  "could not delete service roles",
+					Detail:   err.Error(),
+				})
+			}
+
 		}
 	}
 

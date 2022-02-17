@@ -26,3 +26,5 @@ debug
 
 # IntelliJ files
 *.iml
+/example/**/terraform.tfvars
+/example/**/.out

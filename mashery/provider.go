@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-// Provider schema configuration settings
+// Provider mashschema configuration settings
 //
 // The provider accepts three types of access credentials:
 // - the token value passed to either from Vault secret engine, or by reading  <code>TF_MASHERY_V3_ACCESS_TOKEN</code>
@@ -300,7 +300,7 @@ func providerConfigure(_ context.Context, d *schema.ResourceData) (interface{}, 
 	return cl, diags
 }
 
-// Provider Mashery Terraform Provider schema definition
+// Provider Mashery Terraform Provider mashschema definition
 func Provider() *schema.Provider {
 	return &schema.Provider{
 		Schema: providerConfigSchema,
@@ -324,8 +324,6 @@ func Provider() *schema.Provider {
 		DataSourcesMap: map[string]*schema.Resource{
 			"mashery_public_domains":     dataSourceMasheryPublicDomains(),
 			"mashery_system_domains":     dataSourceMasherySystemDomains(),
-			"mashery_service":            dataSourceMasheryService(),
-			"mashery_service_endpoints":  dataSourceMasheryServiceEndpoints(),
 			"mashery_email_template_set": dataSourceMasheryEmailTemplateSet(),
 			"mashery_role":               dataSourceMasheryRole(),
 		},

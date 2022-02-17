@@ -6,6 +6,7 @@ import (
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	mashschema "terraform-provider-mashery/mashschema"
 )
 
 func resourceMasheryPackageKey() *schema.Resource {
@@ -16,10 +17,10 @@ func resourceMasheryPackageKey() *schema.Resource {
 		UpdateContext: packageKeyUpdate,
 		DeleteContext: packageKeyDelete,
 		// Schema
-		Schema: PackageKeySchema,
+		Schema: mashschema.PackageKeyMapper.TerraformSchema(),
 		// Importer by ID
-		//Importer: &schema.ResourceImporter{
-		//	StateContext: schema.ImportStatePassthroughContext,
+		//Importer: &mashschema.ResourceImporter{
+		//	StateContext: mashschema.ImportStatePassthroughContext,
 		//},
 	}
 }
@@ -27,14 +28,16 @@ func resourceMasheryPackageKey() *schema.Resource {
 func packageKeyRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	v3cl := m.(v3client.Client)
 
-	if rv, err := v3cl.GetPackageKey(ctx, d.Id()); err != nil {
+	keyIdent := mashschema.PackageKeyMapper.GetIdentifier(d)
+
+	if rv, err := v3cl.GetPackageKey(ctx, keyIdent.KeyId); err != nil {
 		return diag.FromErr(err)
 	} else {
 		doLogJson(fmt.Sprintf("Recived the following JSON for package key %s", d.Id()), rv)
 
 		if rv.Apikey != nil && rv.Secret != nil && len(*rv.Apikey) > 0 {
-			V3PackageKeyToResourceData(rv, d)
-			return diag.Diagnostics{}
+			mashschema.PackageKeyMapper.PersistTyped(ctx, rv, d)
+			return nil
 		} else {
 			d.SetId("")
 			return diag.Diagnostics{diag.Diagnostic{
@@ -48,13 +51,10 @@ func packageKeyRead(ctx context.Context, d *schema.ResourceData, m interface{}) 
 }
 
 func packageKeyCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	pid := PlanIdentifier{}
-	pid.From(extractString(d, MashPlanId, ""))
+	pid := mashschema.PackageKeyMapper.GetPlanIdentifier(d)
+	appIdent := mashschema.PackageKeyMapper.GetApplicationIdentifier(d)
 
-	appIdent := ApplicationIdentifier{}
-	appIdent.From(extractString(d, MashAppId, ""))
-
-	if !pid.IsIdentified() || !appIdent.IsIdentified() {
+	if !mashschema.IsIdentified(pid) || !mashschema.IsIdentified(appIdent) {
 		return diag.Diagnostics{diag.Diagnostic{
 			Severity: diag.Error,
 			Summary:  "Ambiguous parent",
@@ -62,36 +62,36 @@ func packageKeyCreate(ctx context.Context, d *schema.ResourceData, m interface{}
 		}}
 	}
 
-	upsertable := MashPackageKeyUpsertable(d)
+	upsertable, _ := mashschema.PackageKeyMapper.UpsertableTyped(d)
 
 	v3cl := m.(v3client.Client)
 
 	if rv, err := v3cl.CreatePackageKey(ctx, appIdent.AppId, upsertable); err != nil {
 		return diag.FromErr(err)
 	} else {
-		V3PackageKeyToResourceData(rv, d)
-		d.SetId(rv.Id)
+		mashschema.PackageKeyMapper.SetIdentifier(appIdent, rv.Id, d)
+		mashschema.PackageKeyMapper.PersistTyped(ctx, rv, d)
 
-		return diag.Diagnostics{}
+		return nil
 	}
 }
 
 func packageKeyUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	upsertable := MashPackageKeyUpsertable(d)
+	upsertable, _ := mashschema.PackageKeyMapper.UpsertableTyped(d)
 	v3cl := m.(v3client.Client)
 
 	if rv, err := v3cl.UpdatePackageKey(ctx, upsertable); err != nil {
 		return diag.FromErr(err)
 	} else {
-		V3PackageKeyToResourceData(rv, d)
-		return diag.Diagnostics{}
+		mashschema.PackageKeyMapper.PersistTyped(ctx, rv, d)
+		return nil
 	}
 }
 
 func packageKeyDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	v3cl := m.(v3client.Client)
 
-	upsertable := MashPackageKeyUpsertable(d)
+	upsertable, _ := mashschema.PackageKeyMapper.UpsertableTyped(d)
 	if upsertable.Apikey == nil && upsertable.Secret == nil {
 		return diag.Diagnostics{diag.Diagnostic{
 			Severity: diag.Warning,
@@ -100,7 +100,8 @@ func packageKeyDelete(ctx context.Context, d *schema.ResourceData, m interface{}
 		}}
 	}
 
-	if err := v3cl.DeletePackageKey(ctx, d.Id()); err != nil {
+	pkId := mashschema.PackageKeyMapper.GetIdentifier(d)
+	if err := v3cl.DeletePackageKey(ctx, pkId.KeyId); err != nil {
 		return diag.FromErr(err)
 	} else {
 		return diag.Diagnostics{}

@@ -17,7 +17,7 @@ const (
 func resourceMasheryUniquePath() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: createUniquePath,
-		ReadContext:   noopResourceOperation,
+		ReadContext:   schema.NoopContext,
 		DeleteContext: deleteUniquePath,
 		Schema: map[string]*schema.Schema{
 			MashUniquePathPrefix: {

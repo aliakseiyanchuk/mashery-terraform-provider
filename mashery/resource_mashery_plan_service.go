@@ -7,20 +7,21 @@ import (
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"terraform-provider-mashery/mashschema"
 )
 
 func resourceMasheryPlanService() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: createPlanService,
-		ReadContext:   noopResourceOperation,
+		ReadContext:   schema.NoopContext,
 		DeleteContext: deletePlanService,
-		Schema:        PlanService,
+		Schema:        mashschema.PlanServiceMapper.TerraformSchema(),
 	}
 }
 
 func createPlanService(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	v3cl := m.(v3client.Client)
-	upsert := V3MasheryPlanServiceUpsertable(d)
+	upsert := mashschema.PlanServiceMapper.UpsertableTyped(d)
 
 	doLogJson("Creating plan service using this upsert", upsert)
 
@@ -28,16 +29,15 @@ func createPlanService(ctx context.Context, d *schema.ResourceData, m interface{
 		return diag.FromErr(err)
 	} else {
 		if rv.Id != "" {
-			psi := PlanServiceIdentifier{
-				PlanIdentifier: PlanIdentifier{
-					PackageId: upsert.PackageId,
-					PlanId:    upsert.PlanId,
-				},
-				ServiceId: upsert.ServiceId,
-			}
-			d.SetId(psi.Id())
+			psi := mashschema.PlanServiceMapper.CreateIdentifierTyped()
 
-			return diag.Diagnostics{}
+			psi.PackageId = upsert.PackageId
+			psi.PlanId = upsert.PlanId
+			psi.ServiceId = upsert.ServiceId
+
+			d.SetId(mashschema.CompoundId(psi))
+
+			return nil
 		} else {
 			return diag.Diagnostics{diag.Diagnostic{
 				Severity:      diag.Error,
@@ -51,7 +51,7 @@ func createPlanService(ctx context.Context, d *schema.ResourceData, m interface{
 
 func deletePlanService(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	v3cl := m.(v3client.Client)
-	upsert := V3MasheryPlanServiceUpsertable(d)
+	upsert := mashschema.PlanServiceMapper.UpsertableTyped(d)
 
 	// Guard against deleting plan services that still have Mashery endpoints entered.
 	if cnt, err := v3cl.CountPlanEndpoints(ctx, upsert); err != nil {
@@ -59,7 +59,7 @@ func deletePlanService(ctx context.Context, d *schema.ResourceData, m interface{
 	} else if cnt > 0 {
 		return diag.Diagnostics{diag.Diagnostic{
 			Severity:      diag.Error,
-			Summary:       "Offending objects found",
+			Summary:       "offending objects found",
 			Detail:        fmt.Sprintf("There are still %d endpoints attached to this service", cnt),
 			AttributePath: nil,
 		}}

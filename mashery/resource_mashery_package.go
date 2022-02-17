@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"terraform-provider-mashery/mashschema"
 )
 
 func resourceMasheryPackage() *schema.Resource {
@@ -18,7 +19,7 @@ func resourceMasheryPackage() *schema.Resource {
 		UpdateContext: packageUpdate,
 		DeleteContext: packageDelete,
 		// Schema
-		Schema: PackageSchema,
+		Schema: mashschema.PackageSchema,
 		// Importer by ID
 		Importer: &schema.ResourceImporter{
 			StateContext: importMasheryPackage,
@@ -34,7 +35,7 @@ func importMasheryPackage(ctx context.Context, d *schema.ResourceData, m interfa
 	} else if pack == nil {
 		return []*schema.ResourceData{}, errors.New("No such service")
 	} else {
-		v3PackageToResourceData(pack, d)
+		mashschema.PackageMapper.PersistTyped(ctx, pack, d)
 		return []*schema.ResourceData{d}, nil
 	}
 }
@@ -47,18 +48,18 @@ func packageRead(ctx context.Context, d *schema.ResourceData, m interface{}) dia
 		return diag.FromErr(err)
 	} else {
 		if rv != nil {
-			v3PackageToResourceData(rv, d)
+			return mashschema.PackageMapper.PersistTyped(ctx, rv, d)
 		} else {
 			d.SetId("")
 		}
 	}
 
-	return diag.Diagnostics{}
+	return nil
 }
 
 func packageCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	v3Client := m.(v3client.Client)
-	upsert := mashPackageUpsertable(d)
+	upsert, _ := mashschema.PackageMapper.UpsertableTyped(d)
 
 	doLogJson("Creating JSON using upsertable dataset", &upsert)
 
@@ -77,18 +78,18 @@ func packageCreate(ctx context.Context, d *schema.ResourceData, m interface{}) d
 			}}
 		}
 
-		return v3PackageToResourceData(rv, d)
+		return mashschema.PackageMapper.PersistTyped(ctx, rv, d)
 	}
 }
 
 func packageUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	upsert := mashPackageUpsertable(d)
+	upsert, _ := mashschema.PackageMapper.UpsertableTyped(d)
 
 	v3Client := m.(v3client.Client)
 	if rv, err := v3Client.UpdatePackage(ctx, upsert); err != nil {
 		return diag.FromErr(err)
 	} else {
-		return v3PackageToResourceData(rv, d)
+		return mashschema.PackageMapper.PersistTyped(ctx, rv, d)
 	}
 }
 
@@ -118,5 +119,5 @@ func packageDelete(ctx context.Context, d *schema.ResourceData, m interface{}) d
 	}
 
 	// Delete went okay.
-	return diag.Diagnostics{}
+	return nil
 }
