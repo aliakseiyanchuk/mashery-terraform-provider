@@ -1,7 +1,6 @@
 package mashschema_test
 
 import (
-	"context"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"terraform-provider-mashery/mashschema"
 	"testing"
@@ -17,23 +16,25 @@ func TestJsonPattern(t *testing.T) {
 func TestV3EndpointMethodFilterToResourceData(t *testing.T) {
 	now := masherytypes.MasheryJSONTime(time.Now())
 
-	d := mashschema.ServiceEndpointMethodFilterMapper.NewResourceData()
+	d := mashschema.ServiceEndpointMethodFilterMapper.TestResourceData()
 	//mashery.assertOk(t, d.Set(mashschema.MashObjName, "DefaultFilter"))
 	//mashery.assertOk(t, d.Set(mashschema.ServiceEndpointMethodRef, "service::endpoint::methodId"))
 
-	ref := masherytypes.MasheryResponseFilter{
-		AddressableV3Object: masherytypes.AddressableV3Object{
-			Id:      "filterId",
-			Name:    "DefaultFilter",
-			Created: &now,
-			Updated: &now,
+	ref := masherytypes.ServiceEndpointMethodFilter{
+		ResponseFilter: masherytypes.ResponseFilter{
+			AddressableV3Object: masherytypes.AddressableV3Object{
+				Id:      "filterId",
+				Name:    "DefaultFilter",
+				Created: &now,
+				Updated: &now,
+			},
+			Notes:            "notes",
+			XmlFilterFields:  "xml,fields,a",
+			JsonFilterFields: "json,fields,b",
 		},
-		Notes:            "notes",
-		XmlFilterFields:  "xml,fields,a",
-		JsonFilterFields: "json,fields,b",
 	}
 
-	setChecks := mashschema.ServiceEndpointMethodFilterMapper.PersistTyped(context.TODO(), &ref, d)
+	setChecks := mashschema.ServiceEndpointMethodFilterMapper.PersistTyped(ref, d)
 	LogErrorDiagnostics(t, "setting full data", &setChecks)
 
 	//mashery.assertResourceContainsKey(t, d, MashObjCreated)

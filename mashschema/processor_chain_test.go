@@ -26,7 +26,7 @@ func TestProcessChainOperation(t *testing.T) {
 	//	mashschema.V3ProcessorConfigurationToTerraform(adapterB),
 	//}
 	//
-	//res := NewResourceData(&mashschema.EndpointProcessorChainSchema)
+	//res := TestResourceData(&mashschema.EndpointProcessorChainSchema)
 	//err := res.Set(mashschema.MashEndpointProcessors, tfInput)
 	//assert.Nil(t, err)
 	//

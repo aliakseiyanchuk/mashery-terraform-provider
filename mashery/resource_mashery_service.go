@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -29,13 +30,14 @@ func resourceMasheryService() *schema.Resource {
 
 func importMasheryService(ctx context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
 	mashV3Cl := m.(v3client.Client)
+	svcId := masherytypes.ServiceIdentifier{ServiceId: d.Id()}
 
-	if service, err := mashV3Cl.GetService(ctx, d.Id()); err != nil {
+	if service, err := mashV3Cl.GetService(ctx, svcId); err != nil {
 		return []*schema.ResourceData{}, errwrap.Wrapf("Failed to import this service: {{err}}", err)
 	} else if service == nil {
-		return []*schema.ResourceData{}, errors.New("No such service")
+		return []*schema.ResourceData{}, errors.New("no such service")
 	} else {
-		mashschema.ServiceMapper.PersistTyped(ctx, service, d)
+		mashschema.ServiceMapper.PersistTyped(service, d)
 
 		roleDiags := serviceReadRoles(ctx, d, mashV3Cl)
 		if roleDiags.HasError() {
@@ -62,7 +64,7 @@ func serviceReadRoles(ctx context.Context, d *schema.ResourceData, v3cl v3client
 }
 
 func serviceCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	mashSvcUpsert, _ := mashschema.ServiceMapper.UpsertableTyped(d)
+	mashSvcUpsert, _, _ := mashschema.ServiceMapper.UpsertableTyped(d)
 
 	doLogJson("Will attempt to create new service with this upsertable", mashSvcUpsert)
 
@@ -72,7 +74,7 @@ func serviceCreate(ctx context.Context, d *schema.ResourceData, m interface{}) d
 	} else {
 		d.SetId(rv.Id)
 
-		opDiagnostic := mashschema.ServiceMapper.PersistTyped(ctx, rv, d)
+		opDiagnostic := mashschema.ServiceMapper.PersistTyped(rv, d)
 
 		// After the service has been created, portal access groups need to be pushed. Otherwise, default
 		// pre-populated list needs to be read.
@@ -108,10 +110,12 @@ func trySetServiceRoles(ctx context.Context, d *schema.ResourceData, mashV3Cl v3
 
 func serviceRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	mashV3Cl := m.(v3client.Client)
-	if rv, err := mashV3Cl.GetService(ctx, d.Id()); err != nil {
+	svcId := masherytypes.ServiceIdentifier{ServiceId: d.Id()}
+
+	if rv, err := mashV3Cl.GetService(ctx, svcId); err != nil {
 		return diag.FromErr(err)
 	} else {
-		servDiags := mashschema.ServiceMapper.PersistTyped(ctx, rv, d)
+		servDiags := mashschema.ServiceMapper.PersistTyped(rv, d)
 		rolesDiags := serviceReadRoles(ctx, d, mashV3Cl)
 
 		return append(servDiags, rolesDiags...)
@@ -128,7 +132,7 @@ func serviceUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) d
 		if rv, err := mashV3Cl.UpdateService(ctx, mashServ); err != nil {
 			return diag.FromErr(err)
 		} else {
-			upd := mashschema.ServiceMapper.PersistTyped(ctx, rv, d)
+			upd := mashschema.ServiceMapper.PersistTyped(rv, d)
 			if len(upd) > 0 {
 				updateDiagnostic = append(updateDiagnostic, upd...)
 			}
@@ -146,7 +150,7 @@ func serviceUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) d
 				})
 			} else {
 				// OAuth profile has been deleted.
-				_ = mashschema.ServiceMapper.ClearServiceOAuthProfile(ctx, d)
+				_ = mashschema.ServiceMapper.ClearServiceOAuthProfile(d)
 			}
 		} else {
 			requestedProfile := mashschema.ServiceMapper.SecurityProfileUpsertable(d)
@@ -157,7 +161,7 @@ func serviceUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) d
 					Detail:   err.Error(),
 				})
 			} else {
-				oauthSave := mashschema.ServiceMapper.PersistOAuthProfile(ctx, actualOAuth, d)
+				oauthSave := mashschema.ServiceMapper.PersistOAuthProfile(actualOAuth, d)
 				if len(oauthSave) > 0 {
 					updateDiagnostic = append(updateDiagnostic, oauthSave...)
 				}
@@ -212,7 +216,7 @@ func serviceUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) d
 
 func serviceDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(v3client.Client)
-	svcId := d.Id()
+	svcId := masherytypes.ServiceIdentifier{ServiceId: d.Id()}
 
 	// Verify that it's safe to delete this Mashery service, that it doesn't have
 	// endpoints left to be associated with it, possibly unmanaged.

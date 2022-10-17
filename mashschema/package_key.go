@@ -1,7 +1,6 @@
 package mashschema
 
 import (
-	"context"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -27,62 +26,26 @@ const (
 
 var mashPackageKeyStatusEnum = []string{"active", "waiting", "disabled"}
 
-type PackageKeyIdentifier struct {
-	ApplicationIdentifier
-	KeyId string
-}
-
-func (pki *PackageKeyIdentifier) Self() interface{} {
-	return pki
-}
-
 var PackageKeyMapper *PackageKeyMapperImpl
 
 type PackageKeyMapperImpl struct {
-	MapperImpl
+	ResourceMapperImpl
 }
 
-func (pkm *PackageKeyMapperImpl) GetIdentifier(d *schema.ResourceData) *PackageKeyIdentifier {
-	rv := &PackageKeyIdentifier{}
-	CompoundIdFrom(rv, d.Id())
+func (pkm *PackageKeyMapperImpl) UpsertableTyped(d *schema.ResourceData) (masherytypes.PackageKey, V3ObjectIdentifier, diag.Diagnostics) {
+	rvd := diag.Diagnostics{}
 
-	return rv
-}
-
-func (pkm *PackageKeyMapperImpl) SetIdentifier(appId *ApplicationIdentifier, id string, d *schema.ResourceData) *PackageKeyIdentifier {
-	rv := &PackageKeyIdentifier{
-		ApplicationIdentifier: ApplicationIdentifier{
-			MemberIdentifier: MemberIdentifier{
-				MemberId: appId.MemberId,
-				Username: appId.Username,
-			},
-			AppId: appId.AppId,
-		},
-		KeyId: id,
+	appIdent := masherytypes.ApplicationIdentifier{}
+	if !CompoundIdFrom(&appIdent, ExtractString(d, MashAppId, "")) {
+		rvd = append(rvd, pkm.lackingIdentificationDiagnostic(MashAppId))
 	}
-	CompoundIdFrom(rv, d.Id())
 
-	return rv
-}
+	plnIdent := masherytypes.PackagePlanIdentifier{}
+	if !CompoundIdFrom(&plnIdent, ExtractString(d, MashPlanId, "")) {
+		rvd = append(rvd, pkm.lackingIdentificationDiagnostic(MashPlanId))
+	}
 
-func (pkm *PackageKeyMapperImpl) GetApplicationIdentifier(d *schema.ResourceData) *ApplicationIdentifier {
-	rv := &ApplicationIdentifier{}
-	CompoundIdFrom(rv, ExtractString(d, MashAppId, ""))
-
-	return rv
-}
-
-func (pkm *PackageKeyMapperImpl) GetPlanIdentifier(d *schema.ResourceData) *PlanIdentifier {
-	rv := &PlanIdentifier{}
-	CompoundIdFrom(rv, ExtractString(d, MashPlanId, ""))
-
-	return rv
-}
-
-func (pkm *PackageKeyMapperImpl) UpsertableTyped(d *schema.ResourceData) (masherytypes.MasheryPackageKey, diag.Diagnostics) {
-	plnIdent := pkm.GetPlanIdentifier(d)
-
-	return masherytypes.MasheryPackageKey{
+	return masherytypes.PackageKey{
 		AddressableV3Object: masherytypes.AddressableV3Object{
 			Id: d.Id(),
 		},
@@ -90,27 +53,27 @@ func (pkm *PackageKeyMapperImpl) UpsertableTyped(d *schema.ResourceData) (masher
 		Secret: ExtractStringPointer(d, MashPackageKeySecret),
 
 		RateLimitCeiling: extractInt64Pointer(d, MashPackageKeyRateLimitCeiling, 0),
-		RateLimitExempt:  extractBool(d, MashPackageKeyRateLimitExempt, false),
+		RateLimitExempt:  ExtractBool(d, MashPackageKeyRateLimitExempt, false),
 
 		QpsLimitCeiling: extractInt64Pointer(d, MashPackageKeyQpsLimitCeiling, 0),
-		QpsLimitExempt:  extractBool(d, MashPackageKeyQpsLimitExempt, false),
+		QpsLimitExempt:  ExtractBool(d, MashPackageKeyQpsLimitExempt, false),
 
 		Status: ExtractString(d, MashPackageKeyStatus, "waiting"),
 
-		Package: &masherytypes.MasheryPackage{
+		Package: &masherytypes.Package{
 			AddressableV3Object: masherytypes.AddressableV3Object{
 				Id: plnIdent.PackageId,
 			},
 		},
-		Plan: &masherytypes.MasheryPlan{
+		Plan: &masherytypes.Plan{
 			AddressableV3Object: masherytypes.AddressableV3Object{
 				Id: plnIdent.PlanId,
 			},
 		},
-	}, nil
+	}, appIdent, nil
 }
 
-func (pkm *PackageKeyMapperImpl) persistLimits(inp *masherytypes.MasheryPackageKey) interface{} {
+func (pkm *PackageKeyMapperImpl) persistLimits(inp masherytypes.PackageKey) interface{} {
 	if inp.Limits != nil {
 		rv := make([]interface{}, len(*inp.Limits))
 		for idx, v := range *inp.Limits {
@@ -127,7 +90,7 @@ func (pkm *PackageKeyMapperImpl) persistLimits(inp *masherytypes.MasheryPackageK
 	}
 }
 
-func (pkm *PackageKeyMapperImpl) PersistTyped(ctx context.Context, inp *masherytypes.MasheryPackageKey, d *schema.ResourceData) diag.Diagnostics {
+func (pkm *PackageKeyMapperImpl) PersistTyped(inp masherytypes.PackageKey, d *schema.ResourceData) diag.Diagnostics {
 	data := map[string]interface{}{
 		MashPackageKeyIdent:            inp.Apikey,
 		MashPackageKeySecret:           inp.Secret,
@@ -139,7 +102,7 @@ func (pkm *PackageKeyMapperImpl) PersistTyped(ctx context.Context, inp *masheryt
 		MashPackageKeyLimits:           pkm.persistLimits(inp),
 	}
 
-	return pkm.SetResourceFields(ctx, data, d)
+	return pkm.persistMap(inp.Identifier(), data, d)
 }
 
 func initPackageKeyBoilerplate() {
@@ -158,7 +121,8 @@ func initPackageKeyBoilerplate() {
 
 func init() {
 	PackageKeyMapper = &PackageKeyMapperImpl{
-		MapperImpl{
+		ResourceMapperImpl: ResourceMapperImpl{
+			v3ObjectName: "package key",
 			schema: map[string]*schema.Schema{
 				MashPlanId: {
 					Type:        schema.TypeString,
@@ -167,7 +131,7 @@ func init() {
 					Description: "Plan to which this application needs to be attached",
 					ValidateDiagFunc: func(i interface{}, path cty.Path) diag.Diagnostics {
 						return ValidateCompoundIdent(i, path, func() interface{} {
-							return &PlanIdentifier{}
+							return &masherytypes.PackagePlanIdentifier{}
 						})
 					},
 				},
@@ -176,6 +140,12 @@ func init() {
 					Required:    true,
 					ForceNew:    true,
 					Description: "Application to which this key is attached",
+
+					ValidateDiagFunc: func(i interface{}, path cty.Path) diag.Diagnostics {
+						return ValidateCompoundIdent(i, path, func() interface{} {
+							return &masherytypes.ApplicationIdentifier{}
+						})
+					},
 				},
 				MashPackageKeyStatus: {
 					Type:     schema.TypeString,
@@ -206,17 +176,24 @@ func init() {
 					},
 				},
 			},
+			v3Identity: func(d *schema.ResourceData) (interface{}, diag.Diagnostics) {
+				rv := masherytypes.PackageKeyIdentifier{PackageKeyId: d.Id()}
+
+				rvd := diag.Diagnostics{}
+				if len(rv.PackageKeyId) == 0 {
+					rvd = append(rvd, PackageKeyMapper.lackingIdentificationDiagnostic("id"))
+				}
+
+				return rv, rvd
+			},
+			upsertFunc: func(d *schema.ResourceData) (Upsertable, V3ObjectIdentifier, diag.Diagnostics) {
+				return PackageKeyMapper.Upsertable(d)
+			},
+			persistFunc: func(rv interface{}, d *schema.ResourceData) diag.Diagnostics {
+				ptr := rv.(*masherytypes.PackageKey)
+				return PackageKeyMapper.PersistTyped(*ptr, d)
+			},
 		},
 	}
 	initPackageKeyBoilerplate()
-
-	PackageKeyMapper.identifier = func() interface{} {
-		return &PackageKeyIdentifier{}
-	}
-	PackageKeyMapper.upsertFunc = func(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
-		return PackageKeyMapper.UpsertableTyped(d)
-	}
-	PackageKeyMapper.persistFunc = func(ctx context.Context, rv interface{}, d *schema.ResourceData) diag.Diagnostics {
-		return PackageKeyMapper.PersistTyped(ctx, rv.(*masherytypes.MasheryPackageKey), d)
-	}
 }

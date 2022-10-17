@@ -1,7 +1,6 @@
 package mashschema
 
 import (
-	"context"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -11,13 +10,13 @@ const MashEmailTemplateSetType = "type"
 
 const MashEmailTemplateSetId = "set_id"
 
-var EmailTemplateSetMapper *EmailTemplateSetMapperImpl
+var EmailTemplateSetMapper *emailTemplateSetMapperImpl
 
-type EmailTemplateSetMapperImpl struct {
-	MapperImpl
+type emailTemplateSetMapperImpl struct {
+	DataSourceMapperImpl
 }
 
-func (etsm *EmailTemplateSetMapperImpl) PersistTyped(ctx context.Context, set *masherytypes.MasheryEmailTemplateSet, d *schema.ResourceData) diag.Diagnostics {
+func (etsm *emailTemplateSetMapperImpl) PersistTyped(set masherytypes.EmailTemplateSet, d *schema.ResourceData) diag.Diagnostics {
 	data := map[string]interface{}{
 		MashObjCreated:           set.Created.ToString(),
 		MashObjUpdated:           set.Updated.ToString(),
@@ -25,7 +24,7 @@ func (etsm *EmailTemplateSetMapperImpl) PersistTyped(ctx context.Context, set *m
 		MashEmailTemplateSetType: set.Type,
 	}
 
-	return etsm.SetResourceFields(ctx, data, d)
+	return SetResourceFields(data, d)
 }
 
 func initEmailTemplateSetSchemaBoilerplate() {
@@ -36,8 +35,8 @@ func initEmailTemplateSetSchemaBoilerplate() {
 }
 
 func init() {
-	EmailTemplateSetMapper = &EmailTemplateSetMapperImpl{
-		MapperImpl{
+	EmailTemplateSetMapper = &emailTemplateSetMapperImpl{
+		DataSourceMapperImpl{
 			schema: map[string]*schema.Schema{
 				MashDataSourceSearch: {
 					Type:        schema.TypeMap,
@@ -52,13 +51,13 @@ func init() {
 					Description: "If true (default), then email template set must exist. If an element doesn't exist, the error is generated",
 				},
 			},
+
+			persistOne: func(rv interface{}, d *schema.ResourceData) diag.Diagnostics {
+				return EmailTemplateSetMapper.PersistTyped(rv.(masherytypes.EmailTemplateSet), d)
+			},
 		},
 	}
 
 	initEmailTemplateSetSchemaBoilerplate()
 	addComputedString(&EmailTemplateSetMapper.schema, MashEmailTemplateSetId, "Email set Id")
-
-	EmailTemplateSetMapper.persistFunc = func(ctx context.Context, rv interface{}, d *schema.ResourceData) diag.Diagnostics {
-		return EmailTemplateSetMapper.PersistTyped(ctx, rv.(*masherytypes.MasheryEmailTemplateSet), d)
-	}
 }

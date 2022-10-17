@@ -7,57 +7,39 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-type PlanServiceIdentifier struct {
-	PlanIdentifier
-	ServiceId string
-}
-
 var PlanServiceMapper *PlanServiceMapperImpl
 
 type PlanServiceMapperImpl struct {
-	MapperImpl
+	ResourceMapperImpl
 }
 
-func (psi *PlanServiceIdentifier) Self() interface{} {
-	return psi
-}
+func (psm *PlanServiceMapperImpl) UpsertableTyped(d *schema.ResourceData) (masherytypes.PackagePlanServiceIdentifier, V3ObjectIdentifier, diag.Diagnostics) {
+	dg := diag.Diagnostics{}
+	planIdent := masherytypes.PackagePlanIdentifier{}
 
-func (psm *PlanServiceMapperImpl) CreateIdentifierTyped() *PlanServiceIdentifier {
-	return &PlanServiceIdentifier{}
-}
-
-func (sem *PlanServiceMapperImpl) GetIdentifier(d *schema.ResourceData) *PlanServiceIdentifier {
-	rv := &PlanServiceIdentifier{}
-	CompoundIdFrom(rv, d.Id())
-
-	return rv
-}
-
-func (psm *PlanServiceMapperImpl) UpsertableTyped(d *schema.ResourceData) masherytypes.MasheryPlanService {
-	if d.Id() == "" {
-		planId := PlanIdentifier{}
-		CompoundIdFrom(&planId, ExtractString(d, MashPlanId, ""))
-
-		return masherytypes.MasheryPlanService{
-			PackageId: planId.PackageId,
-			PlanId:    planId.PlanId,
-			ServiceId: ExtractString(d, MashSvcId, ""),
-		}
-	} else {
-		ident := PlanServiceIdentifier{}
-		CompoundIdFrom(&ident, d.Id())
-
-		return masherytypes.MasheryPlanService{
-			PackageId: ident.PackageId,
-			PlanId:    ident.PlanId,
-			ServiceId: ident.ServiceId,
-		}
+	if !CompoundIdFrom(&planIdent, ExtractString(d, MashPlanId, "")) {
+		dg = append(dg, psm.lackingIdentificationDiagnostic(MashPlanId))
 	}
+
+	rv := masherytypes.PackagePlanServiceIdentifier{
+		ServiceIdentifier: masherytypes.ServiceIdentifier{
+			ServiceId: ExtractString(d, MashSvcId, ""),
+		},
+		PackagePlanIdentifier: masherytypes.PackagePlanIdentifier{
+			PackageIdentifier: masherytypes.PackageIdentifier{
+				PackageId: planIdent.PackageId,
+			},
+			PlanId: planIdent.PlanId,
+		},
+	}
+
+	return rv, nil, dg
 }
 
 func init() {
 	PlanServiceMapper = &PlanServiceMapperImpl{
-		MapperImpl{
+		ResourceMapperImpl{
+			v3ObjectName: "package plan service",
 			schema: map[string]*schema.Schema{
 				MashPlanId: {
 					Type:        schema.TypeString,
@@ -66,7 +48,7 @@ func init() {
 					Description: "Plan to which the service needs to be attached",
 					ValidateDiagFunc: func(i interface{}, path cty.Path) diag.Diagnostics {
 						return ValidateCompoundIdent(i, path, func() interface{} {
-							return &PlanIdentifier{}
+							return &masherytypes.PackagePlanIdentifier{}
 						})
 					},
 				},
@@ -76,6 +58,16 @@ func init() {
 					ForceNew:    true,
 					Description: "Service to expose in this plan",
 				},
+			},
+			v3Identity: func(d *schema.ResourceData) (interface{}, diag.Diagnostics) {
+				rv, _, dg := PlanServiceMapper.UpsertableTyped(d)
+				return rv, dg
+			},
+			upsertFunc: func(d *schema.ResourceData) (Upsertable, V3ObjectIdentifier, diag.Diagnostics) {
+				return PlanServiceMapper.UpsertableTyped(d)
+			},
+			persistFunc: func(rv interface{}, d *schema.ResourceData) diag.Diagnostics {
+				return PlanServiceMapper.persistMap(rv, nil, d)
 			},
 		},
 	}

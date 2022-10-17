@@ -6,7 +6,7 @@ import (
 
 func TestV3MasheryEndpointMethodToResourceState(t *testing.T) {
 	//now := masherytypes.MasheryJSONTime(time.Now())
-	//d := NewResourceData(&mashschema.EndpointMethodSchema)
+	//d := TestResourceData(&mashschema.EndpointMethodSchema)
 	////mashery.assertOk(t, d.Set(MashObjName, "name"))
 	//
 	//refInput := masherytypes.MasheryMethod{

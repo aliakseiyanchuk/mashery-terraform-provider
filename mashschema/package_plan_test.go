@@ -22,7 +22,7 @@ func TestPlanIdentifier_From(t *testing.T) {
 }
 
 func TestV3PlanUpsertableFromMinimalInputs(t *testing.T) {
-	//d := NewResourceData(&mashschema.PlanSchema)
+	//d := TestResourceData(&mashschema.PlanSchema)
 	//
 	//packId := "packId"
 	//planName := "planName"
@@ -36,7 +36,7 @@ func TestV3PlanUpsertableFromMinimalInputs(t *testing.T) {
 }
 
 func TestV3PlanUpsertable_OnNilInputs(t *testing.T) {
-	//d := NewResourceData(&mashschema.PlanSchema)
+	//d := TestResourceData(&mashschema.PlanSchema)
 	//
 	//diags := mashschema.V3PlanToResourceData(&masherytypes.MasheryPlan{}, d)
 	//LogErrorDiagnostics(t, "V3 with minimal data", &diags)

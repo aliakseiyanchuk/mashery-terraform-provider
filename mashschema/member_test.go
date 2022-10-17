@@ -1,18 +1,19 @@
 package mashschema_test
 
 import (
+	"fmt"
+	"github.com/stretchr/testify/assert"
+	"terraform-provider-mashery/mashschema"
 	"testing"
 )
 
 func TestWillGeneratePrefixedUsername(t *testing.T) {
-	//d := NewResourceData(&mashschema.MemberSchema)
-	//prefix := "lspwd_prefix"
-	//mashery.assertOk(t, d.Set(mashschema.MashMemberUserNamePrefix, prefix))
-	//
-	//upsert := mashschema.MashMemberUpsertable(d)
-	//if !strings.HasPrefix(upsert.Username, prefix) {
-	//	t.Errorf("Username (%s) was not prefixed correctly", upsert.Username)
-	//}
+
+	d := mashschema.MemberMapper.TestResourceData()
+	upsertable, _, dg := mashschema.MemberMapper.Upsertable(d)
+
+	assert.Equal(t, 0, len(dg))
+	fmt.Println(upsertable)
 }
 
 func TestV3MemberToResourceData(t *testing.T) {

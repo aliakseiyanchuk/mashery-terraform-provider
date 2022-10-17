@@ -1,7 +1,7 @@
 package mashschema
 
 import (
-	"context"
+	"errors"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -31,95 +31,31 @@ const (
 	MashSvrErrorSetMessageResponseBody = "response_body"
 )
 
-var ServiceErrorSetSchema = map[string]*schema.Schema{
-	MashObjId: {
-		Type:        schema.TypeString,
-		Computed:    true,
-		Description: "Id of this error set",
-	},
-	MashSvcId: {
-		Type:     schema.TypeString,
-		Required: true,
-	},
-	MashObjName: {
-		Type:     schema.TypeString,
-		Required: true,
-	},
-	MashSvcErrorSetJsonpType: {
-		Type:     schema.TypeString,
-		Optional: true,
-		Default:  "",
-	},
-	MashSvcErrorSetJsonp: {
-		Type:     schema.TypeBool,
-		Optional: true,
-		Default:  false,
-	},
-	MashSvcErrorSetType: {
-		Type:     schema.TypeString,
-		Optional: true,
-		Default:  "text/xml",
-	},
-	MashSvcErrorSetMessage: {
-		Type:     schema.TypeSet,
-		Required: true,
-		Elem: &schema.Resource{
-			Schema: map[string]*schema.Schema{
-				MashObjId: {
-					Type:        schema.TypeString,
-					Required:    true,
-					Description: "Id of this message",
-					ValidateDiagFunc: func(i interface{}, path cty.Path) diag.Diagnostics {
-						return validateStringValueInSet(i, path, &validErrorSetMessageId)
-					},
-				},
-				MashSvrErrorSetMessageStatus: {
-					Type:        schema.TypeString,
-					Optional:    true,
-					Computed:    true,
-					Description: "String passed in the status field",
-				},
-				MashSvrErrorSetMessageDetailHeader: {
-					Type:        schema.TypeString,
-					Optional:    true,
-					Computed:    true,
-					Description: "Detailed header contents",
-				},
-				MashSvrErrorSetMessageResponseBody: {
-					Type:        schema.TypeString,
-					Optional:    true,
-					Computed:    true,
-					Description: "Response body value",
-				},
-			},
-		},
-	},
-}
-
-type ErrorSetIdentifier struct {
-	ServiceIdentifier
-	ErrorSetId string
-}
-
-func (esi *ErrorSetIdentifier) Self() interface{} {
-	return esi
-}
-
 var ErrorSetMapper *ErrorSetMapperImpl
 
 type ErrorSetMapperImpl struct {
-	MapperImpl
+	ResourceMapperImpl
+}
+
+func (esm *ErrorSetMapperImpl) ErrorSetIdentityDiag(d *schema.ResourceData) (masherytypes.ErrorSetIdentifier, diag.Diagnostics) {
+	rv := masherytypes.ErrorSetIdentifier{}
+	if CompoundIdFrom(&rv, d.Id()) {
+		return rv, nil
+	} else {
+		return rv, diag.Diagnostics{ErrorSetMapper.lackingIdentificationDiagnostic("id")}
+	}
+}
+func (esm *ErrorSetMapperImpl) ErrorSetIdentity(d *schema.ResourceData) (masherytypes.ErrorSetIdentifier, error) {
+	rv := masherytypes.ErrorSetIdentifier{}
+	if CompoundIdFrom(&rv, d.Id()) {
+		return rv, nil
+	} else {
+		return rv, errors.New("error set identity is incomplete")
+	}
 }
 
 func (esm *ErrorSetMapperImpl) GetServiceIdentifier(d *schema.ResourceData) string {
 	return ExtractString(d, MashSvcId, "")
-}
-
-func (esm *ErrorSetMapperImpl) GetIdentifier(d *schema.ResourceData) *ErrorSetIdentifier {
-	ident := &ErrorSetIdentifier{}
-	CompoundIdFrom(ident, d.Id())
-
-	return ident
 }
 
 func (esm *ErrorSetMapperImpl) ErrorSetMessagesChanged(d *schema.ResourceData) bool {
@@ -136,7 +72,7 @@ func (esm *ErrorSetMapperImpl) FindMessageById(inp *[]masherytypes.MasheryErrorM
 	return nil
 }
 
-func (esm *ErrorSetMapperImpl) convertExistingErrorSubset(errSet *masherytypes.MasheryErrorSet, d *schema.ResourceData) []map[string]interface{} {
+func (esm *ErrorSetMapperImpl) convertExistingErrorSubset(errSet *masherytypes.ErrorSet, d *schema.ResourceData) []map[string]interface{} {
 	var rv []map[string]interface{}
 
 	defined := esm.UpsertableErrorMessages(d)
@@ -149,7 +85,7 @@ func (esm *ErrorSetMapperImpl) convertExistingErrorSubset(errSet *masherytypes.M
 	return rv
 }
 
-func (esm *ErrorSetMapperImpl) PersistTyped(ctx context.Context, errSet *masherytypes.MasheryErrorSet, d *schema.ResourceData) diag.Diagnostics {
+func (esm *ErrorSetMapperImpl) PersistTyped(errSet *masherytypes.ErrorSet, d *schema.ResourceData) diag.Diagnostics {
 	data := map[string]interface{}{
 		MashObjName:              errSet.Name,
 		MashSvcErrorSetJsonp:     errSet.JSONP,
@@ -161,24 +97,44 @@ func (esm *ErrorSetMapperImpl) PersistTyped(ctx context.Context, errSet *mashery
 		data[MashSvcErrorSetMessage] = esm.convertExistingErrorSubset(errSet, d)
 	}
 
-	return esm.SetResourceFields(ctx, data, d)
+	return SetResourceFields(data, d)
 }
 
-func (esm *ErrorSetMapperImpl) UpsertableTyped(d *schema.ResourceData) masherytypes.MasheryErrorSet {
-	setIdent := ErrorSetIdentifier{}
-	CompoundIdFrom(&setIdent, d.Id())
+func (esm *ErrorSetMapperImpl) UpsertableTyped(d *schema.ResourceData) (masherytypes.ErrorSet, masherytypes.ServiceIdentifier, diag.Diagnostics) {
+	rvd := diag.Diagnostics{}
 
-	rv := masherytypes.MasheryErrorSet{
+	setIdent := masherytypes.ErrorSetIdentifier{}
+	identComplete := CompoundIdFrom(&setIdent, d.Id())
+
+	svcIdent := masherytypes.ServiceIdentifier{}
+	if !CompoundIdFrom(&svcIdent, ExtractString(d, MashSvcId, "")) {
+		rvd = append(rvd, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "service identifier is incomplete",
+		})
+	}
+
+	parentSelector := func() masherytypes.ServiceIdentifier {
+		if identComplete {
+			return setIdent.ServiceIdentifier
+		} else {
+			return svcIdent
+		}
+	}
+
+	rv := masherytypes.ErrorSet{
 		AddressableV3Object: masherytypes.AddressableV3Object{
 			Id:   setIdent.ErrorSetId,
 			Name: ExtractString(d, MashObjName, "Terraform-managed error set"),
 		},
 		JSONPType: ExtractString(d, MashSvcErrorSetJsonpType, ""),
-		JSONP:     extractBool(d, MashSvcErrorSetJsonp, false),
+		JSONP:     ExtractBool(d, MashSvcErrorSetJsonp, false),
 		Type:      ExtractString(d, MashSvcErrorSetType, "text/xml"),
+
+		ParentServiceId: parentSelector(),
 	}
 
-	return rv
+	return rv, svcIdent, rvd
 }
 
 func extractKeyFromMap(inp map[string]interface{}, key string, receiver *string) {
@@ -198,17 +154,6 @@ func extractIntKeyFromMap(inp map[string]interface{}, key string, receiver *int)
 }
 
 var errorParsePattern = regexp.MustCompile("ERR_(\\d{3})_.*")
-
-func (esm *ErrorSetMapperImpl) SetIdentifier(serviceId string, errSet *masherytypes.MasheryErrorSet, d *schema.ResourceData) {
-	ident := &ErrorSetIdentifier{
-		ServiceIdentifier: ServiceIdentifier{
-			ServiceId: serviceId,
-		},
-		ErrorSetId: errSet.Id,
-	}
-
-	d.SetId(CompoundId(ident))
-}
 
 func (esm *ErrorSetMapperImpl) UpsertableErrorMessage(d interface{}) masherytypes.MasheryErrorMessage {
 	rv := masherytypes.MasheryErrorMessage{}
@@ -253,4 +198,80 @@ func (esm *ErrorSetMapperImpl) UpsertableErrorMessages(d *schema.ResourceData) [
 	}
 
 	return []masherytypes.MasheryErrorMessage{}
+}
+
+func init() {
+	ErrorSetMapper = &ErrorSetMapperImpl{
+		ResourceMapperImpl{
+			v3ObjectName: "error set",
+			schema: map[string]*schema.Schema{
+				MashObjId: {
+					Type:        schema.TypeString,
+					Computed:    true,
+					Description: "Id of this error set",
+				},
+				MashSvcId: {
+					Type:     schema.TypeString,
+					Required: true,
+				},
+				MashObjName: {
+					Type:     schema.TypeString,
+					Required: true,
+				},
+				MashSvcErrorSetJsonpType: {
+					Type:     schema.TypeString,
+					Optional: true,
+					Default:  "",
+				},
+				MashSvcErrorSetJsonp: {
+					Type:     schema.TypeBool,
+					Optional: true,
+					Default:  false,
+				},
+				MashSvcErrorSetType: {
+					Type:     schema.TypeString,
+					Optional: true,
+					Default:  "text/xml",
+				},
+				MashSvcErrorSetMessage: {
+					Type:     schema.TypeSet,
+					Required: true,
+					Elem: &schema.Resource{
+						Schema: map[string]*schema.Schema{
+							MashObjId: {
+								Type:        schema.TypeString,
+								Required:    true,
+								Description: "Id of this message",
+								ValidateDiagFunc: func(i interface{}, path cty.Path) diag.Diagnostics {
+									return validateStringValueInSet(i, path, &validErrorSetMessageId)
+								},
+							},
+							MashSvrErrorSetMessageStatus: {
+								Type:        schema.TypeString,
+								Optional:    true,
+								Computed:    true,
+								Description: "String passed in the status field",
+							},
+							MashSvrErrorSetMessageDetailHeader: {
+								Type:        schema.TypeString,
+								Optional:    true,
+								Computed:    true,
+								Description: "Detailed header contents",
+							},
+							MashSvrErrorSetMessageResponseBody: {
+								Type:        schema.TypeString,
+								Optional:    true,
+								Computed:    true,
+								Description: "Response body value",
+							},
+						},
+					},
+				},
+			},
+
+			v3Identity: func(d *schema.ResourceData) (interface{}, diag.Diagnostics) {
+				return ErrorSetMapper.ErrorSetIdentityDiag(d)
+			},
+		},
+	}
 }

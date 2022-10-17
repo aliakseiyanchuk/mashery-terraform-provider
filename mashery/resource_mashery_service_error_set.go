@@ -28,50 +28,57 @@ func resourceMasheryErrorSet() *schema.Resource {
 func importServiceErrorSet(ctx context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
 	mashV3Cl := m.(v3client.Client)
 
-	setId := mashschema.ErrorSetMapper.GetIdentifier(d)
-
-	if errSet, err := mashV3Cl.GetErrorSet(ctx, setId.ServiceId, setId.ErrorSetId); err != nil {
-		return []*schema.ResourceData{}, errwrap.Wrapf("Failed to import this errSet: {{err}}", err)
-	} else if errSet == nil {
-		return []*schema.ResourceData{}, errors.New("no such error set")
+	if setId, err := mashschema.ErrorSetMapper.ErrorSetIdentity(d); err != nil {
+		return []*schema.ResourceData{}, errwrap.Wrapf("error set identifier is invalid: {{err}}", err)
 	} else {
-		mashschema.ErrorSetMapper.PersistTyped(ctx, errSet, d)
-		return []*schema.ResourceData{d}, nil
+		if errSet, err := mashV3Cl.GetErrorSet(ctx, setId); err != nil {
+			return []*schema.ResourceData{}, errwrap.Wrapf("failed to import this error set: {{err}}", err)
+		} else if errSet == nil {
+			return []*schema.ResourceData{}, errors.New("no such error set")
+		} else {
+			mashschema.ErrorSetMapper.PersistTyped(errSet, d)
+			return []*schema.ResourceData{d}, nil
+		}
 	}
 }
 
 func serviceErrorSetRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	setId := mashschema.ErrorSetMapper.GetIdentifier(d)
+	setId, dg := mashschema.ErrorSetMapper.ErrorSetIdentityDiag(d)
+	if len(dg) > 0 {
+		return dg
+	}
 
 	v3cl := m.(v3client.Client)
 
-	if rv, err := v3cl.GetErrorSet(ctx, setId.ServiceId, setId.ErrorSetId); err != nil {
+	if rv, err := v3cl.GetErrorSet(ctx, setId); err != nil {
 		return diag.FromErr(err)
 	} else {
-		return mashschema.ErrorSetMapper.PersistTyped(ctx, rv, d)
+		return mashschema.ErrorSetMapper.PersistTyped(rv, d)
 	}
 }
 
 func serviceErrorSetCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	serviceId := mashschema.ErrorSetMapper.GetServiceIdentifier(d)
+	upsert, svcId, dg := mashschema.ErrorSetMapper.UpsertableTyped(d)
+	if len(dg) > 0 {
+		return dg
+	}
 
-	upsert := mashschema.ErrorSetMapper.UpsertableTyped(d)
 	custMessages := mashschema.ErrorSetMapper.UpsertableErrorMessages(d)
 
-	retVal := diag.Diagnostics{}
-
 	v3cl := m.(v3client.Client)
-	if errSet, err := v3cl.CreateErrorSet(ctx, serviceId, upsert); err != nil {
+	if errSet, err := v3cl.CreateErrorSet(ctx, svcId, upsert); err != nil {
 		return diag.FromErr(err)
 	} else {
-		mashschema.ErrorSetMapper.SetIdentifier(serviceId, errSet, d)
+		mashschema.ErrorSetMapper.PersistTyped(errSet, d)
+
+		setId, _ := mashschema.ErrorSetMapper.ErrorSetIdentity(d)
 
 		if len(custMessages) > 0 {
 			for _, msg := range custMessages {
 				doLogJson("Sending error message", msg)
 
-				if _, err := v3cl.UpdateErrorSetMessage(ctx, serviceId, errSet.Id, msg); err != nil {
-					retVal = append(retVal, diag.Diagnostic{
+				if _, err := v3cl.UpdateErrorSetMessage(ctx, setId, msg); err != nil {
+					dg = append(dg, diag.Diagnostic{
 						Severity: diag.Error,
 						Summary:  "Could not update error message",
 						Detail:   fmt.Sprintf("%s", err),
@@ -80,8 +87,8 @@ func serviceErrorSetCreate(ctx context.Context, d *schema.ResourceData, m interf
 				}
 			}
 
-			if refreshed, err := v3cl.GetErrorSet(ctx, serviceId, errSet.Id); err != nil {
-				retVal = append(retVal, diag.Diagnostic{
+			if refreshed, err := v3cl.GetErrorSet(ctx, setId); err != nil {
+				dg = append(dg, diag.Diagnostic{
 					Severity: diag.Error,
 					Summary:  "Failed to refresh error set after updating messages",
 					Detail:   fmt.Sprintf("%s", err),
@@ -90,23 +97,23 @@ func serviceErrorSetCreate(ctx context.Context, d *schema.ResourceData, m interf
 				errSet = refreshed
 			}
 
-			setDiags := mashschema.ErrorSetMapper.PersistTyped(ctx, errSet, d)
+			setDiags := mashschema.ErrorSetMapper.PersistTyped(errSet, d)
 			if len(setDiags) > 0 {
-				retVal = append(retVal, setDiags...)
+				dg = append(dg, setDiags...)
 			}
 		} else {
 			// Save the basic fields
-			rvDiags := mashschema.ErrorSetMapper.PersistTyped(ctx, errSet, d)
+			rvDiags := mashschema.ErrorSetMapper.PersistTyped(errSet, d)
 			if len(rvDiags) > 0 {
-				retVal = append(retVal, rvDiags...)
+				dg = append(dg, rvDiags...)
 			}
 		}
 
-		return retVal
+		return dg
 	}
 }
 
-func modifiedMessages(inp *masherytypes.MasheryErrorSet, rawMsg []masherytypes.MasheryErrorMessage) []masherytypes.MasheryErrorMessage {
+func modifiedMessages(inp *masherytypes.ErrorSet, rawMsg []masherytypes.MasheryErrorMessage) []masherytypes.MasheryErrorMessage {
 	var rv []masherytypes.MasheryErrorMessage
 
 	for _, m := range rawMsg {
@@ -128,11 +135,14 @@ func modifiedMessages(inp *masherytypes.MasheryErrorSet, rawMsg []masherytypes.M
 }
 
 func serviceErrorSetDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	setId := mashschema.ErrorSetMapper.GetIdentifier(d)
+	setId, dg := mashschema.ErrorSetMapper.ErrorSetIdentityDiag(d)
+	if len(dg) > 0 {
+		return dg
+	}
 
 	v3cl := m.(v3client.Client)
 
-	if err := v3cl.DeleteErrorSet(ctx, setId.ServiceId, setId.ErrorSetId); err != nil {
+	if err := v3cl.DeleteErrorSet(ctx, setId); err != nil {
 		return diag.FromErr(err)
 	} else {
 		return diag.Diagnostics{}
@@ -140,24 +150,27 @@ func serviceErrorSetDelete(ctx context.Context, d *schema.ResourceData, m interf
 }
 
 func serviceErrorSetUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	setId := mashschema.ErrorSetMapper.GetIdentifier(d)
+	setId, dg := mashschema.ErrorSetMapper.ErrorSetIdentityDiag(d)
+	if len(dg) > 0 {
+		return dg
+	}
 
-	upsert := mashschema.ErrorSetMapper.UpsertableTyped(d)
+	upsert, _, _ := mashschema.ErrorSetMapper.UpsertableTyped(d)
 	custMessages := mashschema.ErrorSetMapper.UpsertableErrorMessages(d)
 
 	retVal := diag.Diagnostics{}
 	v3cl := m.(v3client.Client)
 
-	var updInst *masherytypes.MasheryErrorSet
+	var updInst *masherytypes.ErrorSet
 	var err error
 
-	if updInst, err = v3cl.UpdateErrorSet(ctx, setId.ServiceId, upsert); err != nil {
+	if updInst, err = v3cl.UpdateErrorSet(ctx, upsert); err != nil {
 		return diag.FromErr(err)
 	}
 
 	if len(custMessages) > 0 && mashschema.ErrorSetMapper.ErrorSetMessagesChanged(d) {
 		for _, val := range modifiedMessages(updInst, custMessages) {
-			if _, err := v3cl.UpdateErrorSetMessage(ctx, setId.ServiceId, setId.ErrorSetId, val); err != nil {
+			if _, err := v3cl.UpdateErrorSetMessage(ctx, setId, val); err != nil {
 				retVal = append(retVal, diag.Diagnostic{
 					Severity: diag.Error,
 					Summary:  "could not update error message",
@@ -166,7 +179,7 @@ func serviceErrorSetUpdate(ctx context.Context, d *schema.ResourceData, m interf
 			}
 		}
 
-		if refreshed, err := v3cl.GetErrorSet(ctx, setId.ServiceId, setId.ErrorSetId); err != nil {
+		if refreshed, err := v3cl.GetErrorSet(ctx, setId); err != nil {
 			retVal = append(retVal, diag.Diagnostic{
 				Severity: diag.Error,
 				Summary:  "could not refresh error set after emitting custom error messagaes",
@@ -177,7 +190,7 @@ func serviceErrorSetUpdate(ctx context.Context, d *schema.ResourceData, m interf
 		}
 	}
 
-	setDiags := mashschema.ErrorSetMapper.PersistTyped(ctx, updInst, d)
+	setDiags := mashschema.ErrorSetMapper.PersistTyped(updInst, d)
 	if len(setDiags) > 0 {
 		retVal = append(retVal, setDiags...)
 	}

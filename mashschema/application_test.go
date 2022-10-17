@@ -1,8 +1,6 @@
 package mashschema_test
 
 import (
-	"context"
-	"fmt"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/stretchr/testify/assert"
 	"terraform-provider-mashery/mashschema"
@@ -10,31 +8,8 @@ import (
 	"time"
 )
 
-func TestApplicationCompoundIdentityGenerator(t *testing.T) {
-	idt := mashschema.ApplicationMapper.CreateIdentifierTyped()
-	idt.MemberId = "a-b-c-d-e"
-	idt.Username = "lspwd.github"
-	idt.AppId = "a-b-c-d-e"
-
-	str := mashschema.CompoundId(&idt)
-	fmt.Println(str)
-}
-
-func TestApplicationIdParsing(t *testing.T) {
-	ident := mashschema.ApplicationIdentifier{}
-	mashschema.CompoundIdFrom(&ident, "{\"mid\":\"a-b-c-d-e\",\"un\":\"lspwd.github\",\"appId\":\"a-b-c-d-e\"}")
-
-	memberId := "a-b-c-d-e"
-	userName := "lspwd.github"
-	appId := "a-b-c-d-e"
-
-	assert.Equal(t, ident.MemberId, memberId, "MemberId")
-	assert.Equal(t, ident.Username, userName, "Username")
-	assert.Equal(t, ident.AppId, appId, "AppId")
-}
-
 func TestMashAppUpsertable(t *testing.T) {
-	d := mashschema.ApplicationMapper.NewResourceData()
+	d := mashschema.ApplicationMapper.TestResourceData()
 	_ = d.Set(mashschema.MashAppOwner, "{\"mid\":\"a-b-c-d-e\",\"un\":\"m_username\"}")
 
 	now := masherytypes.MasheryJSONTime(time.Now())
@@ -42,7 +17,7 @@ func TestMashAppUpsertable(t *testing.T) {
 		"A": "B",
 	})
 
-	orig := masherytypes.MasheryApplication{
+	orig := masherytypes.Application{
 		AddressableV3Object: masherytypes.AddressableV3Object{
 			Id:      "appId",
 			Name:    "appName",
@@ -68,7 +43,7 @@ func TestMashAppUpsertable(t *testing.T) {
 	}
 
 	// Setting forward.
-	chk := mashschema.ApplicationMapper.SetState(context.TODO(), &orig, d)
+	chk := mashschema.ApplicationMapper.SetState(&orig, d)
 	if len(chk) > 0 {
 		t.Errorf("Setting fields encountered %d errors", len(chk))
 	}
@@ -78,7 +53,7 @@ func TestMashAppUpsertable(t *testing.T) {
 	d.SetId("{\"mid\":\"mid\",\"un\":\"m_username\",\"appId\":\"appId\"}")
 
 	// Reading back
-	reverse, rvsDiags := mashschema.ApplicationMapper.UpsertableTyped(context.TODO(), d)
+	reverse, _, rvsDiags := mashschema.ApplicationMapper.UpsertableTyped(d)
 	LogErrorDiagnostics(t, "app", &rvsDiags)
 
 	assert.Equal(t, orig.Id, reverse.Id)

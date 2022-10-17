@@ -1,0 +1,25 @@
+package mashery
+
+import (
+	"context"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
+	"terraform-provider-mashery/mashschema"
+)
+
+var PackagePlanServiceResource *ResourceTemplate
+
+func init() {
+	PackagePlanServiceResource = &ResourceTemplate{
+		Mapper: mashschema.PlanServiceMapper,
+		DoCreate: func(ctx context.Context, client v3client.Client, upsertable mashschema.Upsertable, identifier mashschema.V3ObjectIdentifier) (mashschema.Upsertable, error) {
+			return client.CreatePlanService(ctx, upsertable.(masherytypes.PackagePlanServiceIdentifier))
+		},
+		DoCountOffending: func(ctx context.Context, client v3client.Client, identifier mashschema.V3ObjectIdentifier) (int64, error) {
+			return client.CountPlanEndpoints(ctx, identifier.(masherytypes.PackagePlanServiceIdentifier))
+		},
+		DoDelete: func(ctx context.Context, client v3client.Client, identifier mashschema.V3ObjectIdentifier) error {
+			return client.DeletePlanService(ctx, identifier.(masherytypes.PackagePlanServiceIdentifier))
+		},
+	}
+}

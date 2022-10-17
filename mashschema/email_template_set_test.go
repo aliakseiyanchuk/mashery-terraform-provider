@@ -1,7 +1,6 @@
 package mashschema_test
 
 import (
-	"context"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/stretchr/testify/assert"
 	"terraform-provider-mashery/mashschema"
@@ -10,11 +9,11 @@ import (
 )
 
 func TestV3EmailTemplateSetIdToResourceData_DataSource(t *testing.T) {
-	d := mashschema.EmailTemplateSetMapper.NewResourceData()
+	d := mashschema.EmailTemplateSetMapper.TestResourceData()
 
 	now := masherytypes.MasheryJSONTime(time.Now())
 
-	orig := masherytypes.MasheryEmailTemplateSet{
+	orig := masherytypes.EmailTemplateSet{
 		AddressableV3Object: masherytypes.AddressableV3Object{
 			Id:      "setId",
 			Name:    "name",
@@ -25,7 +24,7 @@ func TestV3EmailTemplateSetIdToResourceData_DataSource(t *testing.T) {
 		EmailTemplates: nil,
 	}
 
-	dr := mashschema.EmailTemplateSetMapper.PersistTyped(context.TODO(), &orig, d)
+	dr := mashschema.EmailTemplateSetMapper.PersistTyped(orig, d)
 	LogErrorDiagnostics(t, "email template set", &dr)
 
 	assert.Equal(t, orig.Name, d.Get(mashschema.MashObjName).(string))

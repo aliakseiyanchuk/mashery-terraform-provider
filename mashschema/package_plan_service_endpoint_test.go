@@ -5,7 +5,7 @@ import (
 )
 
 func TestV3MasheryPlanEndpointUpsertable(t *testing.T) {
-	//d := NewResourceData(&mashschema.PlanEndpointSchema)
+	//d := TestResourceData(&mashschema.PlanEndpointSchema)
 
 	//mashery.assertOk(t, d.Set(mashschema.MashEndpointId, "serviceId::endpointId"))
 	//mashery.assertOk(t, d.Set(mashschema.MashPlanServiceId, "packageId::planId::serviceId"))
@@ -27,7 +27,7 @@ func TestV3MasheryPlanEndpointUpsertable(t *testing.T) {
 // Mashery plan should include only endpoints that reside in the same service plan. It it technically possible
 // to specify offending endpoints. This would be detected and an error would be returned.
 func TestV3MasheryPlanEndpointUpsertableWithServiceConflict(t *testing.T) {
-	//d := NewResourceData(&mashschema.PlanEndpointSchema)
+	//d := TestResourceData(&mashschema.PlanEndpointSchema)
 
 	//mashery.assertOk(t, d.Set(mashschema.MashEndpointId, "offendingServiceId::endpointId"))
 	//mashery.assertOk(t, d.Set(mashschema.MashPlanServiceId, "packageId::planId::serviceId"))

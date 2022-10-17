@@ -1,7 +1,6 @@
 package mashschema
 
 import (
-	"context"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -47,18 +46,10 @@ var notifyDeveloperPeriodEnum = []string{MashDurationMinute, MashDurationHourly,
 var notifyAdminPeriodEnum = []string{MashDurationMinute, MashDurationHourly,
 	MashDurationDay, MashDurationWeek, MashDurationMonth}
 
-type PackageIdentifier struct {
-	PackageId string
-}
-
-func (pi *PackageIdentifier) Self() interface{} {
-	return pi
-}
-
 var PackageMapper *PackageMapperImpl
 
 type PackageMapperImpl struct {
-	MapperImpl
+	ResourceMapperImpl
 }
 
 var PackageSchema = map[string]*schema.Schema{
@@ -208,8 +199,8 @@ var PackageSchema = map[string]*schema.Schema{
 	},
 }
 
-func (pmi *PackageMapperImpl) UpsertableTyped(d *schema.ResourceData) (masherytypes.MasheryPackage, diag.Diagnostics) {
-	rv := masherytypes.MasheryPackage{
+func (pmi *PackageMapperImpl) UpsertableTyped(d *schema.ResourceData) (masherytypes.Package, V3ObjectIdentifier, diag.Diagnostics) {
+	rv := masherytypes.Package{
 		AddressableV3Object: masherytypes.AddressableV3Object{
 			Id:   d.Id(),
 			Name: extractSetOrPrefixedString(d, MashPackName, MashPackNamePrefix),
@@ -217,23 +208,23 @@ func (pmi *PackageMapperImpl) UpsertableTyped(d *schema.ResourceData) (masheryty
 
 		Description:                 ExtractString(d, MashPackDescription, ""),
 		NotifyDeveloperPeriod:       ExtractString(d, MashPackNotifyDeveloperPeriod, "hour"),
-		NotifyDeveloperNearQuota:    extractBool(d, MashPackNotifyDeveloperNearQuota, true),
-		NotifyDeveloperOverQuota:    extractBool(d, MashPackNotifyDeveloperOverQuota, true),
-		NotifyDeveloperOverThrottle: extractBool(d, MashPackNotifyDeveloperOverThrottle, false),
+		NotifyDeveloperNearQuota:    ExtractBool(d, MashPackNotifyDeveloperNearQuota, true),
+		NotifyDeveloperOverQuota:    ExtractBool(d, MashPackNotifyDeveloperOverQuota, true),
+		NotifyDeveloperOverThrottle: ExtractBool(d, MashPackNotifyDeveloperOverThrottle, false),
 		NotifyAdminPeriod:           ExtractString(d, MashPackNotifyAdminPeriod, MashDurationDay),
-		NotifyAdminNearQuota:        extractBool(d, MashPackNotifyAdminNearQuota, false),
-		NotifyAdminOverQuota:        extractBool(d, MashPackNotifyAdminOverQuota, false),
-		NotifyAdminOverThrottle:     extractBool(d, MashPackNotifyDeveloperOverThrottle, false),
+		NotifyAdminNearQuota:        ExtractBool(d, MashPackNotifyAdminNearQuota, false),
+		NotifyAdminOverQuota:        ExtractBool(d, MashPackNotifyAdminOverQuota, false),
+		NotifyAdminOverThrottle:     ExtractBool(d, MashPackNotifyDeveloperOverThrottle, false),
 		NotifyAdminEmails:           strings.Join(ExtractStringArray(d, MashPackNotifyAdminEmails, &EmptyStringArray), ","),
 		NearQuotaThreshold:          extractIntPointer(d, MashPackNearQuotaThreshold),
-		Eav:                         extractStringMap(d, MashPackEAVs),
+		Eav:                         ExtractStringMap(d, MashPackEAVs),
 		KeyAdapter:                  ExtractString(d, MashPackKeyAdapter, ""),
 		KeyLength:                   extractIntPointer(d, MashPackKeyLength),
 		SharedSecretLength:          extractIntPointer(d, MashPackSharedSecretLength),
 		Plans:                       nil,
 	}
 
-	return rv, nil
+	return rv, nil, nil
 }
 
 func (pmi *PackageMapperImpl) splitAddressToSet(str string) []interface{} {
@@ -250,7 +241,7 @@ func (pmi *PackageMapperImpl) splitAddressToSet(str string) []interface{} {
 	return rv
 }
 
-func (pmi *PackageMapperImpl) PersistTyped(ctx context.Context, pack *masherytypes.MasheryPackage, d *schema.ResourceData) diag.Diagnostics {
+func (pmi *PackageMapperImpl) PersistTyped(pack masherytypes.Package, d *schema.ResourceData) diag.Diagnostics {
 	data := map[string]interface{}{
 		MashPackagekId:      pack.Id,
 		MashPackCreated:     pack.Created.ToString(),
@@ -276,23 +267,31 @@ func (pmi *PackageMapperImpl) PersistTyped(ctx context.Context, pack *masherytyp
 		MashPackSharedSecretLength: pack.SharedSecretLength,
 	}
 
-	return pmi.SetResourceFields(ctx, data, d)
+	return pmi.persistMap(pack.Identifier(), data, d)
 }
 
 func init() {
 	PackageMapper = &PackageMapperImpl{
-		MapperImpl{
+		ResourceMapperImpl{
 			schema: PackageSchema,
-		},
-	}
+			v3Identity: func(d *schema.ResourceData) (interface{}, diag.Diagnostics) {
+				rv := masherytypes.PackageIdentifier{
+					PackageId: d.Id(),
+				}
 
-	PackageMapper.identifier = func() interface{} {
-		return &PackageIdentifier{}
-	}
-	PackageMapper.upsertFunc = func(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
-		return PackageMapper.UpsertableTyped(d)
-	}
-	PackageMapper.persistFunc = func(ctx context.Context, rv interface{}, d *schema.ResourceData) diag.Diagnostics {
-		return PackageMapper.PersistTyped(ctx, rv.(*masherytypes.MasheryPackage), d)
+				rvd := diag.Diagnostics{}
+				if len(rv.PackageId) == 0 {
+					rvd = append(rvd, PackageMapper.lackingIdentificationDiagnostic("id"))
+				}
+				return rv, rvd
+			},
+			upsertFunc: func(d *schema.ResourceData) (Upsertable, V3ObjectIdentifier, diag.Diagnostics) {
+				return PackageMapper.UpsertableTyped(d)
+			},
+			persistFunc: func(rv interface{}, d *schema.ResourceData) diag.Diagnostics {
+				ptr := rv.(*masherytypes.Package)
+				return PackageMapper.PersistTyped(*ptr, d)
+			},
+		},
 	}
 }

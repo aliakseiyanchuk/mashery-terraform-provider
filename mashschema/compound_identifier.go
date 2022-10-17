@@ -53,21 +53,11 @@ func CompoundId(identStruct interface{}) string {
 }
 
 func CompoundIdFrom(identStruct interface{}, id string) bool {
-	_ = json.Unmarshal([]byte(id), identStruct)
-	//arr := strings.Split(IdWithoutComment(id), CompoundIdSeparator)
-	//
-	//enumerateStringFields(identStruct, func(field reflect.StructField, val string) *string {
-	//	if len(arr) > 0 {
-	//		rv := arr[0]
-	//		arr = arr[1:]
-	//
-	//		return &rv
-	//	} else {
-	//		return nil
-	//	}
-	//})
-
-	return IsIdentified(identStruct)
+	if err := json.Unmarshal([]byte(id), identStruct); err != nil {
+		return false
+	} else {
+		return IsIdentified(identStruct)
+	}
 }
 
 func IsIdentified(identStruct interface{}) bool {

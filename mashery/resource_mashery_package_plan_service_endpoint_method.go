@@ -2,7 +2,6 @@ package mashery
 
 import (
 	"context"
-	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -20,43 +19,23 @@ func resourceMasheryPlanMethod() *schema.Resource {
 }
 
 func CreatePlanMethod(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	peIdent, svcMethIdent, filterIdent, dgs := mashschema.PackagePlanServiceEndpointMethodMapper.GetIdentifiers(d)
-
-	if len(dgs) > 0 {
-		return dgs
-	}
-
+	mapper := mashschema.PackagePlanServiceEndpointMethodMapper
 	v3cl := m.(v3client.Client)
 
-	mashMeth := masherytypes.MasheryMethod{
-		AddressableV3Object: masherytypes.AddressableV3Object{
-			Id: svcMethIdent.MethodId,
-		},
+	methIdent, _, dg := mapper.UpsertableTyped(d)
+	if len(dg) > 0 {
+		return dg
 	}
 
-	if meth, err := v3cl.CreatePackagePlanMethod(ctx, *peIdent, mashMeth); err != nil {
+	if _, err := v3cl.CreatePackagePlanMethod(ctx, methIdent); err != nil {
 		return diag.FromErr(err)
 	} else {
-		mashschema.PackagePlanServiceEndpointMethodMapper.SetIdentifier(peIdent, meth, d)
+		d.SetId(mashschema.CompoundId(&methIdent))
 
-		if filterIdent != nil {
-			v3Meth := masherytypes.MasheryPlanServiceEndpointMethod{
-				MasheryPlanServiceEndpoint: masherytypes.MasheryPlanServiceEndpoint{
-					MasheryPlanService: masherytypes.MasheryPlanService{
-						PackageId: peIdent.PackageId,
-						PlanId:    peIdent.PlanId,
-						ServiceId: peIdent.ServiceId,
-					},
-					EndpointId: peIdent.EndpointId,
-				},
-				MethodId: meth.Id,
-			}
+		if mapper.HasFilter(d) {
+			filterIdent, _ := mapper.GetFilterIdentity(d) // TODO: handle the diagnostics earlier
 
-			filterRef := masherytypes.MasheryServiceMethodFilter{
-				FilterId: filterIdent.FilterId,
-			}
-
-			if _, err := v3cl.CreatePackagePlanMethodFilter(ctx, v3Meth, filterRef); err != nil {
+			if _, err := v3cl.CreatePackagePlanMethodFilter(ctx, filterIdent); err != nil {
 				return diag.FromErr(err)
 			}
 		}
@@ -66,15 +45,20 @@ func CreatePlanMethod(ctx context.Context, d *schema.ResourceData, m interface{}
 }
 
 func UpdatePlanMethod(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	mapper := mashschema.PackagePlanServiceEndpointMethodMapper
+
+	v3Id, dgs := mapper.V3Identity(d)
+	if len(dgs) > 0 {
+		return dgs
+	}
+
 	v3cl := m.(v3client.Client)
 
-	if mashschema.PackagePlanServiceEndpointMethodMapper.HasFilterChange(d) {
-		v3Id, dgs := mashschema.PackagePlanServiceEndpointMethodMapper.GetIdentifier(d)
+	if mapper.HasFilterChange(d) {
 		if len(dgs) > 0 {
 			return dgs
 		}
-
-		_, after := mashschema.PackagePlanServiceEndpointMethodMapper.GetFilterChange(d)
+		_, after := mapper.GetFilterChange(d)
 
 		if !mashschema.IsIdentified(after) {
 			if err := v3cl.DeletePackagePlanMethodFilter(ctx, v3Id); err != nil {
@@ -82,18 +66,9 @@ func UpdatePlanMethod(ctx context.Context, d *schema.ResourceData, m interface{}
 			}
 		} else {
 
-			filter := masherytypes.MasheryServiceMethodFilter{
-				MasheryServiceMethod: masherytypes.MasheryServiceMethod{
-					MasheryServiceEndpoint: masherytypes.MasheryServiceEndpoint{
-						ServiceId:  after.ServiceId,
-						EndpointId: after.EndpointId,
-					},
-					MethodId: after.MethodId,
-				},
-				FilterId: after.FilterId,
-			}
+			filterIdent, _ := mapper.GetFilterIdentity(d)
 
-			if _, err := v3cl.CreatePackagePlanMethodFilter(ctx, v3Id, filter); err != nil {
+			if _, err := v3cl.CreatePackagePlanMethodFilter(ctx, filterIdent); err != nil {
 				return diag.FromErr(err)
 			}
 		}
@@ -105,7 +80,8 @@ func UpdatePlanMethod(ctx context.Context, d *schema.ResourceData, m interface{}
 }
 
 func ReadPlanMethod(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	v3Id, dgs := mashschema.PackagePlanServiceEndpointMethodMapper.GetIdentifier(d)
+	mapper := mashschema.PackagePlanServiceEndpointMethodMapper
+	v3Id, dgs := mapper.V3Identity(d)
 	if len(dgs) > 0 {
 		return dgs
 	}
@@ -125,7 +101,7 @@ func ReadPlanMethod(ctx context.Context, d *schema.ResourceData, m interface{}) 
 			if filter == nil {
 				mashschema.PackagePlanServiceEndpointMethodMapper.ClearFilter(d)
 			} else {
-				mashschema.PackagePlanServiceEndpointMethodMapper.SetServiceFilterIdent(&v3Id, filter, d)
+				mashschema.PackagePlanServiceEndpointMethodMapper.SetServiceFilterIdent(filter, d)
 			}
 		}
 
@@ -134,7 +110,8 @@ func ReadPlanMethod(ctx context.Context, d *schema.ResourceData, m interface{}) 
 }
 
 func DeletePlanMethod(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	v3Id, dgs := mashschema.PackagePlanServiceEndpointMethodMapper.GetIdentifier(d)
+	mapper := mashschema.PackagePlanServiceEndpointMethodMapper
+	v3Id, dgs := mapper.V3Identity(d)
 	if len(dgs) > 0 {
 		return dgs
 	}

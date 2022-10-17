@@ -1,7 +1,6 @@
 package mashschema
 
 import (
-	"context"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -15,63 +14,51 @@ const (
 	ServiceEndpointMethodRef            = "method_id" // Shared, to be moved
 )
 
-type ServiceEndpointMethodIdentifier struct {
-	ServiceEndpointIdentifier
-	MethodId string
-}
-
-func (semi *ServiceEndpointMethodIdentifier) Self() interface{} {
-	return semi
-}
-
 var ServiceEndpointMethodMapper *ServiceEndpointMethodMapperImpl
 
 type ServiceEndpointMethodMapperImpl struct {
-	MapperImpl
+	ResourceMapperImpl
 }
 
-func (semm *ServiceEndpointMethodMapperImpl) CreateIdentifierTyped() *ServiceEndpointMethodIdentifier {
-	return &ServiceEndpointMethodIdentifier{}
-}
+func (semm *ServiceEndpointMethodMapperImpl) UpsertableTyped(d *schema.ResourceData) (masherytypes.ServiceEndpointMethod, masherytypes.ServiceEndpointIdentifier, diag.Diagnostics) {
+	rvd := diag.Diagnostics{}
+	ctxIdent := masherytypes.ServiceEndpointIdentifier{}
 
-func (semm *ServiceEndpointMethodMapperImpl) CreateIdentifier(d *schema.ResourceData) *ServiceEndpointMethodIdentifier {
-	rv := semm.CreateIdentifierTyped()
-	CompoundIdFrom(rv, d.Id())
-
-	return rv
-}
-
-func (semm *ServiceEndpointMethodMapperImpl) EndpointIdentifier(d *schema.ResourceData) (*ServiceEndpointIdentifier, diag.Diagnostics) {
-	rv := &ServiceEndpointIdentifier{}
-	CompoundIdFrom(rv, ExtractString(d, MashEndpointId, ""))
-
-	if !IsIdentified(rv) {
-		return rv, diag.Diagnostics{diag.Diagnostic{
+	if !CompoundIdFrom(&ctxIdent, ExtractString(d, MashEndpointId, "")) {
+		rvd = append(rvd, diag.Diagnostic{
 			Severity:      diag.Error,
-			Summary:       "Incomplete identifier",
-			Detail:        "Endpoint identifier supplies incomplete data, or is malformed",
+			Summary:       "endpoint v3 identitty is not complete",
+			Detail:        "Endpoint v3Identity supplies incomplete data, or is malformed",
 			AttributePath: cty.GetAttrPath(MashEndpointId),
-		}}
-	} else {
-		return rv, nil
+		})
 	}
-}
 
-func (semm *ServiceEndpointMethodMapperImpl) UpsertableTyped(d *schema.ResourceData) (*masherytypes.MasheryMethod, diag.Diagnostics) {
-	ident := ServiceEndpointMethodIdentifier{}
-	CompoundIdFrom(&ident, d.Id())
+	ident := masherytypes.ServiceEndpointMethodIdentifier{}
+	primaryIdentFull := CompoundIdFrom(&ident, d.Id())
 
-	return &masherytypes.MasheryMethod{
-		AddressableV3Object: masherytypes.AddressableV3Object{
-			Id:   ident.MethodId,
-			Name: ExtractString(d, MashObjName, ""),
+	parentSelector := func() masherytypes.ServiceEndpointIdentifier {
+		if primaryIdentFull {
+			return ident.ServiceEndpointIdentifier
+		} else {
+			return ctxIdent
+		}
+	}
+
+	return masherytypes.ServiceEndpointMethod{
+		BaseMethod: masherytypes.BaseMethod{
+			AddressableV3Object: masherytypes.AddressableV3Object{
+				Id:   ident.MethodId,
+				Name: ExtractString(d, MashObjName, ""),
+			},
+			SampleJsonResponse: ExtractString(d, MashServiceEndpointMethodSampleJson, ""),
+			SampleXmlResponse:  ExtractString(d, MashServiceEndpointMethodSampleXml, ""),
 		},
-		SampleJsonResponse: ExtractString(d, MashServiceEndpointMethodSampleJson, ""),
-		SampleXmlResponse:  ExtractString(d, MashServiceEndpointMethodSampleXml, ""),
-	}, nil
+
+		ParentEndpointId: parentSelector(),
+	}, ctxIdent, nil
 }
 
-func (semm *ServiceEndpointMethodMapperImpl) PersistTyped(ctx context.Context, inp *masherytypes.MasheryMethod, d *schema.ResourceData) diag.Diagnostics {
+func (semm *ServiceEndpointMethodMapperImpl) PersistTyped(inp masherytypes.ServiceEndpointMethod, d *schema.ResourceData) diag.Diagnostics {
 	data := map[string]interface{}{
 		MashServiceEndpointMethodId:         inp.Id,
 		MashObjCreated:                      inp.Created.ToString(),
@@ -80,11 +67,11 @@ func (semm *ServiceEndpointMethodMapperImpl) PersistTyped(ctx context.Context, i
 		MashServiceEndpointMethodSampleXml:  nullForEmptyString(inp.SampleXmlResponse),
 	}
 
-	return semm.SetResourceFields(ctx, data, d)
+	return semm.persistMap(inp.Identifier(), data, d)
 }
 
 func initEndpointMethodSchemaBoilerplate() {
-	addComputedString(&ServiceEndpointMethodMapper.schema, ServiceEndpointMethodRef, "V3 identifier of this method")
+	addComputedString(&ServiceEndpointMethodMapper.schema, ServiceEndpointMethodRef, "V3 v3Identity of this method")
 	addComputedString(&ServiceEndpointMethodMapper.schema, MashObjCreated, "Date/time the object was created")
 	addComputedString(&ServiceEndpointMethodMapper.schema, MashObjUpdated, "Date/time the object was updated")
 
@@ -94,7 +81,7 @@ func initEndpointMethodSchemaBoilerplate() {
 
 func init() {
 	ServiceEndpointMethodMapper = &ServiceEndpointMethodMapperImpl{
-		MapperImpl: MapperImpl{
+		ResourceMapperImpl: ResourceMapperImpl{
 			schema: map[string]*schema.Schema{
 				MashEndpointId: {
 					Type:        schema.TypeString,
@@ -109,20 +96,31 @@ func init() {
 					Description: "Method name, as it would be detected by Mashery",
 				},
 			},
+
+			v3Identity: func(d *schema.ResourceData) (interface{}, diag.Diagnostics) {
+				rv := masherytypes.ServiceEndpointMethodIdentifier{}
+				rvd := diag.Diagnostics{}
+
+				if !CompoundIdFrom(&rv, d.Id()) {
+					rvd = append(rvd, diag.Diagnostic{
+						Severity: diag.Error,
+						Summary:  "endpoint method's identity is incomplete",
+					})
+				}
+
+				return rv, rvd
+			},
+
+			upsertFunc: func(d *schema.ResourceData) (Upsertable, V3ObjectIdentifier, diag.Diagnostics) {
+				return ServiceEndpointMethodMapper.Upsertable(d)
+			},
+
+			persistFunc: func(rv interface{}, d *schema.ResourceData) diag.Diagnostics {
+				ptr := rv.(*masherytypes.ServiceEndpointMethod)
+				return ServiceEndpointMethodMapper.PersistTyped(*ptr, d)
+			},
 		},
 	}
 
 	initEndpointMethodSchemaBoilerplate()
-
-	ServiceEndpointMethodMapper.identifier = func() interface{} {
-		return &ServiceEndpointMethodIdentifier{}
-	}
-
-	ServiceEndpointMethodMapper.persistFunc = func(ctx context.Context, rv interface{}, d *schema.ResourceData) diag.Diagnostics {
-		return ServiceEndpointMethodMapper.PersistTyped(ctx, rv.(*masherytypes.MasheryMethod), d)
-	}
-
-	ServiceEndpointMethodMapper.upsertFunc = func(_ context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
-		return ServiceEndpointMethodMapper.UpsertableTyped(d)
-	}
 }

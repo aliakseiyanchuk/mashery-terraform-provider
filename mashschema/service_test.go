@@ -1,7 +1,6 @@
 package mashschema_test
 
 import (
-	"context"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
@@ -17,13 +16,13 @@ import (
 //  version = "0.0.1a"
 // }
 func TestCreateUpsertFromBasicService(t *testing.T) {
-	d := mashschema.ServiceMapper.NewResourceData()
+	d := mashschema.ServiceMapper.TestResourceData()
 	d.SetId("serviceID")
 	d.Set("name_prefix", "lspwd2.github")
 	d.Set("description", "service-desc")
 	d.Set("version", "0.0.1a")
 
-	upsert, dg := mashschema.ServiceMapper.UpsertableTyped(d)
+	upsert, _, dg := mashschema.ServiceMapper.UpsertableTyped(d)
 	LogErrorDiagnostics(t, "get service upsertable", &dg)
 
 	assert.True(t, len(upsert.Name) > 0)
@@ -42,14 +41,14 @@ func TestCreateUpsertFromBasicService(t *testing.T) {
 //  version = "0.0.1a"
 // }
 func TestCreateUpsertFromBasicServiceWithCache(t *testing.T) {
-	d := mashschema.ServiceMapper.NewResourceData()
+	d := mashschema.ServiceMapper.TestResourceData()
 	d.SetId("serviceID")
 	d.Set("name_prefix", "lspwd2.github")
 	d.Set("description", "service-desc")
 	d.Set("cache_ttl", 30)
 	d.Set("version", "0.0.1a")
 
-	upsert, dg := mashschema.ServiceMapper.UpsertableTyped(d)
+	upsert, _, dg := mashschema.ServiceMapper.UpsertableTyped(d)
 	LogErrorDiagnostics(t, "get service upsertable", &dg)
 
 	assert.True(t, len(upsert.Name) > 0)
@@ -74,7 +73,7 @@ func TestCreateUpsertFromBasicServiceWithCache(t *testing.T) {
 //  version = "0.0.1a"
 // }
 func TestCreateUpsertFromBasicOauth(t *testing.T) {
-	d := mashschema.ServiceMapper.NewResourceData()
+	d := mashschema.ServiceMapper.TestResourceData()
 	d.SetId("serviceID")
 	d.Set("name_prefix", "lspwd2.github")
 	d.Set("description", "service-desc")
@@ -92,7 +91,7 @@ func TestCreateUpsertFromBasicOauth(t *testing.T) {
 	setErr := d.Set("oauth", oauthSet)
 	assert.Nil(t, setErr)
 
-	upsert, dg := mashschema.ServiceMapper.UpsertableTyped(d)
+	upsert, _, dg := mashschema.ServiceMapper.UpsertableTyped(d)
 	LogErrorDiagnostics(t, "get service upsertable", &dg)
 
 	assert.True(t, len(upsert.Name) > 0)
@@ -110,20 +109,20 @@ func TestV3ServiceRolesToTerraform(t *testing.T) {
 	now := masherytypes.MasheryJSONTime(time.Now())
 	inp := []masherytypes.MasheryRolePermission{
 		{
-			MasheryRole: masherytypes.MasheryRole{
+			Role: masherytypes.Role{
 				AddressableV3Object: masherytypes.AddressableV3Object{Id: "r1", Name: "n1", Created: &now, Updated: &now},
 			},
 			Action: "read",
 		},
 		{
-			MasheryRole: masherytypes.MasheryRole{
+			Role: masherytypes.Role{
 				AddressableV3Object: masherytypes.AddressableV3Object{Id: "r2", Name: "n2"},
 			},
 			Action: "read",
 		},
 	}
 
-	d := mashschema.ServiceMapper.NewResourceData()
+	d := mashschema.ServiceMapper.TestResourceData()
 	diags := mashschema.ServiceMapper.PersisRoles(inp, d)
 
 	assert.Equal(t, 0, len(diags))
@@ -146,12 +145,12 @@ func indexOfServiceRolePermission(inp *[]masherytypes.MasheryRolePermission, id,
 }
 
 func TestV3ServiceToTerraform(t *testing.T) {
-	d := mashschema.ServiceMapper.NewResourceData()
+	d := mashschema.ServiceMapper.TestResourceData()
 
 	now := masherytypes.MasheryJSONTime(time.Now())
 	var limitOverall int64 = 10
 
-	cache := masherytypes.MasheryServiceCache{CacheTtl: 30}
+	cache := masherytypes.ServiceCache{CacheTtl: 30}
 	secProfile := masherytypes.MasherySecurityProfile{OAuth: &masherytypes.MasheryOAuth{
 		AccessTokenTtlEnabled:       true,
 		AccessTokenTtl:              3600,
@@ -173,7 +172,7 @@ func TestV3ServiceToTerraform(t *testing.T) {
 		SecureTokensEnabled:         true,
 	}}
 
-	v3Obj := masherytypes.MasheryService{
+	v3Obj := masherytypes.Service{
 		AddressableV3Object: masherytypes.AddressableV3Object{
 			Id:      "id",
 			Name:    "name",
@@ -196,10 +195,10 @@ func TestV3ServiceToTerraform(t *testing.T) {
 	}
 
 	d.SetId("id")
-	diags := mashschema.ServiceMapper.SetState(context.TODO(), &v3Obj, d)
+	diags := mashschema.ServiceMapper.SetState(&v3Obj, d)
 	assert.Equal(t, 0, len(diags))
 
-	reverse, _ := mashschema.ServiceMapper.UpsertableTyped(d)
+	reverse, _, _ := mashschema.ServiceMapper.UpsertableTyped(d)
 
 	assert.Equal(t, v3Obj.Name, reverse.Name)
 	assert.Equal(t, v3Obj.Description, reverse.Description)

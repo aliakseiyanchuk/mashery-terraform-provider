@@ -1,7 +1,6 @@
 package mashschema
 
 import (
-	"context"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -35,19 +34,10 @@ const (
 	MashPlanEmailTemplateSetId            = "email_template_set"
 )
 
-type PlanIdentifier struct {
-	PackageIdentifier
-	PlanId string
-}
-
-func (pi *PlanIdentifier) Self() interface{} {
-	return pi
-}
-
 var PlanMapper *PlanMapperImpl
 
 type PlanMapperImpl struct {
-	MapperImpl
+	ResourceMapperImpl
 }
 
 var rateLimitPeriodEnum = []string{MashDurationMinute, MashDurationHourly, MashDurationDay, MashDurationMonth}
@@ -184,67 +174,59 @@ var PlanSchema = map[string]*schema.Schema{
 	},
 }
 
-func (pmi *PlanMapperImpl) SetIdentifier(rv *masherytypes.MasheryPlan, d *schema.ResourceData) {
-	ident := PlanIdentifier{
-		PackageIdentifier: PackageIdentifier{
-			PackageId: pmi.GetExplicitPackageIdentifier(d),
-		},
-		PlanId: rv.Id,
+func (pmi *PlanMapperImpl) UpsertableTyped(d *schema.ResourceData) (masherytypes.Plan, masherytypes.PackageIdentifier, diag.Diagnostics) {
+	rvd := diag.Diagnostics{}
+
+	// Recover the package identifier
+	plnIdent := masherytypes.PackagePlanIdentifier{}
+	planIndentCompete := CompoundIdFrom(&plnIdent, d.Id())
+
+	// Recover the package identifier
+	pkIdent := masherytypes.PackageIdentifier{}
+	if !CompoundIdFrom(&pkIdent, ExtractString(d, MashPackagekId, "")) {
+		rvd = append(rvd, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "incomplete package identifier",
+		})
 	}
-	d.SetId(CompoundId(&ident))
-}
 
-func (pmi *PlanMapperImpl) GetIdentifier(d *schema.ResourceData) *PlanIdentifier {
-	rv := &PlanIdentifier{}
-	CompoundIdFrom(rv, d.Id())
-
-	return rv
-}
-
-func (pmi *PlanMapperImpl) GetPackageIdentifier(ident *PlanIdentifier, d *schema.ResourceData) string {
-	if len(ident.PackageId) > 0 {
-		return ident.PackageId
-	} else {
-		return pmi.GetExplicitPackageIdentifier(d)
+	parentSelector := func() masherytypes.PackageIdentifier {
+		if planIndentCompete {
+			return plnIdent.PackageIdentifier
+		} else {
+			return pkIdent
+		}
 	}
-}
 
-func (pmi *PlanMapperImpl) GetExplicitPackageIdentifier(d *schema.ResourceData) string {
-	return ExtractString(d, MashPackagekId, "")
-}
-
-func (pmi *PlanMapperImpl) UpsertableTyped(d *schema.ResourceData) (masherytypes.MasheryPlan, diag.Diagnostics) {
-	plnIdent := pmi.GetIdentifier(d)
-
-	rv := masherytypes.MasheryPlan{
+	rv := masherytypes.Plan{
 		AddressableV3Object: masherytypes.AddressableV3Object{
 			Id:   plnIdent.PlanId,
 			Name: ExtractString(d, MashPlanName, "Default"),
 		},
 		Description:                       ExtractString(d, MashPlanDescription, ""),
 		Eav:                               extractEAVPointer(d, MashPlanEAV),
-		SelfServiceKeyProvisioningEnabled: extractBool(d, MashPlanSelfServiceKeyProvisioningEnabled, false),
-		AdminKeyProvisioningEnabled:       extractBool(d, MashPlanAdminKeyProvisioningEnabled, false),
+		SelfServiceKeyProvisioningEnabled: ExtractBool(d, MashPlanSelfServiceKeyProvisioningEnabled, false),
+		AdminKeyProvisioningEnabled:       ExtractBool(d, MashPlanAdminKeyProvisioningEnabled, false),
 		Notes:                             ExtractString(d, MashPlanNotes, ""),
 		MaxNumKeysAllowed:                 extractInt(d, MashPlanMaxNumKeysAllowed, 2),
 		NumKeysBeforeReview:               extractInt(d, MashPlanNumKeysBeforeReview, 1),
 		QpsLimitCeiling:                   extractInt64Pointer(d, MashPlanQpsLimitCeiling, 0),
-		QpsLimitExempt:                    extractBool(d, MashPlanQpsLimitExempt, false),
-		QpsLimitKeyOverrideAllowed:        extractBool(d, MashPlanQpsLimitKeyOverrideAllowed, false),
+		QpsLimitExempt:                    ExtractBool(d, MashPlanQpsLimitExempt, false),
+		QpsLimitKeyOverrideAllowed:        ExtractBool(d, MashPlanQpsLimitKeyOverrideAllowed, false),
 		RateLimitCeiling:                  extractInt64Pointer(d, MashPlanRateLimitCeiling, 0),
-		RateLimitExempt:                   extractBool(d, MashPlanRateLimitExempt, false),
-		RateLimitKeyOverrideAllowed:       extractBool(d, MashPlanRateLimitKeyOverrideAllowed, false),
+		RateLimitExempt:                   ExtractBool(d, MashPlanRateLimitExempt, false),
+		RateLimitKeyOverrideAllowed:       ExtractBool(d, MashPlanRateLimitKeyOverrideAllowed, false),
 		RateLimitPeriod:                   ExtractString(d, MashPlanRateLimitPeriod, ""),
-		ResponseFilterOverrideAllowed:     extractBool(d, MashPlanResponseFilterOverrideAllowed, false),
+		ResponseFilterOverrideAllowed:     ExtractBool(d, MashPlanResponseFilterOverrideAllowed, false),
 		EmailTemplateSetId:                ExtractString(d, MashPlanEmailTemplateSetId, ""),
 
-		ParentPackageId: pmi.GetPackageIdentifier(plnIdent, d),
+		ParentPackageId: parentSelector(),
 	}
 
-	return rv, nil
+	return rv, pkIdent, rvd
 }
 
-func (pmi *PlanMapperImpl) PersistTyped(ctx context.Context, pln *masherytypes.MasheryPlan, d *schema.ResourceData) diag.Diagnostics {
+func (pmi *PlanMapperImpl) PersistTyped(pln masherytypes.Plan, d *schema.ResourceData) diag.Diagnostics {
 	data := map[string]interface{}{
 		MashPlanId:          pln.Id,
 		MashPlanCreated:     pln.Created.ToString(),
@@ -274,23 +256,31 @@ func (pmi *PlanMapperImpl) PersistTyped(ctx context.Context, pln *masherytypes.M
 		MashPlanEmailTemplateSetId:            nullForEmptyString(pln.EmailTemplateSetId),
 	}
 
-	return pmi.SetResourceFields(ctx, data, d)
+	return pmi.persistMap(pln.Identifier(), data, d)
 }
 
 func init() {
 	PlanMapper = &PlanMapperImpl{
-		MapperImpl{
+		ResourceMapperImpl{
 			schema: PlanSchema,
+			v3Identity: func(d *schema.ResourceData) (interface{}, diag.Diagnostics) {
+				plnIdent := masherytypes.PackagePlanIdentifier{}
+				if CompoundIdFrom(&plnIdent, d.Id()) {
+					return plnIdent, nil
+				} else {
+					return nil, diag.Diagnostics{diag.Diagnostic{
+						Severity: diag.Error,
+						Summary:  "plan identifier is incomplete",
+					}}
+				}
+			},
+			upsertFunc: func(d *schema.ResourceData) (Upsertable, V3ObjectIdentifier, diag.Diagnostics) {
+				return PlanMapper.UpsertableTyped(d)
+			},
+			persistFunc: func(rv interface{}, d *schema.ResourceData) diag.Diagnostics {
+				ptr := rv.(*masherytypes.Plan)
+				return PlanMapper.PersistTyped(*ptr, d)
+			},
 		},
-	}
-
-	PlanMapper.identifier = func() interface{} {
-		return &PlanIdentifier{}
-	}
-	PlanMapper.upsertFunc = func(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
-		return PlanMapper.UpsertableTyped(d)
-	}
-	PlanMapper.persistFunc = func(ctx context.Context, rv interface{}, d *schema.ResourceData) diag.Diagnostics {
-		return PlanMapper.PersistTyped(ctx, rv.(*masherytypes.MasheryPlan), d)
 	}
 }

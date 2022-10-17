@@ -1,7 +1,6 @@
 package mashschema
 
 import (
-	"context"
 	"fmt"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/go-cty/cty"
@@ -89,20 +88,10 @@ const (
 
 // Terraform specification for the Mashery endpoint.
 
-type ServiceEndpointIdentifier struct {
-	ServiceIdentifier
-
-	EndpointId string
-}
-
-func (ei *ServiceEndpointIdentifier) Self() interface{} {
-	return ei
-}
-
 var ServiceEndpointMapper *ServiceEndpointMapperImpl
 
 type ServiceEndpointMapperImpl struct {
-	MapperImpl
+	ResourceMapperImpl
 }
 
 var EndpointProcessorSchema = map[string]*schema.Schema{
@@ -170,7 +159,7 @@ var EndpointSchema = map[string]*schema.Schema{
 	MashEndpointApiMethodDetectionKey: {
 		Type:        schema.TypeString,
 		Optional:    true,
-		Description: "Method identifier, aka the string that uniquely identifies the incoming method to the Traffic Manager. I",
+		Description: "Method v3Identity, aka the string that uniquely identifies the incoming method to the Traffic Manager. I",
 	},
 	MashEndpointApiMethodDetectionLocations: {
 		Type:        schema.TypeSet,
@@ -531,18 +520,6 @@ func (sem *ServiceEndpointMapperImpl) corsUpsertable(d *schema.ResourceData) *ma
 	}
 }
 
-func (sem *ServiceEndpointMapperImpl) schemaMapToKV(fl map[string]interface{}) []string {
-	rv := make([]string, len(fl))
-
-	idx := 0
-	for k, v := range fl {
-		rv[idx] = fmt.Sprintf("%s:%s", k, v)
-		idx++
-	}
-
-	return rv
-}
-
 func (sem *ServiceEndpointMapperImpl) processorUpsertable(d *schema.ResourceData) *masherytypes.Processor {
 	if procSet, exists := d.GetOk(MashEndpointProcessor); exists {
 		tfProcMap := unwrapStructFromTerraformSet(procSet)
@@ -559,14 +536,27 @@ func (sem *ServiceEndpointMapperImpl) processorUpsertable(d *schema.ResourceData
 	}
 }
 
+func (sem *ServiceEndpointMapperImpl) schemaArrayToString(in []interface{}) []string {
+	rv := make([]string, len(in))
+	for idx, vRaw := range in {
+		if v, ok := vRaw.(string); ok {
+			rv[idx] = v
+		} else {
+			rv[idx] = fmt.Sprintf("%s", vRaw)
+		}
+	}
+
+	return rv
+}
+
 func (sem *ServiceEndpointMapperImpl) processorUpsertableFromMap(tfProcMap map[string]interface{}) masherytypes.Processor {
 	// TODO: Unsafe lookup from map
 	// Maybe this conversion won't event work.
 	rv := masherytypes.Processor{
 		PreProcessEnabled:  tfProcMap[MashEndpointProcessorPreProcessEnabled].(bool),
 		PostProcessEnabled: tfProcMap[MashEndpointProcessorPostProcessEnabled].(bool),
-		PreInputs:          sem.schemaMapToKV(tfProcMap[MashEndpointProcessorPreConfig].(map[string]interface{})),
-		PostInputs:         sem.schemaMapToKV(tfProcMap[MashEndpointProcessorPostConfig].(map[string]interface{})),
+		PreInputs:          sem.schemaArrayToString(tfProcMap[MashEndpointProcessorPreConfig].([]interface{})),
+		PostInputs:         sem.schemaArrayToString(tfProcMap[MashEndpointProcessorPostConfig].([]interface{})),
 		Adapter:            tfProcMap[MashEndpointProcessorAdapter].(string),
 	}
 	return rv
@@ -602,17 +592,27 @@ func (sem *ServiceEndpointMapperImpl) systemDomainAuthenticationUpsertable(d *sc
 }
 
 // UpsertableTyped Create V3 Mashery Endpoint data structure from the resource data
-func (sem *ServiceEndpointMapperImpl) UpsertableTyped(d *schema.ResourceData) masherytypes.MasheryEndpoint {
+func (sem *ServiceEndpointMapperImpl) UpsertableTyped(d *schema.ResourceData) (masherytypes.Endpoint, masherytypes.ServiceIdentifier, diag.Diagnostics) {
 
-	enpdIdent := ServiceEndpointIdentifier{}
+	rvd := diag.Diagnostics{}
+
+	enpdIdent := masherytypes.ServiceEndpointIdentifier{}
 	CompoundIdFrom(&enpdIdent, d.Id())
 
-	rv := masherytypes.MasheryEndpoint{
+	serviceIdent := masherytypes.ServiceIdentifier{}
+	if !CompoundIdFrom(&serviceIdent, ExtractString(d, MashSvcId, "")) {
+		rvd = append(rvd, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "service context is incomplete",
+		})
+	}
+
+	rv := masherytypes.Endpoint{
 		AddressableV3Object: masherytypes.AddressableV3Object{
 			Id:   enpdIdent.EndpointId,
 			Name: ExtractString(d, MashEndpointName, resource.UniqueId()),
 		},
-		AllowMissingApiKey:                         extractBool(d, MashEndpointAllowMissingApiKey, false),
+		AllowMissingApiKey:                         ExtractBool(d, MashEndpointAllowMissingApiKey, false),
 		ApiKeyValueLocationKey:                     ExtractString(d, MashEndpointApiKeyValueLocationKey, "api_key"),
 		ApiKeyValueLocations:                       ExtractStringArray(d, MashEndpointApiKeyValueLocations, &impliedKeyValueLocations),
 		ApiMethodDetectionKey:                      ExtractString(d, MashEndpointApiMethodDetectionKey, ""),
@@ -620,17 +620,17 @@ func (sem *ServiceEndpointMapperImpl) UpsertableTyped(d *schema.ResourceData) ma
 		Cache:                                      sem.cacheUpsertable(d),
 		ConnectionTimeoutForSystemDomainRequest:    extractInt(d, MashEndpointConnectionTimeoutForSystemDomainRequest, 10),
 		ConnectionTimeoutForSystemDomainResponse:   extractInt(d, MashEndpointConnectionTimeoutForSystemDomainResponse, 60),
-		CookiesDuringHttpRedirectsEnabled:          extractBool(d, MashEndpointCookiesDuringHttpRedirectsEnabled, false),
+		CookiesDuringHttpRedirectsEnabled:          ExtractBool(d, MashEndpointCookiesDuringHttpRedirectsEnabled, false),
 		Cors:                                       sem.corsUpsertable(d),
 		CustomRequestAuthenticationAdapter:         ExtractStringPointer(d, MashEndpointCustomRequestAuthenticationAdapter),
-		DropApiKeyFromIncomingCall:                 extractBool(d, MashEndpointDropApiKeyFromIncomingCall, true),
-		ForceGzipOfBackendCall:                     extractBool(d, MashEndpointForceGzipOfBackendCall, false),
-		GzipPassthroughSupportEnabled:              extractBool(d, MashEndpointGzipPassthroughSupportEnabled, true),
+		DropApiKeyFromIncomingCall:                 ExtractBool(d, MashEndpointDropApiKeyFromIncomingCall, true),
+		ForceGzipOfBackendCall:                     ExtractBool(d, MashEndpointForceGzipOfBackendCall, false),
+		GzipPassthroughSupportEnabled:              ExtractBool(d, MashEndpointGzipPassthroughSupportEnabled, true),
 		HeadersToExcludeFromIncomingCall:           ExtractStringArray(d, MashEndpointHeadersToExcludeFromIncomingCall, &EmptyStringArray),
-		HighSecurity:                               extractBool(d, MashEndpointHighSecurity, false),
-		HostPassthroughIncludedInBackendCallHeader: extractBool(d, MashEndpointHostPassthroughIncludedInBackendCallHeader, true),
-		InboundSslRequired:                         extractBool(d, MashEndpointInboundSslRequired, true),
-		InboundMutualSslRequired:                   extractBool(d, MashEndpointInboundMutualSslRequired, true),
+		HighSecurity:                               ExtractBool(d, MashEndpointHighSecurity, false),
+		HostPassthroughIncludedInBackendCallHeader: ExtractBool(d, MashEndpointHostPassthroughIncludedInBackendCallHeader, true),
+		InboundSslRequired:                         ExtractBool(d, MashEndpointInboundSslRequired, true),
+		InboundMutualSslRequired:                   ExtractBool(d, MashEndpointInboundMutualSslRequired, true),
 		JsonpCallbackParameter:                     ExtractString(d, MashEndpointJsonpCallbackParameter, ""),
 		JsonpCallbackParameterValue:                ExtractString(d, MashEndpointJsonpCallbackParameterValue, ""),
 		ScheduledMaintenanceEvent:                  nil,
@@ -652,12 +652,14 @@ func (sem *ServiceEndpointMapperImpl) UpsertableTyped(d *schema.ResourceData) ma
 		SystemDomainAuthentication:                 sem.systemDomainAuthenticationUpsertable(d),
 		SystemDomains:                              sem.domainsArrayUpsertable(d, MashEndpointSystemDomains),
 		TrafficManagerDomain:                       ExtractString(d, MashEndpointTrafficManagerDomain, ""),
-		UseSystemDomainCredentials:                 extractBool(d, MashEndpointUseSystemDomainCredentials, false),
+		UseSystemDomainCredentials:                 ExtractBool(d, MashEndpointUseSystemDomainCredentials, false),
 		SystemDomainCredentialKey:                  ExtractStringPointer(d, MashEndpointSystemDomainCredentialKey),
 		SystemDomainCredentialSecret:               ExtractStringPointer(d, MashEndpointSystemDomainCredentialSecret),
+
+		ParentServiceId: serviceIdent,
 	}
 
-	return rv
+	return rv, serviceIdent, rvd
 }
 
 func (sem *ServiceEndpointMapperImpl) persistCache(cache *masherytypes.Cache) []interface{} {
@@ -720,17 +722,6 @@ func (sem *ServiceEndpointMapperImpl) persistDomains(d []masherytypes.Domain) []
 	}
 }
 
-func (sem *ServiceEndpointMapperImpl) CreateIdentifierTyped() *ServiceEndpointIdentifier {
-	return &ServiceEndpointIdentifier{}
-}
-
-func (sem *ServiceEndpointMapperImpl) GetIdentifier(d *schema.ResourceData) *ServiceEndpointIdentifier {
-	rv := &ServiceEndpointIdentifier{}
-	CompoundIdFrom(rv, d.Id())
-
-	return rv
-}
-
 func (sem *ServiceEndpointMapperImpl) persistAuthentication(d *masherytypes.SystemDomainAuthentication) []interface{} {
 	if d != nil {
 		return []interface{}{
@@ -746,7 +737,7 @@ func (sem *ServiceEndpointMapperImpl) persistAuthentication(d *masherytypes.Syst
 	}
 }
 
-func (sem *ServiceEndpointMapperImpl) PersistTyped(ctx context.Context, endpoint *masherytypes.MasheryEndpoint, d *schema.ResourceData) diag.Diagnostics {
+func (sem *ServiceEndpointMapperImpl) PersistTyped(endpoint masherytypes.Endpoint, d *schema.ResourceData) diag.Diagnostics {
 	data := map[string]interface{}{
 		MashEndpointId:                                         endpoint.Id,
 		MashEndpointAllowMissingApiKey:                         endpoint.AllowMissingApiKey,
@@ -794,28 +785,36 @@ func (sem *ServiceEndpointMapperImpl) PersistTyped(ctx context.Context, endpoint
 		MashEndpointSystemDomainCredentialSecret:               endpoint.SystemDomainCredentialSecret,
 	}
 
-	return sem.SetResourceFields(ctx, data, d)
+	return sem.persistMap(endpoint.Identifier(), data, d)
 }
 
 // init
 func init() {
 	ServiceEndpointMapper = &ServiceEndpointMapperImpl{
-		MapperImpl: MapperImpl{
-			schema: EndpointSchema,
+		ResourceMapperImpl: ResourceMapperImpl{
+			schema:       EndpointSchema,
+			v3ObjectName: "endpoint",
+			v3Identity: func(d *schema.ResourceData) (interface{}, diag.Diagnostics) {
+				rv := masherytypes.ServiceEndpointIdentifier{}
+				rvd := diag.Diagnostics{}
+
+				if !CompoundIdFrom(&rv, d.Id()) {
+					rvd = append(rvd, diag.Diagnostic{
+						Severity: diag.Error,
+						Summary:  "endpoint identifier is incomplete",
+					})
+				}
+
+				return rv, rvd
+			},
+
+			upsertFunc: func(d *schema.ResourceData) (Upsertable, V3ObjectIdentifier, diag.Diagnostics) {
+				return ServiceEndpointMapper.UpsertableTyped(d)
+			},
+			persistFunc: func(rv interface{}, d *schema.ResourceData) diag.Diagnostics {
+				ptr := rv.(*masherytypes.Endpoint)
+				return ServiceEndpointMapper.PersistTyped(*ptr, d)
+			},
 		},
 	}
-
-	ServiceEndpointMapper.identifier = func() interface{} {
-		return &ServiceEndpointIdentifier{}
-	}
-
-	ServiceEndpointMapper.upsertFunc = func(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
-		typed := ServiceEndpointMapper.UpsertableTyped(d)
-		return &typed, nil
-	}
-
-	ServiceEndpointMapper.persistFunc = func(ctx context.Context, rv interface{}, d *schema.ResourceData) diag.Diagnostics {
-		return ServiceEndpointMapper.PersistTyped(ctx, rv.(*masherytypes.MasheryEndpoint), d)
-	}
-
 }

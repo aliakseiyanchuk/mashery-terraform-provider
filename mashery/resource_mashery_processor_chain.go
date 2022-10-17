@@ -19,9 +19,6 @@ func resourceMasheryProcessorChain() *schema.Resource {
 }
 
 func ProcessorChainCreateUpdate(ctx context.Context, d *schema.ResourceData, _ interface{}) diag.Diagnostics {
-	proc := mashschema.ProcessorChainMapper.ComputeChain(d)
-	doLogJson("Computed processor chain", proc)
-
 	if len(d.Id()) == 0 {
 		d.SetId(resource.PrefixedUniqueId("processorChain"))
 		doLogf("Assigned ID to the resource")

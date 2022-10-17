@@ -1,7 +1,6 @@
 package mashschema
 
 import (
-	"context"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform/helper/hashcode"
@@ -12,20 +11,20 @@ const MashDomains = "domains"
 var DomainsMapper *DomainsMapperImpl
 
 type DomainsMapperImpl struct {
-	MapperImpl
+	DataSourceMapperImpl
 }
 
-func (dmi *DomainsMapperImpl) PersistTyped(ctx context.Context, domains []string, d *schema.ResourceData) diag.Diagnostics {
+func (dmi *DomainsMapperImpl) PersistTyped(domains []string, d *schema.ResourceData) diag.Diagnostics {
 	data := map[string]interface{}{
 		MashDomains: domains,
 	}
 
-	return dmi.SetResourceFields(ctx, data, d)
+	return SetResourceFields(data, d)
 }
 
 func init() {
 	DomainsMapper = &DomainsMapperImpl{
-		MapperImpl{
+		DataSourceMapperImpl{
 			schema: map[string]*schema.Schema{
 				MashDomains: {
 					Type:        schema.TypeSet,
@@ -39,10 +38,10 @@ func init() {
 					},
 				},
 			},
-		},
-	}
 
-	DomainsMapper.persistFunc = func(ctx context.Context, rv interface{}, d *schema.ResourceData) diag.Diagnostics {
-		return DomainsMapper.PersistTyped(ctx, rv.([]string), d)
+			persistMany: func(rv []interface{}, d *schema.ResourceData) diag.Diagnostics {
+				return DomainsMapper.PersistTyped(CoerceInterfaceArrayToStringArray(rv), d)
+			},
+		},
 	}
 }

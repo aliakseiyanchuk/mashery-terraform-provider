@@ -1,7 +1,6 @@
 package mashschema_test
 
 import (
-	"context"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"terraform-provider-mashery/mashschema"
 	"testing"
@@ -11,7 +10,7 @@ import (
 // BUG: not sending data on concurrent requests.
 
 func TestV3EndpointToResourceDataWithEmptyCache(t *testing.T) {
-	source := masherytypes.MasheryEndpoint{
+	source := masherytypes.Endpoint{
 		Cache: &masherytypes.Cache{
 			ClientSurrogateControlEnabled: false,
 			ContentCacheKeyHeaders:        []string{},
@@ -23,15 +22,15 @@ func TestV3EndpointToResourceDataWithEmptyCache(t *testing.T) {
 	}
 }
 
-func storeEndpointAndGet(endp *masherytypes.MasheryEndpoint, key string) (interface{}, bool) {
-	d := mashschema.ServiceEndpointMapper.NewResourceData()
-	mashschema.ServiceEndpointMapper.PersistTyped(context.TODO(), endp, d)
+func storeEndpointAndGet(endp *masherytypes.Endpoint, key string) (interface{}, bool) {
+	d := mashschema.ServiceEndpointMapper.TestResourceData()
+	mashschema.ServiceEndpointMapper.PersistTyped(*endp, d)
 
 	return d.GetOk(key)
 }
 
 func TestV3EndpointToResourceDataWithEmptyProcessor(t *testing.T) {
-	source := masherytypes.MasheryEndpoint{
+	source := masherytypes.Endpoint{
 		Processor: &masherytypes.Processor{
 			PreProcessEnabled:  false,
 			PostProcessEnabled: false,
@@ -58,7 +57,7 @@ func TestV3EndpointToResourceData(t *testing.T) {
 	sysCredsKey := "sysCredsKey"
 	sysCredsPass := "sysCredsPass"
 
-	source := masherytypes.MasheryEndpoint{
+	source := masherytypes.Endpoint{
 		AddressableV3Object: masherytypes.AddressableV3Object{
 			Id:      "endpointId",
 			Name:    "endpName",
@@ -130,10 +129,10 @@ func TestV3EndpointToResourceData(t *testing.T) {
 		SystemDomainCredentialSecret: &sysCredsPass,
 	}
 
-	d := mashschema.ServiceEndpointMapper.NewResourceData()
+	d := mashschema.ServiceEndpointMapper.TestResourceData()
 	d.SetId("serviceId::endpointId")
 
-	diags := mashschema.ServiceEndpointMapper.PersistTyped(context.TODO(), &source, d)
+	diags := mashschema.ServiceEndpointMapper.PersistTyped(source, d)
 	if len(diags) > 0 {
 		t.Errorf("full conversion has encountered %d errors where none were expected", len(diags))
 	}

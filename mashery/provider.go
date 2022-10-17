@@ -269,17 +269,18 @@ func providerConfigure(_ context.Context, d *schema.ResourceData) (interface{}, 
 		})
 	}
 
-	// 1. Give preference to explicitly specified token
-	tkn := d.Get(providerV3Token).(string)
-	// Mashery tokens is 24 characters long. This condition is a built-in protection for the
-	// developer passing invalid tokens
-	if len(tkn) > 20 {
-		tokenProvider = v3client.NewFixedTokenProvider(tkn)
-	} else {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  fmt.Sprintf("insufficient V3 token for connecting directly (%d chars supplied)", len(tkn)),
-		})
+	if tknRaw, ok := d.GetOk(providerV3Token); ok {
+		tkn := tknRaw.(string)
+		// Mashery tokens is 24 characters long. This condition is a built-in protection for the
+		// developer passing invalid tokens
+		if len(tkn) > 20 {
+			tokenProvider = v3client.NewFixedTokenProvider(tkn)
+		} else {
+			diags = append(diags, diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  fmt.Sprintf("insufficient V3 token for connecting directly (%d chars supplied)", len(tkn)),
+			})
+		}
 	}
 
 	var cl v3client.Client
@@ -308,24 +309,24 @@ func Provider() *schema.Provider {
 			"mashery_service":                      resourceMasheryService(),
 			"mashery_service_error_set":            resourceMasheryErrorSet(),
 			"mashery_processor_chain":              resourceMasheryProcessorChain(),
-			"mashery_endpoint":                     resourceMasheryEndpoint(),
-			"mashery_endpoint_method":              resourceMasheryEndpointMethod(),
-			"mashery_endpoint_method_filter":       resourceMasheryEndpointMethodFilter(),
-			"mashery_package":                      resourceMasheryPackage(),
-			"mashery_package_plan":                 resourceMasheryPlan(),
-			"mashery_package_plan_service":         resourceMasheryPlanService(),
-			"mashery_package_plan_endpoint":        resourceMasheryPackagePlanEndpoint(),
+			"mashery_endpoint":                     EndpointResource.TFDataSourceSchema(),
+			"mashery_endpoint_method":              EndpointMethodResource.TFDataSourceSchema(),
+			"mashery_endpoint_method_filter":       EndpointMethodFilterResponse.TFDataSourceSchema(),
+			"mashery_package":                      PackageResource.TFDataSourceSchema(),
+			"mashery_package_plan":                 PackagePlanResource.TFDataSourceSchema(),
+			"mashery_package_plan_service":         PackagePlanServiceResource.TFDataSourceSchema(),
+			"mashery_package_plan_endpoint":        PackagePlanServiceEndpointResource.TFDataSourceSchema(),
 			"mashery_package_plan_endpoint_method": resourceMasheryPlanMethod(),
-			"mashery_member":                       resourceMasheryMember(),
-			"mashery_application":                  resourceMasheryApplication(),
-			"mashery_package_key":                  resourceMasheryPackageKey(),
+			"mashery_member":                       MemberResource.TFDataSourceSchema(),
+			"mashery_application":                  ApplicationResource.TFDataSourceSchema(),
+			"mashery_package_key":                  PackageKeyResource.TFDataSourceSchema(),
 			"mashery_unique_path":                  resourceMasheryUniquePath(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-			"mashery_public_domains":     dataSourceMasheryPublicDomains(),
-			"mashery_system_domains":     dataSourceMasherySystemDomains(),
-			"mashery_email_template_set": dataSourceMasheryEmailTemplateSet(),
-			"mashery_role":               dataSourceMasheryRole(),
+			"mashery_system_domains":     systemDomainsDataSource.TFDataSourceSchema(),
+			"mashery_public_domains":     publicDomainsDataSource.TFDataSourceSchema(),
+			"mashery_email_template_set": emailTemplateSet.TFDataSourceSchema(),
+			"mashery_role":               roleDataSource.TFDataSourceSchema(),
 		},
 		ConfigureContextFunc: providerConfigure,
 	}

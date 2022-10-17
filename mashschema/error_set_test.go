@@ -6,7 +6,7 @@ import (
 
 func TestV3ErrorSetConversion(t *testing.T) {
 	//now := masherytypes.MasheryJSONTime(time.Now())
-	//d := NewResourceData(&mashschema.ServiceErrorSetSchema)
+	//d := TestResourceData(&mashschema.ServiceErrorSetSchema)
 	//
 	//v3 := masherytypes.MasheryErrorSet{
 	//	AddressableV3Object: masherytypes.AddressableV3Object{
@@ -37,7 +37,7 @@ func TestV3ErrorSetConversion(t *testing.T) {
 }
 
 func TestV3ErrorMessageExtraction(t *testing.T) {
-	//d := NewResourceData(&mashschema.ServiceErrorSetSchema)
+	//d := TestResourceData(&mashschema.ServiceErrorSetSchema)
 	//d.SetId("serviceId::errorSetId")
 
 	//passedSet := map[string]interface{}{

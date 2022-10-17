@@ -2,6 +2,7 @@ package mashschema
 
 import (
 	"fmt"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"reflect"
@@ -75,14 +76,14 @@ func ValidateCompoundIdent(i interface{}, path cty.Path, supplier Supplier) diag
 
 func validateDiagInputIsEndpointMethodIdentifier(i interface{}, path cty.Path) diag.Diagnostics {
 	if str, ok := i.(string); ok {
-		mid := ServiceEndpointMethodIdentifier{}
+		mid := masherytypes.ServiceEndpointMethodIdentifier{}
 		CompoundIdFrom(&mid, str)
 
 		if !IsIdentified(&mid) {
 			return diag.Diagnostics{diag.Diagnostic{
 				Severity:      diag.Error,
-				Summary:       "Incomplete identifier",
-				Detail:        "Endpoint method identifier is incomplete or malformed",
+				Summary:       "Incomplete v3Identity",
+				Detail:        "Endpoint method v3Identity is incomplete or malformed",
 				AttributePath: path,
 			}}
 		} else {

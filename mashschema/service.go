@@ -1,7 +1,6 @@
 package mashschema
 
 import (
-	"context"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -71,18 +70,10 @@ var serviceDirectUpsertable = []string{
 	MashSvcName, MashSvcDescription, MashSvcQpsLimitOverall, MashSvcServiceRFC3986Encode, MashSvcVersion,
 }
 
-type ServiceIdentifier struct {
-	ServiceId string
-}
-
-func (si *ServiceIdentifier) Self() interface{} {
-	return si
-}
-
 var ServiceMapper *ServiceMapperImpl
 
 type ServiceMapperImpl struct {
-	MapperImpl
+	ResourceMapperImpl
 }
 
 // OAuthSecurityProfileSchema Mother mashschema for OAuth security profile.
@@ -433,7 +424,7 @@ func (smi *ServiceMapperImpl) PersistPermissions(inp []masherytypes.MasheryRoleP
 
 func (smi *ServiceMapperImpl) RolePermissionUpsertable(inp map[string]interface{}) masherytypes.MasheryRolePermission {
 	return masherytypes.MasheryRolePermission{
-		MasheryRole: masherytypes.MasheryRole{
+		Role: masherytypes.Role{
 			AddressableV3Object: masherytypes.AddressableV3Object{
 				Id: inp[MashObjId].(string),
 			},
@@ -458,19 +449,19 @@ func (smi *ServiceMapperImpl) UpsertableServiceRoles(d *schema.ResourceData) *[]
 	}
 }
 
-func (smi *ServiceMapperImpl) PersistOAuthProfile(ctx context.Context, inp *masherytypes.MasheryOAuth, d *schema.ResourceData) diag.Diagnostics {
+func (smi *ServiceMapperImpl) PersistOAuthProfile(inp *masherytypes.MasheryOAuth, d *schema.ResourceData) diag.Diagnostics {
 	data := map[string]interface{}{
 		MashSvcOAuth: smi.oauthAsTerraform(inp),
 	}
 
-	return smi.SetResourceFields(ctx, data, d)
+	return SetResourceFields(data, d)
 }
 
 func (smi *ServiceMapperImpl) HasDirectUpsertableChanges(d *schema.ResourceData) bool {
 	return d.HasChanges(serviceDirectUpsertable...)
 }
 
-func (smi *ServiceMapperImpl) PersistTyped(ctx context.Context, inp *masherytypes.MasheryService, d *schema.ResourceData) diag.Diagnostics {
+func (smi *ServiceMapperImpl) PersistTyped(inp *masherytypes.Service, d *schema.ResourceData) diag.Diagnostics {
 	data := map[string]interface{}{
 		MashSvcId:                   inp.Id,
 		MashSvcName:                 inp.Name,
@@ -500,7 +491,7 @@ func (smi *ServiceMapperImpl) PersistTyped(ctx context.Context, inp *masherytype
 		data[MashSvcCacheTtl] = 0
 	}
 
-	return smi.SetResourceFields(ctx, data, d)
+	return SetResourceFields(data, d)
 }
 
 func (smi *ServiceMapperImpl) PersisRoles(inp []masherytypes.MasheryRolePermission, d *schema.ResourceData) diag.Diagnostics {
@@ -519,10 +510,10 @@ func (smi *ServiceMapperImpl) IODocsRolesDefined(d *schema.ResourceData) bool {
 // -----------------------------------------------------------------------
 // Terraform -> V3 conversion routines
 
-func (smi *ServiceMapperImpl) CacheUpsertable(d *schema.ResourceData) *masherytypes.MasheryServiceCache {
+func (smi *ServiceMapperImpl) CacheUpsertable(d *schema.ResourceData) *masherytypes.ServiceCache {
 	cacheTTL := extractInt(d, MashSvcCacheTtl, 0)
 	if cacheTTL > 0 {
-		return &masherytypes.MasheryServiceCache{
+		return &masherytypes.ServiceCache{
 			CacheTtl: cacheTTL,
 		}
 	} else {
@@ -577,39 +568,39 @@ func (smi *ServiceMapperImpl) IODocsRolesChanged(d *schema.ResourceData) bool {
 	return d.HasChanges(MashSvcInteractiveDocsRoles)
 }
 
-func (smi *ServiceMapperImpl) ClearServiceOAuthProfile(ctx context.Context, d *schema.ResourceData) diag.Diagnostics {
+func (smi *ServiceMapperImpl) ClearServiceOAuthProfile(d *schema.ResourceData) diag.Diagnostics {
 	data := map[string]interface{}{
 		MashSvcOAuth: nil,
 	}
-	return smi.SetResourceFields(ctx, data, d)
+	return SetResourceFields(data, d)
 }
 
-func (smi *ServiceMapperImpl) DirectlyUpdateable(d *schema.ResourceData) (masherytypes.MasheryService, diag.Diagnostics) {
-	mashServ := masherytypes.MasheryService{
+func (smi *ServiceMapperImpl) DirectlyUpdateable(d *schema.ResourceData) (masherytypes.Service, diag.Diagnostics) {
+	mashServ := masherytypes.Service{
 		AddressableV3Object: masherytypes.AddressableV3Object{
 			Name: extractSetOrPrefixedString(d, MashSvcName, MashSvcNamePrefix),
 		},
 		Description:     ExtractString(d, MashSvcDescription, "Managed by Terraform"),
 		QpsLimitOverall: extractInt64Pointer(d, MashSvcQpsLimitOverall, -1),
-		RFC3986Encode:   extractBool(d, MashSvcServiceRFC3986Encode, true),
+		RFC3986Encode:   ExtractBool(d, MashSvcServiceRFC3986Encode, true),
 		Version:         ExtractString(d, MashSvcVersion, "0.0.1-TF"),
 	}
 
 	return mashServ, nil
 }
 
-func (smi *ServiceMapperImpl) UpsertableTyped(d *schema.ResourceData) (masherytypes.MasheryService, diag.Diagnostics) {
+func (smi *ServiceMapperImpl) UpsertableTyped(d *schema.ResourceData) (masherytypes.Service, V3ObjectIdentifier, diag.Diagnostics) {
 
 	mashServ, _ := smi.DirectlyUpdateable(d)
 
 	ttl := extractInt(d, MashSvcCacheTtl, 0)
 	if ttl > 0 {
-		mashServ.Cache = &masherytypes.MasheryServiceCache{CacheTtl: ttl}
+		mashServ.Cache = &masherytypes.ServiceCache{CacheTtl: ttl}
 	}
 
 	mashServ.SecurityProfile = smi.SecurityProfileUpsertable(d)
 
-	return mashServ, nil
+	return mashServ, nil, nil
 }
 
 // -----------------------------------
@@ -635,19 +626,21 @@ func inheritMasheryDataSourceSchema() {
 
 func init() {
 	ServiceMapper = &ServiceMapperImpl{
-		MapperImpl{
+		ResourceMapperImpl{
 			schema: ServiceSchema,
+			v3Identity: func(d *schema.ResourceData) (interface{}, diag.Diagnostics) {
+				return masherytypes.ServiceIdentifier{
+					ServiceId: d.Id(),
+				}, nil
+			},
 		},
 	}
 	inheritMasheryDataSourceSchema()
 
-	ServiceMapper.identifier = func() interface{} {
-		return &ServiceIdentifier{}
-	}
-	ServiceMapper.upsertFunc = func(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
+	ServiceMapper.upsertFunc = func(d *schema.ResourceData) (Upsertable, V3ObjectIdentifier, diag.Diagnostics) {
 		return ServiceMapper.UpsertableTyped(d)
 	}
-	ServiceMapper.persistFunc = func(ctx context.Context, rv interface{}, d *schema.ResourceData) diag.Diagnostics {
-		return ServiceMapper.PersistTyped(ctx, rv.(*masherytypes.MasheryService), d)
+	ServiceMapper.persistFunc = func(rv interface{}, d *schema.ResourceData) diag.Diagnostics {
+		return ServiceMapper.PersistTyped(rv.(*masherytypes.Service), d)
 	}
 }

@@ -14,7 +14,7 @@ const MashEndpointCompiledProcessorChain = "compiled_chain"
 var ProcessorChainMapper *ProcessorChaiMapperImpl
 
 type ProcessorChaiMapperImpl struct {
-	MapperImpl
+	ResourceMapperImpl
 }
 
 func (pcm *ProcessorChaiMapperImpl) adapterPrefixed(adapter string, cfg []string) []string {
@@ -79,7 +79,7 @@ func (pcm *ProcessorChaiMapperImpl) ComputeChain(d *schema.ResourceData) mashery
 
 func init() {
 	ProcessorChainMapper = &ProcessorChaiMapperImpl{
-		MapperImpl: MapperImpl{
+		ResourceMapperImpl: ResourceMapperImpl{
 			schema: map[string]*schema.Schema{
 				MashEndpointProcessors: {
 					Type:        schema.TypeList,

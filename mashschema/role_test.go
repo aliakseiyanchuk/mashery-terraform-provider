@@ -1,7 +1,6 @@
 package mashschema_test
 
 import (
-	"context"
 	"fmt"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/stretchr/testify/assert"
@@ -11,10 +10,10 @@ import (
 )
 
 func TestV3MashRoleToResourceData(t *testing.T) {
-	d := mashschema.RoleMapper.NewResourceData()
+	d := mashschema.RoleMapper.TestResourceData()
 
 	now := masherytypes.MasheryJSONTime(time.Now())
-	orig := masherytypes.MasheryRole{
+	orig := masherytypes.Role{
 		AddressableV3Object: masherytypes.AddressableV3Object{
 			Id:      "roleId",
 			Name:    "Name",
@@ -27,8 +26,8 @@ func TestV3MashRoleToResourceData(t *testing.T) {
 		Assignable:  true,
 	}
 
-	setDiag := mashschema.RoleMapper.SetState(context.TODO(), &orig, d)
-	LogErrorDiagnostics(t, "setting mashery role to resource statw", &setDiag)
+	setDiag := mashschema.RoleMapper.SetStateOf(orig, d)
+	LogErrorDiagnostics(t, "setting mashery role to resource state", &setDiag)
 
 	name := d.Get(mashschema.MashObjName).(string)
 	desc := d.Get(mashschema.MashObjDescription).(string)

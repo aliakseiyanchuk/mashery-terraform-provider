@@ -1,7 +1,6 @@
 package mashschema
 
 import (
-	"context"
 	"fmt"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/go-cty/cty"
@@ -24,71 +23,46 @@ const (
 
 var JsonRegexp = regexp.MustCompile("^(?:\\/[^\\/\\| ]+)+(?: \\| (?:\\/[^\\/\\| ]+)+)*$")
 
-type ServiceEndpointMethodFilterIdentifier struct {
-	ServiceEndpointMethodIdentifier
-	FilterId string
-}
-
-func (semfi *ServiceEndpointMethodFilterIdentifier) Self() interface{} {
-	return semfi
-}
-
 var ServiceEndpointMethodFilterMapper *ServiceEndpointMethodFilterMapperImpl
 
 type ServiceEndpointMethodFilterMapperImpl struct {
-	MapperImpl
+	ResourceMapperImpl
 }
 
-func (sefm *ServiceEndpointMethodFilterMapperImpl) GetMethodIdentifier(d *schema.ResourceData) (*ServiceEndpointMethodIdentifier, diag.Diagnostics) {
-	rv := &ServiceEndpointMethodIdentifier{}
-	CompoundIdFrom(rv, ExtractString(d, ServiceEndpointMethodRef, ""))
-
-	var rvd diag.Diagnostics = nil
-	if !IsIdentified(rv) {
-		rvd = CompoundIdMalformedDiagnostic(cty.GetAttrPath(ServiceEndpointMethodRef))
-	}
-
-	return rv, rvd
-}
-
-func (sefm *ServiceEndpointMethodFilterMapperImpl) GetIdentifier(d *schema.ResourceData) *ServiceEndpointMethodFilterIdentifier {
-	rv := &ServiceEndpointMethodFilterIdentifier{}
-	CompoundIdFrom(rv, d.Id())
-
-	return rv
-}
-
-func (sefm *ServiceEndpointMethodFilterMapperImpl) SetIdentifier(pIdent *ServiceEndpointMethodIdentifier, fl *masherytypes.MasheryResponseFilter, d *schema.ResourceData) {
-	v := &ServiceEndpointMethodFilterIdentifier{
-		ServiceEndpointMethodIdentifier: ServiceEndpointMethodIdentifier{
-			ServiceEndpointIdentifier: ServiceEndpointIdentifier{
-				ServiceIdentifier: ServiceIdentifier{
-					ServiceId: pIdent.ServiceId,
-				},
-				EndpointId: pIdent.EndpointId,
-			},
-			MethodId: pIdent.MethodId,
-		},
-		FilterId: fl.Id,
-	}
-
-	d.SetId(CompoundId(v))
-}
-
-func (sefm *ServiceEndpointMethodFilterMapperImpl) UpsertableTyped(d *schema.ResourceData) (masherytypes.MasheryResponseFilter, diag.Diagnostics) {
-	emfi := ServiceEndpointMethodFilterIdentifier{}
-	CompoundIdFrom(&emfi, d.Id())
-
+func (sefm *ServiceEndpointMethodFilterMapperImpl) UpsertableTyped(d *schema.ResourceData) (masherytypes.ServiceEndpointMethodFilter, masherytypes.ServiceEndpointMethodIdentifier, diag.Diagnostics) {
 	rvd := diag.Diagnostics{}
 
-	rv := masherytypes.MasheryResponseFilter{
-		AddressableV3Object: masherytypes.AddressableV3Object{
-			Id:   emfi.FilterId,
-			Name: ExtractString(d, MashObjName, "Terraform filter"),
+	ctxIdent := masherytypes.ServiceEndpointMethodIdentifier{}
+	if !CompoundIdFrom(&ctxIdent, ExtractString(d, MashServiceEndpointMethodId, "")) {
+		rvd = append(rvd, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "endpoint method identifier is incomplete",
+		})
+	}
+
+	emfi := masherytypes.ServiceEndpointMethodFilterIdentifier{}
+	identCompete := CompoundIdFrom(&emfi, d.Id())
+
+	parentSelector := func() masherytypes.ServiceEndpointMethodIdentifier {
+		if identCompete {
+			return emfi.ServiceEndpointMethodIdentifier
+		} else {
+			return ctxIdent
+		}
+	}
+
+	rv := masherytypes.ServiceEndpointMethodFilter{
+		ResponseFilter: masherytypes.ResponseFilter{
+			AddressableV3Object: masherytypes.AddressableV3Object{
+				Id:   emfi.FilterId,
+				Name: ExtractString(d, MashObjName, "Terraform filter"),
+			},
+			Notes:            ExtractString(d, MashServiceEndpointMethodFilterNotes, "Managed by terraform"),
+			XmlFilterFields:  strings.Join(ExtractStringArray(d, MashServiceEndpointMethodFilterXmlFields, &EmptyStringArray), endpointFilterFieldSeparator),
+			JsonFilterFields: strings.Join(ExtractStringArray(d, MashServiceEndpointMethodFilterJsonFields, &EmptyStringArray), endpointFilterFieldSeparator),
 		},
-		Notes:            ExtractString(d, MashServiceEndpointMethodFilterNotes, "Managed by terraform"),
-		XmlFilterFields:  strings.Join(ExtractStringArray(d, MashServiceEndpointMethodFilterXmlFields, &EmptyStringArray), endpointFilterFieldSeparator),
-		JsonFilterFields: strings.Join(ExtractStringArray(d, MashServiceEndpointMethodFilterJsonFields, &EmptyStringArray), endpointFilterFieldSeparator),
+
+		ServiceEndpointMethod: parentSelector(),
 	}
 
 	if len(rv.JsonFilterFields) > 0 && !JsonRegexp.MatchString(rv.JsonFilterFields) {
@@ -109,10 +83,10 @@ func (sefm *ServiceEndpointMethodFilterMapperImpl) UpsertableTyped(d *schema.Res
 		})
 	}
 
-	return rv, rvd
+	return rv, ctxIdent, rvd
 }
 
-func (sefm *ServiceEndpointMethodFilterMapperImpl) PersistTyped(ctx context.Context, inp *masherytypes.MasheryResponseFilter, d *schema.ResourceData) diag.Diagnostics {
+func (sefm *ServiceEndpointMethodFilterMapperImpl) PersistTyped(inp masherytypes.ServiceEndpointMethodFilter, d *schema.ResourceData) diag.Diagnostics {
 	data := map[string]interface{}{
 		MashEndpointMethodFilterId:                inp.Id,
 		MashObjName:                               inp.Name,
@@ -123,7 +97,7 @@ func (sefm *ServiceEndpointMethodFilterMapperImpl) PersistTyped(ctx context.Cont
 		MashServiceEndpointMethodFilterJsonFields: nilArrayForEmptyString(inp.JsonFilterFields, endpointFilterFieldSeparator),
 	}
 
-	return sefm.SetResourceFields(ctx, data, d)
+	return sefm.persistMap(inp.Identifier(), data, d)
 }
 
 func initEndpointMethodFilterSchemaBoilerplate() {
@@ -137,7 +111,8 @@ func initEndpointMethodFilterSchemaBoilerplate() {
 
 func init() {
 	ServiceEndpointMethodFilterMapper = &ServiceEndpointMethodFilterMapperImpl{
-		MapperImpl: MapperImpl{
+		ResourceMapperImpl: ResourceMapperImpl{
+			v3ObjectName: "endpoint method filter",
 			schema: map[string]*schema.Schema{
 				MashServiceEndpointMethodFilterNotes: {
 					Type:        schema.TypeString,
@@ -165,7 +140,29 @@ func init() {
 					Elem:        stringElem(),
 				},
 			},
+
+			v3Identity: func(d *schema.ResourceData) (interface{}, diag.Diagnostics) {
+				rv := masherytypes.ServiceEndpointMethodFilterIdentifier{}
+				if CompoundIdFrom(&rv, d.Id()) {
+					return rv, nil
+				} else {
+					return rv, diag.Diagnostics{diag.Diagnostic{
+						Severity: diag.Error,
+						Summary:  "endpoint method filter identifier is incomplete",
+					}}
+				}
+			},
+
+			upsertFunc: func(d *schema.ResourceData) (Upsertable, V3ObjectIdentifier, diag.Diagnostics) {
+				return ServiceEndpointMethodFilterMapper.Upsertable(d)
+			},
+
+			persistFunc: func(rv interface{}, d *schema.ResourceData) diag.Diagnostics {
+				ptr := rv.(*masherytypes.ServiceEndpointMethodFilter)
+				return ServiceEndpointMethodFilterMapper.PersistTyped(*ptr, d)
+			},
 		},
 	}
+
 	initEndpointMethodFilterSchemaBoilerplate()
 }

@@ -1,7 +1,6 @@
 package mashschema
 
 import (
-	"context"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -62,41 +61,21 @@ func fillMemberBoilerplate() {
 
 }
 
-type MemberIdentifier struct {
-	MemberId string `json:"mid"`
-	Username string `json:"un"`
-}
-
-func (m *MemberIdentifier) Self() interface{} {
-	return m
-}
-
 var MemberMapper *MemberMapperImpl
 
 type MemberMapperImpl struct {
-	MapperImpl
+	ResourceMapperImpl
 }
 
-func (mmi *MemberMapperImpl) CompoundIdentifierTyped() *MemberIdentifier {
-	return &MemberIdentifier{}
-}
-
-func (mmi *MemberMapperImpl) GetIdentifier(d *schema.ResourceData) *MemberIdentifier {
-	rv := &MemberIdentifier{}
-	CompoundIdFrom(rv, d.Id())
-
-	return rv
-}
-
-func (mmi *MemberMapperImpl) UpsertableTyped(d *schema.ResourceData) (masherytypes.MasheryMember, diag.Diagnostics) {
-	mid := MemberIdentifier{}
+func (mmi *MemberMapperImpl) UpsertableTyped(d *schema.ResourceData) (masherytypes.Member, V3ObjectIdentifier, diag.Diagnostics) {
+	mid := masherytypes.MemberIdentifier{}
 	CompoundIdFrom(&mid, d.Id())
 
 	if mid.Username == "" {
 		mid.Username = extractSetOrPrefixedString(d, MashMemberUserName, MashMemberUserNamePrefix)
 	}
 
-	return masherytypes.MasheryMember{
+	return masherytypes.Member{
 		AddressableV3Object: masherytypes.AddressableV3Object{
 			Id: mid.MemberId,
 		},
@@ -119,10 +98,10 @@ func (mmi *MemberMapperImpl) UpsertableTyped(d *schema.ResourceData) (masherytyp
 		LastName:    ExtractString(d, MashMemberLastName, ""),
 		AreaStatus:  ExtractString(d, MashMemberAreaStatus, "waiting"),
 		ExternalId:  ExtractString(d, MashMemberExternalId, ""),
-	}, nil
+	}, nil, nil
 }
 
-func (mmi *MemberMapperImpl) PersistTyped(ctx context.Context, inp *masherytypes.MasheryMember, d *schema.ResourceData) diag.Diagnostics {
+func (mmi *MemberMapperImpl) PersistTyped(inp masherytypes.Member, d *schema.ResourceData) diag.Diagnostics {
 	data := map[string]interface{}{
 		MashMemberUserName: inp.Username,
 		MashMemberCreated:  inp.Created.ToString(),
@@ -150,12 +129,13 @@ func (mmi *MemberMapperImpl) PersistTyped(ctx context.Context, inp *masherytypes
 		MashMemberExternalId:  inp.ExternalId,
 	}
 
-	return mmi.SetResourceFields(ctx, data, d)
+	return mmi.persistMap(inp.Identifier(), data, d)
 }
 
 func init() {
 	MemberMapper = &MemberMapperImpl{
-		MapperImpl{
+		ResourceMapperImpl{
+			v3ObjectName: "member",
 			schema: map[string]*schema.Schema{
 				MashMemberUserName: {
 					Type:        schema.TypeString,
@@ -207,13 +187,19 @@ func init() {
 
 	fillMemberBoilerplate()
 
-	MemberMapper.identifier = func() interface{} {
-		return &MemberIdentifier{}
+	MemberMapper.v3Identity = func(d *schema.ResourceData) (interface{}, diag.Diagnostics) {
+		rv := masherytypes.MemberIdentifier{MemberId: d.Id()}
+		rvd := diag.Diagnostics{}
+		if len(rv.MemberId) == 0 {
+			rvd = append(rvd, MemberMapper.lackingIdentificationDiagnostic("id"))
+		}
+		return rv, rvd
 	}
-	MemberMapper.upsertFunc = func(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
+	MemberMapper.upsertFunc = func(d *schema.ResourceData) (Upsertable, V3ObjectIdentifier, diag.Diagnostics) {
 		return MemberMapper.UpsertableTyped(d)
 	}
-	MemberMapper.persistFunc = func(ctx context.Context, rv interface{}, d *schema.ResourceData) diag.Diagnostics {
-		return MemberMapper.PersistTyped(ctx, rv.(*masherytypes.MasheryMember), d)
+
+	MemberMapper.persistFunc = func(rv interface{}, d *schema.ResourceData) diag.Diagnostics {
+		return MemberMapper.PersistTyped(rv.(masherytypes.Member), d)
 	}
 }

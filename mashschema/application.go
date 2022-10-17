@@ -1,7 +1,6 @@
 package mashschema
 
 import (
-	"context"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -37,53 +36,23 @@ const (
 var ApplicationMapper *ApplicationMapperImpl
 
 type ApplicationMapperImpl struct {
-	MapperImpl
+	ResourceMapperImpl
 }
 
-func (am *ApplicationMapperImpl) CreateIdentifierTyped() *ApplicationIdentifier {
-	return &ApplicationIdentifier{}
-}
-
-type ApplicationIdentifier struct {
-	MemberIdentifier
-	AppId string `json:"appId"`
-}
-
-func (ai *ApplicationIdentifier) Self() interface{} {
-	return ai
-}
-
-func (ai *ApplicationMapperImpl) GetIdentifier(d *schema.ResourceData) *ApplicationIdentifier {
-	rv := &ApplicationIdentifier{}
-	CompoundIdFrom(rv, d.Id())
-
-	return rv
-}
-
-func (ai *ApplicationMapperImpl) GetOwnerIdentifier(d *schema.ResourceData) *MemberIdentifier {
-	rv := &MemberIdentifier{}
-	CompoundIdFrom(rv, ExtractString(d, MashAppOwner, ""))
-
-	return rv
-}
-
-func (ai *ApplicationMapperImpl) UpsertableTyped(_ context.Context, d *schema.ResourceData) (masherytypes.MasheryApplication, diag.Diagnostics) {
-	mid := MemberIdentifier{}
+func (ai *ApplicationMapperImpl) UpsertableTyped(d *schema.ResourceData) (masherytypes.Application, V3ObjectIdentifier, diag.Diagnostics) {
+	mid := masherytypes.MemberIdentifier{}
 	CompoundIdFrom(&mid, ExtractString(d, MashAppOwner, ""))
 
-	appId := ApplicationIdentifier{}
-	CompoundIdFrom(&appId, d.Id())
-
-	return masherytypes.MasheryApplication{
+	return masherytypes.Application{
 		AddressableV3Object: masherytypes.AddressableV3Object{
-			Id:   appId.AppId,
+			Id:   d.Id(),
 			Name: extractSetOrPrefixedString(d, MashAppName, MashAppNamePrefix),
 		},
 		Username:          mid.Username,
 		Description:       ExtractString(d, MashAppDescription, ""),
 		Type:              ExtractString(d, MashAppType, ""),
-		Commercial:        extractBool(d, MashAppCommercial, false),
-		Ads:               extractBool(d, MashAppAds, false),
+		Commercial:        ExtractBool(d, MashAppCommercial, false),
+		Ads:               ExtractBool(d, MashAppAds, false),
 		AdsSystem:         ExtractString(d, MashAppAdSystem, ""),
 		UsageModel:        ExtractString(d, MashAppUsageModel, ""),
 		Tags:              ExtractString(d, MashAppTags, ""),
@@ -95,11 +64,10 @@ func (ai *ApplicationMapperImpl) UpsertableTyped(_ context.Context, d *schema.Re
 		Uri:               ExtractString(d, MashAppUri, ""),
 		OAuthRedirectUri:  ExtractString(d, MashAppOAuthRedirectUri, ""),
 		Eav:               extractEAVPointer(d, MashAppEAV),
-	}, nil
+	}, mid, nil
 }
 
-func (ai *ApplicationMapperImpl) PersistTyped(ctx context.Context, rawInp interface{}, d *schema.ResourceData) diag.Diagnostics {
-	inp := rawInp.(*masherytypes.MasheryApplication)
+func (ai *ApplicationMapperImpl) PersistTyped(inp masherytypes.Application, d *schema.ResourceData) diag.Diagnostics {
 	data := map[string]interface{}{
 		MashAppId:                inp.Id,
 		MashAppName:              inp.Name,
@@ -123,7 +91,7 @@ func (ai *ApplicationMapperImpl) PersistTyped(ctx context.Context, rawInp interf
 		MashAppEAV:               inp.Eav,
 	}
 
-	return ai.SetResourceFields(ctx, data, d)
+	return ai.persistMap(inp.Identifier(), data, d)
 }
 
 // Fill in boilerplate fields of Mashery application.
@@ -154,7 +122,8 @@ func fillAppSchemaBoilerplate() {
 
 func init() {
 	ApplicationMapper = &ApplicationMapperImpl{
-		MapperImpl: MapperImpl{
+		ResourceMapperImpl: ResourceMapperImpl{
+			v3ObjectName: "application",
 			schema: map[string]*schema.Schema{
 				MashAppName: {
 					Type:        schema.TypeString,
@@ -174,7 +143,7 @@ func init() {
 					Description: "Username of the member that the application belongs to",
 					ValidateDiagFunc: func(i interface{}, path cty.Path) diag.Diagnostics {
 						return ValidateCompoundIdent(i, path, func() interface{} {
-							return &MemberIdentifier{}
+							return &masherytypes.MemberIdentifier{}
 						})
 					},
 				},
@@ -191,15 +160,24 @@ func init() {
 
 	fillAppSchemaBoilerplate()
 
-	ApplicationMapper.upsertFunc = func(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
-		return ApplicationMapper.UpsertableTyped(ctx, d)
+	ApplicationMapper.upsertFunc = func(d *schema.ResourceData) (Upsertable, V3ObjectIdentifier, diag.Diagnostics) {
+		return ApplicationMapper.UpsertableTyped(d)
 	}
 
-	ApplicationMapper.persistFunc = func(ctx context.Context, rv interface{}, d *schema.ResourceData) diag.Diagnostics {
-		return ApplicationMapper.PersistTyped(ctx, rv.(*masherytypes.MasheryApplication), d)
+	ApplicationMapper.persistFunc = func(rv interface{}, d *schema.ResourceData) diag.Diagnostics {
+		ptr := rv.(*masherytypes.Application)
+		return ApplicationMapper.PersistTyped(*ptr, d)
 	}
 
-	ApplicationMapper.identifier = func() interface{} {
-		return ApplicationMapper.CreateIdentifierTyped()
+	ApplicationMapper.v3Identity = func(d *schema.ResourceData) (interface{}, diag.Diagnostics) {
+		rv := masherytypes.ApplicationIdentifier{
+			ApplicationId: d.Id(),
+		}
+
+		rvd := diag.Diagnostics{}
+		if len(rv.ApplicationId) == 0 {
+			rvd = append(rvd, ApplicationMapper.lackingIdentificationDiagnostic("id"))
+		}
+		return rv, rvd
 	}
 }

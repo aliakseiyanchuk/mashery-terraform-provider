@@ -1,7 +1,6 @@
 package mashschema
 
 import (
-	"context"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -21,10 +20,10 @@ const (
 var RoleMapper *RoleMapperImpl
 
 type RoleMapperImpl struct {
-	MapperImpl
+	DataSourceMapperImpl
 }
 
-func (rm *RoleMapperImpl) PersistTyped(ctx context.Context, inp *masherytypes.MasheryRole, d *schema.ResourceData) diag.Diagnostics {
+func (rm *RoleMapperImpl) PersistTyped(inp masherytypes.Role, d *schema.ResourceData) diag.Diagnostics {
 	data := map[string]interface{}{
 		MashObjCreated:         inp.Created.ToString(),
 		MashObjUpdated:         inp.Updated.ToString(),
@@ -33,47 +32,19 @@ func (rm *RoleMapperImpl) PersistTyped(ctx context.Context, inp *masherytypes.Ma
 		MashRolePredefined:     inp.Predefined,
 		MashRoleOrgRole:        inp.OrgRole,
 		MashRoleAssignableRole: inp.Assignable,
-		MashReadRolePermission: rm.rolePermission(inp, "read"),
+		MashReadRolePermission: rm.rolePermission(&inp, "read"),
 	}
 
-	return rm.SetResourceFields(ctx, data, d)
+	return SetResourceFields(data, d)
 }
 
-func (rm *RoleMapperImpl) rolePermission(inp *masherytypes.MasheryRole, perm string) map[string]interface{} {
+func (rm *RoleMapperImpl) rolePermission(inp *masherytypes.Role, perm string) map[string]interface{} {
 	return map[string]interface{}{
 		MashObjId:      inp.Id,
+		MashObjName:    inp.Name,
 		MashRoleAction: perm,
 	}
 }
-
-//func (rm *RoleMapperImpl) V3MashRolePermissionToTerraform(permission masherytypes.MasheryRolePermission) map[string]interface{} {
-//	return map[string]interface{}{
-//		MashObjId:      permission.Id,
-//		MashRoleAction: permission.Action,
-//	}
-//}
-
-//func V3RolesPermissionsToTerraform(inp []masherytypes.MasheryRolePermission) []map[string]interface{} {
-//	rv := make([]map[string]interface{}, len(inp))
-//	for idx, v := range inp {
-//		rv[idx] = V3MashRolePermissionToTerraform(v)
-//	}
-//
-//	return rv
-//}
-
-//func (rm *RoleMapperImpl) UpsertableRolePermission(inp map[string]interface{}) masherytypes.MasheryRolePermission {
-//	return masherytypes.MasheryRolePermission{
-//		MasheryRole: masherytypes.MasheryRole{
-//			AddressableV3Object: masherytypes.AddressableV3Object{
-//				Id: inp[MashObjId].(string),
-//			},
-//		},
-//		Action: inp[MashRoleAction].(string),
-//	}
-//}
-
-//var RolePermissionReferenceSchema = map[string]*schema.Schema{}
 
 func (rm *RoleMapperImpl) initSchemaBoilerplate() {
 	addComputedString(&RoleMapper.schema, MashObjCreated, "Date/time object was created")
@@ -86,17 +57,10 @@ func (rm *RoleMapperImpl) initSchemaBoilerplate() {
 	addComputedBoolean(&RoleMapper.schema, MashRoleAssignableRole, "Whether this role is assignable")
 }
 
-//func initRoleReference() {
-//	addRequiredString(&RolePermissionReferenceSchema, MashObjId, "Role Id")
-//	addRequiredString(&RolePermissionReferenceSchema, MashRoleAction, "Action granted to this role")
-//}
-
 func init() {
 
-	//initRoleReference()
-
 	RoleMapper = &RoleMapperImpl{
-		MapperImpl: MapperImpl{
+		DataSourceMapperImpl: DataSourceMapperImpl{
 			schema: map[string]*schema.Schema{
 				MashDataSourceSearch: {
 					Type:        schema.TypeMap,
@@ -116,11 +80,12 @@ func init() {
 					Description: "Role reference object usable in service I/O docs and package plan portal access",
 				},
 			},
+
+			persistOne: func(rv interface{}, d *schema.ResourceData) diag.Diagnostics {
+				return RoleMapper.PersistTyped(rv.(masherytypes.Role), d)
+			},
 		},
 	}
 
 	RoleMapper.initSchemaBoilerplate()
-	RoleMapper.persistFunc = func(ctx context.Context, rv interface{}, d *schema.ResourceData) diag.Diagnostics {
-		return RoleMapper.PersistTyped(ctx, rv.(*masherytypes.MasheryRole), d)
-	}
 }

@@ -273,7 +273,7 @@ func unwrapStructFromTerraformSet(inp interface{}) map[string]interface{} {
 	return make(map[string]interface{}, 0)
 }
 
-func extractBool(d *schema.ResourceData, key string, impliedValue bool) bool {
+func ExtractBool(d *schema.ResourceData, key string, impliedValue bool) bool {
 	if v, exists := d.GetOk(key); exists {
 		return v.(bool)
 	} else {
@@ -407,9 +407,9 @@ func schemaMapToStringMap(v interface{}) map[string]string {
 	}
 }
 
-// Extract and clone the map from the resource data. The can be modified by the calling client as needed
+// ExtractStringMap extracts and clone the map from the resource data. The can be modified by the calling client as needed
 // without affecting the state of data in the mashschema.ResourceData structure.
-func extractStringMap(d *schema.ResourceData, key string) map[string]string {
+func ExtractStringMap(d *schema.ResourceData, key string) map[string]string {
 	if v, exists := d.GetOk(key); exists {
 		return schemaMapToStringMap(v)
 	}

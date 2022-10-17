@@ -6,7 +6,7 @@ import (
 )
 
 func TestV3PackageKeyToResourceDataFromMinimalInput(t *testing.T) {
-	//d := NewResourceData(&mashschema.PackageKeySchema)
+	//d := TestResourceData(&mashschema.PackageKeySchema)
 	//
 	//expPackId := "packId"
 	//expPlanId := "planId"

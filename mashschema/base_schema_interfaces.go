@@ -1,58 +1,118 @@
 package mashschema
 
 import (
-	"context"
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"strings"
 )
 
 // TFResourceSchema Shortcut for map of schema pointers to make the code a bit more descriptive
 type TFResourceSchema = map[string]*schema.Schema
-type UpsertFunc func(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics)
-type PersistFunc func(ctx context.Context, rv interface{}, d *schema.ResourceData) diag.Diagnostics
-type IdentifierFunc func() interface{}
+type UpsertFunc func(d *schema.ResourceData) (Upsertable, V3ObjectIdentifier, diag.Diagnostics)
+type PersistFunc func(rv interface{}, d *schema.ResourceData) diag.Diagnostics
+type PersistManyFunc func(rv []interface{}, d *schema.ResourceData) diag.Diagnostics
+type V3IdentifierFunc func(d *schema.ResourceData) (interface{}, diag.Diagnostics)
 
-// Mapper Base interface for converting HCL constructs into the Mashery V3 object upsertable calls.
-type Mapper interface {
+type V3ObjectIdentifier interface{}
+type Upsertable interface{}
+
+type DataSourceMapper interface {
+	// TerraformSchema get the Terraform schema for this resource
+	TerraformSchema() TFResourceSchema
+
+	SetState(rv []interface{}, d *schema.ResourceData) diag.Diagnostics
+	SetStateOf(rv interface{}, d *schema.ResourceData) diag.Diagnostics
+}
+
+type DataSourceMapperImpl struct {
+	DataSourceMapper
+	schema      TFResourceSchema
+	persistOne  PersistFunc
+	persistMany PersistManyFunc
+}
+
+func (dsmi *DataSourceMapperImpl) SetState(rv []interface{}, d *schema.ResourceData) diag.Diagnostics {
+	if dsmi.persistMany != nil {
+		return dsmi.persistMany(rv, d)
+	} else {
+		return diag.Diagnostics{
+			diag.Diagnostic{
+				Summary: "persistMany function not defined",
+			},
+		}
+	}
+}
+
+func (dsmi *DataSourceMapperImpl) SetStateOf(rv interface{}, d *schema.ResourceData) diag.Diagnostics {
+	if dsmi.persistOne != nil {
+		return dsmi.persistOne(rv, d)
+	} else {
+		return diag.Diagnostics{
+			diag.Diagnostic{
+				Summary: "persistOne function not defined",
+			},
+		}
+	}
+}
+
+// TestResourceData create a test resource data for flattening and recoverign.
+func (dsmi *DataSourceMapperImpl) TestResourceData() *schema.ResourceData {
+	res := schema.Resource{
+		Schema: dsmi.schema,
+	}
+
+	return res.TestResourceData()
+}
+
+// ResourceMapper Base interface for converting HCL constructs into the Mashery V3 object upsertable calls.
+type ResourceMapper interface {
 
 	// TerraformSchema get the Terraform schema for this resource
 	TerraformSchema() TFResourceSchema
 
-	Upsertable(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics)
+	V3ObjectName() string
 
-	SetState(ctx context.Context, rv interface{}, d *schema.ResourceData) diag.Diagnostics
+	// V3Identity Creates the v3Identity for this object. Will return non-nil diagnostics
+	// if the object is not positively identified
+	V3Identity(d *schema.ResourceData) (V3ObjectIdentifier, diag.Diagnostics)
 
-	// CreateIdentifier create the identifier object that will encode identifier
-	CreateIdentifier() interface{}
+	// Upsertable creates an update-insertable object that can be passed onto the client. Where applicable,
+	// the {@link V3ObjectIdentifier} will contain the identifier of the context
+	Upsertable(d *schema.ResourceData) (Upsertable, V3ObjectIdentifier, diag.Diagnostics)
+
+	// SetState Set the state the V3 object in the terraform schema
+	SetState(rv Upsertable, d *schema.ResourceData) diag.Diagnostics
 }
 
-type MapperImpl struct {
-	Mapper
+type ResourceMapperImpl struct {
+	ResourceMapper
 
-	schema      TFResourceSchema
-	upsertFunc  UpsertFunc
-	persistFunc PersistFunc
-	identifier  IdentifierFunc
+	v3ObjectName string
+	schema       TFResourceSchema
+	upsertFunc   UpsertFunc
+	persistFunc  PersistFunc
+	v3Identity   V3IdentifierFunc
 }
 
-func (mi *MapperImpl) GetQuery(d *schema.ResourceData) map[string]string {
-	return extractStringMap(d, MashDataSourceSearch)
+func (rmi *ResourceMapperImpl) persistMap(inp interface{}, fields map[string]interface{}, d *schema.ResourceData) diag.Diagnostics {
+	d.SetId(CompoundId(inp))
+	return SetResourceFields(fields, d)
 }
 
-func (mi *MapperImpl) IsMatchRequired(d *schema.ResourceData) bool {
-	return extractBool(d, MashDataSourceRequired, true)
-}
-
-func (mi *MapperImpl) CreateIdentifier() interface{} {
-	if mi.identifier != nil {
-		return mi.identifier()
-	} else {
-		return nil
+func (rmi *ResourceMapperImpl) lackingIdentificationDiagnostic(fields ...string) diag.Diagnostic {
+	return diag.Diagnostic{
+		Severity: diag.Error,
+		Summary:  "Lacking identification",
+		Detail:   fmt.Sprintf("field(s) %s must be set to identify V3 %s object and must match object schema", strings.Join(fields, ", "), rmi.v3ObjectName),
 	}
 }
 
-func (mi *MapperImpl) NewResourceData() *schema.ResourceData {
+func (rmi *ResourceMapperImpl) V3ObjectName() string {
+	return rmi.v3ObjectName
+}
+
+func (mi *ResourceMapperImpl) TestResourceData() *schema.ResourceData {
 	res := schema.Resource{
 		Schema: mi.schema,
 	}
@@ -60,25 +120,37 @@ func (mi *MapperImpl) NewResourceData() *schema.ResourceData {
 	return res.TestResourceData()
 }
 
-func (m *MapperImpl) TerraformSchema() TFResourceSchema {
+func (m *ResourceMapperImpl) TerraformSchema() TFResourceSchema {
 	return m.schema
 }
 
-func (m *MapperImpl) Upsertable(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
-	if m.upsertFunc != nil {
-		return m.upsertFunc(ctx, d)
+func (m *ResourceMapperImpl) V3Identity(d *schema.ResourceData) (V3ObjectIdentifier, diag.Diagnostics) {
+	if m.v3Identity != nil {
+		return m.v3Identity(d)
 	} else {
 		return nil, diag.Diagnostics{
 			diag.Diagnostic{
-				Summary: "upsert function not defined",
+				Summary: "upsert function was not defined",
 			},
 		}
 	}
 }
 
-func (m *MapperImpl) SetState(ctx context.Context, rv interface{}, d *schema.ResourceData) diag.Diagnostics {
+func (m *ResourceMapperImpl) Upsertable(d *schema.ResourceData) (Upsertable, V3ObjectIdentifier, diag.Diagnostics) {
+	if m.upsertFunc != nil {
+		return m.upsertFunc(d)
+	} else {
+		return nil, nil, diag.Diagnostics{
+			diag.Diagnostic{
+				Summary: "upsert function was not defined",
+			},
+		}
+	}
+}
+
+func (m *ResourceMapperImpl) SetState(rv Upsertable, d *schema.ResourceData) diag.Diagnostics {
 	if m.persistFunc != nil {
-		return m.persistFunc(ctx, rv, d)
+		return m.persistFunc(rv, d)
 	} else {
 		return diag.Diagnostics{
 			diag.Diagnostic{
@@ -89,7 +161,7 @@ func (m *MapperImpl) SetState(ctx context.Context, rv interface{}, d *schema.Res
 }
 
 // SetResourceFields Set resource data fields, recording any errors occurring while being set.
-func (m *MapperImpl) SetResourceFields(ctx context.Context, data map[string]interface{}, res *schema.ResourceData) diag.Diagnostics {
+func SetResourceFields(data map[string]interface{}, res *schema.ResourceData) diag.Diagnostics {
 	rv := diag.Diagnostics{}
 
 	for k, v := range data {
@@ -97,7 +169,7 @@ func (m *MapperImpl) SetResourceFields(ctx context.Context, data map[string]inte
 			rv = append(rv, diag.Diagnostic{
 				Severity: diag.Error,
 				Summary:  fmt.Sprintf("failed to set field %s", k),
-				Detail:   err.Error(),
+				Detail:   fmt.Sprintf("settings field %s encoutnered an error: %s", k, err.Error()),
 			})
 		}
 	}
