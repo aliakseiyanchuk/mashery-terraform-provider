@@ -108,8 +108,8 @@ func (mmi *MemberMapperImpl) PersistTyped(inp masherytypes.Member, d *schema.Res
 		MashMemberUpdated:  inp.Updated.ToString(),
 
 		// Email and display name will not be updated; these are mandatory fields.
-		//MashMemberEmail: inp.Email,
-		//MashMemberDisplayName: inp.DisplayName,
+		MashMemberEmail:       inp.Email,
+		MashMemberDisplayName: inp.DisplayName,
 
 		MashMemberUri:         inp.Uri,
 		MashMemberBlog:        inp.Blog,
@@ -188,18 +188,19 @@ func init() {
 	fillMemberBoilerplate()
 
 	MemberMapper.v3Identity = func(d *schema.ResourceData) (interface{}, diag.Diagnostics) {
-		rv := masherytypes.MemberIdentifier{MemberId: d.Id()}
-		rvd := diag.Diagnostics{}
-		if len(rv.MemberId) == 0 {
-			rvd = append(rvd, MemberMapper.lackingIdentificationDiagnostic("id"))
+		rv := masherytypes.MemberIdentifier{}
+		if CompoundIdFrom(&rv, d.Id()) {
+			return rv, nil
+		} else {
+			return rv, diag.Diagnostics{MemberMapper.lackingIdentificationDiagnostic("id")}
 		}
-		return rv, rvd
 	}
 	MemberMapper.upsertFunc = func(d *schema.ResourceData) (Upsertable, V3ObjectIdentifier, diag.Diagnostics) {
 		return MemberMapper.UpsertableTyped(d)
 	}
 
 	MemberMapper.persistFunc = func(rv interface{}, d *schema.ResourceData) diag.Diagnostics {
-		return MemberMapper.PersistTyped(rv.(masherytypes.Member), d)
+		ptr := rv.(*masherytypes.Member)
+		return MemberMapper.PersistTyped(*ptr, d)
 	}
 }

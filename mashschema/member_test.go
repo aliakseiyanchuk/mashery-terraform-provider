@@ -2,93 +2,97 @@ package mashschema_test
 
 import (
 	"fmt"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/stretchr/testify/assert"
+	"strings"
 	"terraform-provider-mashery/mashschema"
 	"testing"
+	"time"
 )
 
-func TestWillGeneratePrefixedUsername(t *testing.T) {
-
+func TestUpsertableFromEmptyConfiguration(t *testing.T) {
 	d := mashschema.MemberMapper.TestResourceData()
-	upsertable, _, dg := mashschema.MemberMapper.Upsertable(d)
+	m, ctx, dg := mashschema.MemberMapper.UpsertableTyped(d)
 
+	assert.Nil(t, ctx)
 	assert.Equal(t, 0, len(dg))
-	fmt.Println(upsertable)
+	assert.Equal(t, "waiting", m.AreaStatus)
+	assert.True(t, strings.HasPrefix(m.Username, "terraform-"))
+}
+
+func TestUpsertableFromUserNamePrefix(t *testing.T) {
+	cfg := map[string]interface{}{
+		mashschema.MashMemberUserNamePrefix: "dtt",
+	}
+
+	d, rvd := mashschema.MemberMapper.TestResourceDataWith(cfg)
+	assert.Equal(t, 0, len(rvd), "initial data set must be correct")
+
+	m, ctx, dg := mashschema.MemberMapper.UpsertableTyped(d)
+
+	assert.Nil(t, ctx)
+	assert.Equal(t, 0, len(dg))
+	assert.Equal(t, "waiting", m.AreaStatus)
+	assert.True(t, strings.HasPrefix(m.Username, "dtt"))
+}
+
+func createCompleteMember() masherytypes.Member {
+	tm := masherytypes.MasheryJSONTime(time.Now())
+
+	source := masherytypes.Member{
+		AddressableV3Object: masherytypes.AddressableV3Object{
+			Id:      "member-id",
+			Created: &tm,
+			Updated: &tm,
+		},
+		Username:    "username",
+		Email:       "a@b.com",
+		DisplayName: "dn",
+		Uri:         "uri",
+		Blog:        "blog",
+		Im:          "im",
+		Imsvc:       "imsvc",
+		Phone:       "phone",
+		Company:     "company",
+		Address1:    "addr1",
+		Address2:    "addr2",
+		Locality:    "loc",
+		Region:      "reg",
+		PostalCode:  "postal",
+		CountryCode: "cc",
+		FirstName:   "first",
+		LastName:    "last",
+		AreaStatus:  "active",
+		ExternalId:  "extId",
+	}
+
+	return source
 }
 
 func TestV3MemberToResourceData(t *testing.T) {
-	//var tm masherytypes.MasheryJSONTime = masherytypes.MasheryJSONTime(time.Now())
-	//
-	//source := masherytypes.MasheryMember{
-	//	AddressableV3Object: masherytypes.AddressableV3Object{
-	//		Id:      "id",
-	//		Created: &tm,
-	//		Updated: &tm,
-	//	},
-	//	Username:    "username",
-	//	Email:       "a@b.com",
-	//	DisplayName: "dn",
-	//	Uri:         "uri",
-	//	Blog:        "blog",
-	//	Im:          "im",
-	//	Imsvc:       "imsvc",
-	//	Phone:       "phone",
-	//	Company:     "company",
-	//	Address1:    "addr1",
-	//	Address2:    "addr2",
-	//	Locality:    "loc",
-	//	Region:      "reg",
-	//	PostalCode:  "postal",
-	//	CountryCode: "cc",
-	//	FirstName:   "first",
-	//	LastName:    "last",
-	//	AreaStatus:  "active",
-	//	ExternalId:  "extId",
-	//}
-	//
-	//res := schema.Resource{
-	//	Schema: mashschema.MemberSchema,
-	//}
-	//
-	//d := res.TestResourceData()
-	//refId := "id::username"
-	//d.SetId(refId)
-	//
-	//diags := mashschema.V3MemberToResourceData(&source, d)
-	//
-	//// These two keys are required and must not be set to prevent indefinite loop
-	//// with force-new.
-	//mashery.assertResourceDoesNotHaveKey(t, d, mashschema.MashMemberEmail)
-	//mashery.assertResourceDoesNotHaveKey(t, d, mashschema.MashMemberDisplayName)
-	//
-	//mashery.assertOk(t, d.Set(mashschema.MashMemberEmail, "a@b.com"))
-	//mashery.assertOk(t, d.Set(mashschema.MashMemberDisplayName, "dn"))
-	//
-	//if len(diags) > 0 {
-	//	t.Errorf("full conversion has encountered %d errors where none were expected", len(diags))
-	//}
-	//
-	//reverse := mashschema.MashMemberUpsertable(d)
-	//
-	//mashery.assertSameString(t, "id", &source.Id, &reverse.Id)
-	//
-	//mashery.assertSameString(t, "username", &source.Username, &reverse.Username)
-	//mashery.assertSameString(t, "email", &source.Email, &reverse.Email)
-	//mashery.assertSameString(t, "display name", &source.DisplayName, &reverse.DisplayName)
-	//mashery.assertSameString(t, "uri", &source.Uri, &reverse.Uri)
-	//mashery.assertSameString(t, "blog", &source.Blog, &reverse.Blog)
-	//mashery.assertSameString(t, "im", &source.Im, &reverse.Im)
-	//mashery.assertSameString(t, "imsvc", &source.Imsvc, &reverse.Imsvc)
-	//mashery.assertSameString(t, "phone", &source.Phone, &reverse.Phone)
-	//mashery.assertSameString(t, "company", &source.Company, &reverse.Company)
-	//mashery.assertSameString(t, "address1", &source.Address1, &reverse.Address1)
-	//mashery.assertSameString(t, "address2", &source.Address2, &reverse.Address2)
-	//mashery.assertSameString(t, "locality", &source.Locality, &reverse.Locality)
-	//mashery.assertSameString(t, "region", &source.Region, &reverse.Region)
-	//mashery.assertSameString(t, "postal code", &source.PostalCode, &reverse.PostalCode)
-	//mashery.assertSameString(t, "country code", &source.CountryCode, &reverse.CountryCode)
-	//mashery.assertSameString(t, "first name", &source.FirstName, &reverse.FirstName)
-	//mashery.assertSameString(t, "last name", &source.LastName, &reverse.LastName)
-	//mashery.assertSameString(t, "area status", &source.AreaStatus, &reverse.AreaStatus)
-	//mashery.assertSameString(t, "external id", &source.ExternalId, &reverse.ExternalId)
+	mapper := mashschema.MemberMapper
+
+	d := mapper.TestResourceData()
+
+	source := createCompleteMember()
+	dg := mapper.SetState(&source, d)
+
+	assert.Equal(t, 0, len(dg))
+
+	reverseIdentRaw, dg := mapper.V3Identity(d)
+	assert.Equal(t, 0, len(dg))
+
+	reverseIdent := reverseIdentRaw.(masherytypes.MemberIdentifier)
+	assert.Equal(t, source.Id, reverseIdent.MemberId)
+	assert.Equal(t, source.Username, reverseIdent.Username)
+
+	reverseUpsert, _, dg := mapper.Upsertable(d)
+	assert.Equal(t, 0, len(dg))
+
+	source.Created = nil
+	source.Updated = nil
+
+	fmt.Println(source)
+	fmt.Println(reverseUpsert)
+	assert.True(t, assert.ObjectsAreEqualValues(source, reverseUpsert))
 }

@@ -120,6 +120,17 @@ func (mi *ResourceMapperImpl) TestResourceData() *schema.ResourceData {
 	return res.TestResourceData()
 }
 
+func (mi *ResourceMapperImpl) TestResourceDataWith(init map[string]interface{}) (*schema.ResourceData, diag.Diagnostics) {
+	res := schema.Resource{
+		Schema: mi.schema,
+	}
+
+	rv := res.TestResourceData()
+	rvd := SetResourceFields(init, rv)
+
+	return rv, rvd
+}
+
 func (m *ResourceMapperImpl) TerraformSchema() TFResourceSchema {
 	return m.schema
 }
