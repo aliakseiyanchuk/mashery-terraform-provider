@@ -13,16 +13,16 @@ func init() {
 	EndpointMethodResource = &ResourceTemplate{
 		Mapper: mashschema.ServiceEndpointMethodMapper,
 		DoRead: func(ctx context.Context, client v3client.Client, identifier mashschema.V3ObjectIdentifier) (mashschema.Upsertable, error) {
-			return client.GetEndpointMethod(ctx, identifier.(masherytypes.EndpointMethodIdentifier))
+			return client.GetEndpointMethod(ctx, identifier.(masherytypes.ServiceEndpointMethodIdentifier))
 		},
 		DoCreate: func(ctx context.Context, client v3client.Client, upsertable mashschema.Upsertable, identifier mashschema.V3ObjectIdentifier) (mashschema.Upsertable, error) {
-			return client.CreateEndpointMethod(ctx, identifier.(masherytypes.EndpointIdentifier), upsertable.(masherytypes.Method))
+			return client.CreateEndpointMethod(ctx, identifier.(masherytypes.ServiceEndpointIdentifier), upsertable.(masherytypes.ServiceEndpointMethod))
 		},
 		DoUpdate: func(ctx context.Context, client v3client.Client, upsertable mashschema.Upsertable) (mashschema.Upsertable, error) {
-			return client.UpdateEndpointMethod(ctx, upsertable.(masherytypes.Method))
+			return client.UpdateEndpointMethod(ctx, upsertable.(masherytypes.ServiceEndpointMethod))
 		},
 		DoDelete: func(ctx context.Context, client v3client.Client, identifier mashschema.V3ObjectIdentifier) error {
-			return client.DeleteEndpointMethod(ctx, identifier.(masherytypes.EndpointMethodIdentifier))
+			return client.DeleteEndpointMethod(ctx, identifier.(masherytypes.ServiceEndpointMethodIdentifier))
 		},
 	}
 }

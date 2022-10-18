@@ -13,7 +13,7 @@ func init() {
 	EndpointResource = &ResourceTemplate{
 		Mapper: mashschema.ServiceEndpointMapper,
 		DoRead: func(ctx context.Context, client v3client.Client, identifier mashschema.V3ObjectIdentifier) (mashschema.Upsertable, error) {
-			return client.GetEndpoint(ctx, identifier.(masherytypes.EndpointIdentifier))
+			return client.GetEndpoint(ctx, identifier.(masherytypes.ServiceEndpointIdentifier))
 		},
 		DoCreate: func(ctx context.Context, client v3client.Client, upsertable mashschema.Upsertable, identifier mashschema.V3ObjectIdentifier) (mashschema.Upsertable, error) {
 			return client.CreateEndpoint(ctx, identifier.(masherytypes.ServiceIdentifier), upsertable.(masherytypes.Endpoint))
@@ -23,7 +23,7 @@ func init() {
 		},
 		// The methods and method filters are deleted together with the endpoint.
 		DoDelete: func(ctx context.Context, client v3client.Client, identifier mashschema.V3ObjectIdentifier) error {
-			return client.DeleteEndpoint(ctx, identifier.(masherytypes.EndpointIdentifier))
+			return client.DeleteEndpoint(ctx, identifier.(masherytypes.ServiceEndpointIdentifier))
 		},
 	}
 }

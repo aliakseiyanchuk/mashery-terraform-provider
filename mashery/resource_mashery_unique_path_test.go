@@ -1,6 +1,7 @@
 package mashery_test
 
 import (
+	"github.com/stretchr/testify/assert"
 	"terraform-provider-mashery/mashery"
 	"testing"
 )
@@ -8,7 +9,5 @@ import (
 func TestWillCreateUniquePath(t *testing.T) {
 	v := mashery.CreateUniquePath("path", 1610977328)
 
-	if v != "/path_sXEbVb" {
-		t.Errorf("Unexpected value %s", v)
-	}
+	assert.Equal(t, "/path_sXEbVb", v)
 }
