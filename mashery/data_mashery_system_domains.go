@@ -11,8 +11,7 @@ var publicDomainsDataSource *DatasourceTemplate
 
 func init() {
 	systemDomainsDataSource = &DatasourceTemplate{
-		V3ObjectTypeName: "system domain",
-		QueryExtractor:   DataSourceDefaultQueryExtractor,
+		QueryExtractor: DataSourceDefaultQueryExtractor,
 		Query: func(ctx context.Context, cl v3client.Client, query map[string]string) ([]interface{}, error) {
 			if v3Objects, err := cl.GetSystemDomains(ctx); err != nil {
 				return nil, err
@@ -24,8 +23,7 @@ func init() {
 	}
 
 	publicDomainsDataSource = &DatasourceTemplate{
-		V3ObjectTypeName: "public domain",
-		QueryExtractor:   DataSourceDefaultQueryExtractor,
+		QueryExtractor: DataSourceDefaultQueryExtractor,
 		Query: func(ctx context.Context, cl v3client.Client, query map[string]string) ([]interface{}, error) {
 			if v3Objects, err := cl.GetPublicDomains(ctx); err != nil {
 				return nil, err

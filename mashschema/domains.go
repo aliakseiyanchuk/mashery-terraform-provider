@@ -25,6 +25,7 @@ func (dmi *DomainsMapperImpl) PersistTyped(domains []string, d *schema.ResourceD
 func init() {
 	DomainsMapper = &DomainsMapperImpl{
 		DataSourceMapperImpl{
+			v3ObjectName: "domain",
 			schema: map[string]*schema.Schema{
 				MashDomains: {
 					Type:        schema.TypeSet,

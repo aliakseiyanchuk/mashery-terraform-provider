@@ -39,6 +39,7 @@ func (etsm *emailTemplateSetMapperImpl) initEmailTemplateSetSchemaBoilerplate() 
 func init() {
 	EmailTemplateSetMapper = &emailTemplateSetMapperImpl{
 		DataSourceMapperImpl{
+			v3ObjectName: "email template set",
 			schema: map[string]*schema.Schema{
 				MashDataSourceSearch: {
 					Type:        schema.TypeMap,

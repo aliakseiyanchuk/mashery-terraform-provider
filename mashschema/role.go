@@ -58,9 +58,9 @@ func (rm *RoleMapperImpl) initSchemaBoilerplate() {
 }
 
 func init() {
-
 	RoleMapper = &RoleMapperImpl{
 		DataSourceMapperImpl: DataSourceMapperImpl{
+			v3ObjectName: "role",
 			schema: map[string]*schema.Schema{
 				MashDataSourceSearch: {
 					Type:        schema.TypeMap,

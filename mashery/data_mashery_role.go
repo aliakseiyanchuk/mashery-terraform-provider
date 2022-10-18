@@ -10,9 +10,8 @@ var roleDataSource *DatasourceTemplate
 
 func init() {
 	roleDataSource = &DatasourceTemplate{
-		V3ObjectTypeName: "role",
-		QueryExtractor:   DataSourceDefaultQueryExtractor,
-		RequireUnique:    true,
+		QueryExtractor: DataSourceDefaultQueryExtractor,
+		RequireUnique:  true,
 		Query: func(ctx context.Context, cl v3client.Client, query map[string]string) ([]interface{}, error) {
 			if v3Objects, err := cl.ListRolesFiltered(ctx, query, mashschema.EmptyStringArray); err != nil {
 				return nil, err

@@ -16,10 +16,10 @@ func resourceMasheryService() *schema.Resource {
 	return &schema.Resource{
 		// CRUD operations
 		ReadContext:   serviceRead,
-		CreateContext: serviceCreate,
+		CreateContext: ServiceCreate,
 		UpdateContext: serviceUpdate,
 		DeleteContext: serviceDelete,
-		// Schema
+		// schema
 		Schema: mashschema.ServiceSchema,
 		// Importer by ID
 		Importer: &schema.ResourceImporter{
@@ -63,7 +63,7 @@ func serviceReadRoles(ctx context.Context, d *schema.ResourceData, v3cl v3client
 	}
 }
 
-func serviceCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func ServiceCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	mashSvcUpsert, _, _ := mashschema.ServiceMapper.UpsertableTyped(d)
 
 	doLogJson("Will attempt to create new service with this upsertable", mashSvcUpsert)

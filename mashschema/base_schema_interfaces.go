@@ -20,6 +20,7 @@ type Upsertable interface{}
 type DataSourceMapper interface {
 	// TerraformSchema get the Terraform schema for this resource
 	TerraformSchema() TFResourceSchema
+	V3ObjectName() string
 
 	SetState(rv []interface{}, d *schema.ResourceData) diag.Diagnostics
 	SetStateOf(rv interface{}, d *schema.ResourceData) diag.Diagnostics
@@ -27,12 +28,25 @@ type DataSourceMapper interface {
 
 type DataSourceMapperImpl struct {
 	DataSourceMapper
-	schema      TFResourceSchema
-	persistOne  PersistFunc
-	persistMany PersistManyFunc
+	v3ObjectName string
+	schema       TFResourceSchema
+	persistOne   PersistFunc
+	persistMany  PersistManyFunc
+}
+
+func (dsmi *DataSourceMapperImpl) V3ObjectName() string {
+	if len(dsmi.v3ObjectName) > 0 {
+		return dsmi.v3ObjectName
+	} else {
+		return "---undefined---"
+	}
 }
 
 func (dsmi *DataSourceMapperImpl) SchemaBuilder() *SchemaBuilder {
+	if dsmi.schema == nil {
+		dsmi.schema = map[string]*schema.Schema{}
+	}
+
 	return &SchemaBuilder{schema: &dsmi.schema}
 }
 

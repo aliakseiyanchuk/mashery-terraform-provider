@@ -17,9 +17,6 @@ type DatasourceTemplate struct {
 	// RequireUnique whether the schema of the data query operation requires a unique match.
 	RequireUnique bool
 
-	// V3ObjectTypeName V3 object name being queried through Mashery API
-	V3ObjectTypeName string
-
 	// QueryExtractor function that that will build the query parameters. {@link DefaultQueryExtractor}
 	// provides a sensible default
 	QueryExtractor func(*schema.ResourceData) (map[string]string, error)
@@ -32,7 +29,7 @@ type DatasourceTemplate struct {
 func (t *DatasourceTemplate) TFDataSourceSchema() *schema.Resource {
 	// Panic if necessary functions were not supplied
 	if t.Mapper == nil || t.Query == nil {
-		panic(fmt.Sprintf("Unsatisfied initialization for object %s", t.V3ObjectTypeName))
+		panic(fmt.Sprintf("Unsatisfied initialization for object %s", t.Mapper.V3ObjectName()))
 	}
 
 	return &schema.Resource{
@@ -53,7 +50,7 @@ func (t *DatasourceTemplate) actualQuery(d *schema.ResourceData) (map[string]str
 	if t.QueryExtractor != nil {
 		return t.QueryExtractor(d)
 	} else {
-		return nil, nil
+		return map[string]string{}, nil
 	}
 }
 
@@ -68,29 +65,29 @@ func (t *DatasourceTemplate) TemplateQuery(ctx context.Context, d *schema.Resour
 	if query, queryError := t.actualQuery(d); queryError != nil {
 		return diag.Diagnostics{diag.Diagnostic{
 			Severity: diag.Error,
-			Summary:  fmt.Sprintf("invalid query for %s", t.V3ObjectTypeName),
-			Detail:   fmt.Sprintf("qeurying %s is not possible: %s", t.V3ObjectTypeName, queryError.Error()),
+			Summary:  fmt.Sprintf("invalid query for %s", t.Mapper.V3ObjectName()),
+			Detail:   fmt.Sprintf("qeurying %s is not possible: %s", t.Mapper.V3ObjectName(), queryError.Error()),
 		}}
 	} else {
 		if rv, err := t.Query(ctx, v3cl, query); err != nil {
 			return diag.Diagnostics{diag.Diagnostic{
 				Severity: diag.Error,
-				Summary:  fmt.Sprintf("querying %s failed", t.V3ObjectTypeName),
-				Detail:   fmt.Sprintf("querying %ss using parameters %s has failed: %s", t.V3ObjectTypeName, query, queryError.Error()),
+				Summary:  fmt.Sprintf("querying %s failed", t.Mapper.V3ObjectName()),
+				Detail:   fmt.Sprintf("querying %ss using parameters %s has failed: %s", t.Mapper.V3ObjectName(), query, err.Error()),
 			}}
 		} else {
 			switch {
 			case t.isMatchRequired(d) && len(rv) == 0:
 				return diag.Diagnostics{diag.Diagnostic{
 					Severity: diag.Error,
-					Summary:  fmt.Sprintf("no %ss mached the query", t.V3ObjectTypeName),
-					Detail:   fmt.Sprintf("querying %ss using parameters %s has retuned no matches where results are expected", t.V3ObjectTypeName, query),
+					Summary:  fmt.Sprintf("no %ss mached the query", t.Mapper.V3ObjectName()),
+					Detail:   fmt.Sprintf("querying %ss using parameters %s has retuned no matches where results are expected", t.Mapper.V3ObjectName(), query),
 				}}
 			case t.isUniqueMatchRequired() && len(rv) != 1:
 				return diag.Diagnostics{diag.Diagnostic{
 					Severity: diag.Error,
-					Summary:  fmt.Sprintf("multiple %ss mached the query", t.V3ObjectTypeName),
-					Detail:   fmt.Sprintf("querying %ss using parameters %s has retuned %d matches were exactly one required", t.V3ObjectTypeName, query, len(rv)),
+					Summary:  fmt.Sprintf("multiple %ss mached the query", t.Mapper.V3ObjectName()),
+					Detail:   fmt.Sprintf("querying %ss using parameters %s has retuned %d matches were exactly one required", t.Mapper.V3ObjectName(), query, len(rv)),
 				}}
 			case t.isUniqueMatchRequired() && len(rv) == 1:
 				return t.Mapper.SetStateOf(rv[0], d)
@@ -102,8 +99,8 @@ func (t *DatasourceTemplate) TemplateQuery(ctx context.Context, d *schema.Resour
 			default:
 				return diag.Diagnostics{diag.Diagnostic{
 					Severity: diag.Error,
-					Summary:  fmt.Sprintf("undefined query result of %s", t.V3ObjectTypeName),
-					Detail:   fmt.Sprintf("querying %s returned data set that matches non supported conditions to persis in Terraform schema", t.V3ObjectTypeName),
+					Summary:  fmt.Sprintf("undefined query result of %s", t.Mapper.V3ObjectName()),
+					Detail:   fmt.Sprintf("querying %s returned data set that matches non supported conditions to persis in Terraform schema", t.Mapper.V3ObjectName()),
 				}}
 			}
 		}
