@@ -6,7 +6,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-// Schema definition for Mashery role.
+// schema definition for Mashery role.
 
 const (
 	MashRolePredefined     = "predefined_role"
@@ -47,14 +47,14 @@ func (rm *RoleMapperImpl) rolePermission(inp *masherytypes.Role, perm string) ma
 }
 
 func (rm *RoleMapperImpl) initSchemaBoilerplate() {
-	addComputedString(&RoleMapper.schema, MashObjCreated, "Date/time object was created")
-	addComputedString(&RoleMapper.schema, MashObjUpdated, "Date/time object was updated")
-	addComputedString(&RoleMapper.schema, MashObjName, "Role name")
-	addOptionalString(&RoleMapper.schema, MashObjDescription, "Role description")
-
-	addComputedBoolean(&RoleMapper.schema, MashRolePredefined, "Whether role is pre-defined")
-	addComputedBoolean(&RoleMapper.schema, MashRoleOrgRole, "Whether this role is an org-role")
-	addComputedBoolean(&RoleMapper.schema, MashRoleAssignableRole, "Whether this role is assignable")
+	rm.SchemaBuilder().
+		AddComputedString(MashObjCreated, "Date/time object was created").
+		AddComputedString(MashObjUpdated, "Date/time object was updated").
+		AddComputedString(MashObjName, "Role name").
+		AddOptionalString(MashObjDescription, "Role description").
+		AddComputedBoolean(MashRolePredefined, "Whether role is pre-defined").
+		AddComputedBoolean(MashRoleOrgRole, "Whether this role is an org-role").
+		AddComputedBoolean(MashRoleAssignableRole, "Whether this role is assignable")
 }
 
 func init() {

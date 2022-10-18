@@ -97,13 +97,13 @@ func (psem *PackagePlanServiceEndpointMethodMapperImpl) SetServiceFilterIdent(fi
 	d.Set(ServiceEndpointMethodFilterRef, CompoundId(filter))
 }
 
-func initPlanMethodSchemaBoilerplate() {
-	addComputedString(&PackagePlanServiceEndpointMethodMapper.schema, MashObjId, "Object v3Identity")
-	addComputedString(&PackagePlanServiceEndpointMethodMapper.schema, MashObjCreated, "Date/time the object was created")
-	addComputedString(&PackagePlanServiceEndpointMethodMapper.schema, MashObjUpdated, "Date/time the object was created")
-
-	addComputedString(&PackagePlanServiceEndpointMethodMapper.schema, PlanEndpointMethodFilterId, "Package filter UUID v3Identity")
-	addComputedString(&PackagePlanServiceEndpointMethodMapper.schema, PlanEndpointMethodId, "Package method UUID v3Identity")
+func (psem *PackagePlanServiceEndpointMethodMapperImpl) initPlanMethodSchemaBoilerplate() {
+	psem.SchemaBuilder().
+		AddComputedString(MashObjId, "Object v3Identity").
+		AddComputedString(MashObjCreated, "Date/time the object was created").
+		AddComputedString(MashObjUpdated, "Date/time the object was created").
+		AddComputedString(PlanEndpointMethodFilterId, "Package filter UUID v3Identity").
+		AddComputedString(PlanEndpointMethodId, "Package method UUID v3Identity")
 }
 
 func init() {
@@ -148,5 +148,5 @@ func init() {
 		},
 	}
 
-	initPlanMethodSchemaBoilerplate()
+	PackagePlanServiceEndpointMethodMapper.initPlanMethodSchemaBoilerplate()
 }

@@ -70,13 +70,13 @@ func (semm *ServiceEndpointMethodMapperImpl) PersistTyped(inp masherytypes.Servi
 	return semm.persistMap(inp.Identifier(), data, d)
 }
 
-func initEndpointMethodSchemaBoilerplate() {
-	addComputedString(&ServiceEndpointMethodMapper.schema, ServiceEndpointMethodRef, "V3 v3Identity of this method")
-	addComputedString(&ServiceEndpointMethodMapper.schema, MashObjCreated, "Date/time the object was created")
-	addComputedString(&ServiceEndpointMethodMapper.schema, MashObjUpdated, "Date/time the object was updated")
-
-	addOptionalString(&ServiceEndpointMethodMapper.schema, MashServiceEndpointMethodSampleJson, "Sample JSON response")
-	addOptionalString(&ServiceEndpointMethodMapper.schema, MashServiceEndpointMethodSampleXml, "Sample XML response")
+func (semm *ServiceEndpointMethodMapperImpl) initEndpointMethodSchemaBoilerplate() {
+	semm.SchemaBuilder().
+		AddComputedString(ServiceEndpointMethodRef, "V3 v3Identity of this method").
+		AddComputedString(MashObjCreated, "Date/time the object was created").
+		AddComputedString(MashObjUpdated, "Date/time the object was updated").
+		AddOptionalString(MashServiceEndpointMethodSampleJson, "Sample JSON response").
+		AddOptionalString(MashServiceEndpointMethodSampleXml, "Sample XML response")
 }
 
 func init() {
@@ -122,5 +122,5 @@ func init() {
 		},
 	}
 
-	initEndpointMethodSchemaBoilerplate()
+	ServiceEndpointMethodMapper.initEndpointMethodSchemaBoilerplate()
 }

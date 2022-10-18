@@ -37,27 +37,26 @@ const (
 var memberAreaStatusEnum = []string{"active", "waiting", "disabled"}
 
 // Filling in member boilerplate settings
-func fillMemberBoilerplate() {
-	addComputedString(&MemberMapper.schema, MashMemberCreated, "Date/time the member was created")
-	addComputedString(&MemberMapper.schema, MashMemberUpdated, "Date/time the member was updated")
-
-	addRequiredString(&MemberMapper.schema, MashMemberDisplayName, "Name to use in portal blog comments, discussion forums")
-	addOptionalString(&MemberMapper.schema, MashMemberUri, "URI of the website of the user")
-	addOptionalString(&MemberMapper.schema, MashMemberBlog, "URI of the blog of the user")
-	addOptionalString(&MemberMapper.schema, MashMemberIm, "IM handle")
-	addOptionalString(&MemberMapper.schema, MashMemberImSvc, "IM service, e.g. Hipchat, Google Hangouts, etc.")
-	addOptionalString(&MemberMapper.schema, MashMemberPhone, "Phone number of the user")
-	addOptionalString(&MemberMapper.schema, MashMemberCompany, "Company name")
-	addOptionalString(&MemberMapper.schema, MashMemberAddress1, "Address 1")
-	addOptionalString(&MemberMapper.schema, MashMemberAddress2, "Address 2")
-	addOptionalString(&MemberMapper.schema, MashMemberLocality, "Locale/city of the user")
-	addOptionalString(&MemberMapper.schema, MashMemberRegion, "Region/country of the user")
-	addOptionalString(&MemberMapper.schema, MashMemberPostalCode, "Postal/zip code")
-	addOptionalString(&MemberMapper.schema, MashMemberCountryCode, "Code of the country of the user")
-	addOptionalString(&MemberMapper.schema, MashMemberFirstName, "First name")
-	addOptionalString(&MemberMapper.schema, MashMemberLastName, "Last name")
-
-	addOptionalString(&MemberMapper.schema, MashMemberExternalId, "ID of the user in an external system, e.g. Salesforce")
+func (mmi *MemberMapperImpl) fillMemberBoilerplate() {
+	mmi.SchemaBuilder().
+		AddComputedString(MashMemberCreated, "Date/time the member was created").
+		AddComputedString(MashMemberUpdated, "Date/time the member was updated").
+		AddRequiredString(MashMemberDisplayName, "Name to use in portal blog comments, discussion forums").
+		AddOptionalString(MashMemberUri, "URI of the website of the user").
+		AddOptionalString(MashMemberBlog, "URI of the blog of the user").
+		AddOptionalString(MashMemberIm, "IM handle").
+		AddOptionalString(MashMemberImSvc, "IM service, e.g. Hipchat, Google Hangouts, etc.").
+		AddOptionalString(MashMemberPhone, "Phone number of the user").
+		AddOptionalString(MashMemberCompany, "Company name").
+		AddOptionalString(MashMemberAddress1, "Address 1").
+		AddOptionalString(MashMemberAddress2, "Address 2").
+		AddOptionalString(MashMemberLocality, "Locale/city of the user").
+		AddOptionalString(MashMemberRegion, "Region/country of the user").
+		AddOptionalString(MashMemberPostalCode, "Postal/zip code").
+		AddOptionalString(MashMemberCountryCode, "Code of the country of the user").
+		AddOptionalString(MashMemberFirstName, "First name").
+		AddOptionalString(MashMemberLastName, "Last name").
+		AddOptionalString(MashMemberExternalId, "ID of the user in an external system, e.g. Salesforce")
 
 }
 
@@ -185,7 +184,7 @@ func init() {
 		},
 	}
 
-	fillMemberBoilerplate()
+	MemberMapper.fillMemberBoilerplate()
 
 	MemberMapper.v3Identity = func(d *schema.ResourceData) (interface{}, diag.Diagnostics) {
 		rv := masherytypes.MemberIdentifier{}

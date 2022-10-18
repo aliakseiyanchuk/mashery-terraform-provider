@@ -32,6 +32,10 @@ type DataSourceMapperImpl struct {
 	persistMany PersistManyFunc
 }
 
+func (dsmi *DataSourceMapperImpl) SchemaBuilder() *SchemaBuilder {
+	return &SchemaBuilder{schema: &dsmi.schema}
+}
+
 func (dsmi *DataSourceMapperImpl) SetState(rv []interface{}, d *schema.ResourceData) diag.Diagnostics {
 	if dsmi.persistMany != nil {
 		return dsmi.persistMany(rv, d)
@@ -97,6 +101,10 @@ type ResourceMapperImpl struct {
 	upsertFunc   UpsertFunc
 	persistFunc  PersistFunc
 	v3Identity   V3IdentifierFunc
+}
+
+func (rmi *ResourceMapperImpl) SchemaBuilder() *SchemaBuilder {
+	return &SchemaBuilder{schema: &rmi.schema}
 }
 
 func (rmi *ResourceMapperImpl) persistMap(inp interface{}, fields map[string]interface{}, d *schema.ResourceData) diag.Diagnostics {

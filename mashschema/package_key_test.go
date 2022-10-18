@@ -22,7 +22,7 @@ func TestV3PackageKeyToResourceDataFromMinimalInput(t *testing.T) {
 
 func TestV3PackageKeyToResourceData(t *testing.T) {
 	//res := schema.Resource{
-	//	Schema: mashschema.PackageKeySchema,
+	//	schema: mashschema.PackageKeySchema,
 	//}
 	//var tm masherytypes.MasheryJSONTime = masherytypes.MasheryJSONTime(time.Now())
 	//

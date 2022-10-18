@@ -326,7 +326,7 @@ var ServiceSchema = map[string]*schema.Schema{
 	},
 }
 
-// DataSourceMashSvcSchema Schema for service data source, which allows for the first service that matches
+// DataSourceMashSvcSchema schema for service data source, which allows for the first service that matches
 // the specified query
 var DataSourceMashSvcSchema = DataSourceBaseSchema()
 

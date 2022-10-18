@@ -100,13 +100,14 @@ func (sefm *ServiceEndpointMethodFilterMapperImpl) PersistTyped(inp masherytypes
 	return sefm.persistMap(inp.Identifier(), data, d)
 }
 
-func initEndpointMethodFilterSchemaBoilerplate() {
-	addComputedString(&ServiceEndpointMethodFilterMapper.schema, MashEndpointMethodFilterId, "V3 Id of this filter")
-	addRequiredString(&ServiceEndpointMethodFilterMapper.schema, MashObjName, "Filter name")
+func (sefm *ServiceEndpointMethodFilterMapperImpl) initEndpointMethodFilterSchemaBoilerplate() {
+	sefm.SchemaBuilder().
+		AddComputedString(MashEndpointMethodFilterId, "V3 Id of this filter").
+		AddRequiredString(MashObjName, "Filter name").
 
-	// Created and updated fields
-	addComputedString(&ServiceEndpointMethodFilterMapper.schema, MashObjCreated, "Date/time the object was created")
-	addComputedString(&ServiceEndpointMethodFilterMapper.schema, MashObjUpdated, "Date/time the object was updated")
+		// Created and updated fields
+		AddComputedString(MashObjCreated, "Date/time the object was created").
+		AddComputedString(MashObjUpdated, "Date/time the object was updated")
 }
 
 func init() {
@@ -164,5 +165,5 @@ func init() {
 		},
 	}
 
-	initEndpointMethodFilterSchemaBoilerplate()
+	ServiceEndpointMethodFilterMapper.initEndpointMethodFilterSchemaBoilerplate()
 }

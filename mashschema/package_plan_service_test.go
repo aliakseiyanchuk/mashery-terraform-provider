@@ -40,7 +40,7 @@ func TestPlanServiceIdentifier_From(t *testing.T) {
 //
 //func TestV3MasheryPlanServiceUpsertable_fromRefs(t *testing.T) {
 //	res := schema.Resource{
-//		Schema: mashschema.PlanService,
+//		schema: mashschema.PlanService,
 //	}
 //	d := res.TestResourceData()
 //

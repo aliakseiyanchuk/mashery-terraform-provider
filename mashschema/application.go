@@ -116,29 +116,26 @@ func (ai *ApplicationMapperImpl) PersistTyped(inp masherytypes.Application, d *s
 }
 
 // Fill in boilerplate fields of Mashery application.
-func fillAppSchemaBoilerplate() {
-	addComputedString(&ApplicationMapper.schema, MashAppId, "Original application id")
-	addComputedString(&ApplicationMapper.schema, MashAppCreated, "Date/time the object was created")
-	addComputedString(&ApplicationMapper.schema, MashAppUpdated, "Date/time the object was last updated")
-	addComputedString(&ApplicationMapper.schema, MashAppOwnerUsername, "Owner user name of this application")
-
-	addOptionalString(&ApplicationMapper.schema, MashAppDescription, "Description of the application")
-	addOptionalString(&ApplicationMapper.schema, MashAppType, "Type of application")
-
-	addOptionalBoolean(&ApplicationMapper.schema, MashAppCommercial, "Whether or not the application is commercial in nature")
-	addOptionalBoolean(&ApplicationMapper.schema, MashAppAds, "Whether or not the application supports ads")
-
-	addOptionalString(&ApplicationMapper.schema, MashAppAdSystem, "Advertisement system")
-	addOptionalString(&ApplicationMapper.schema, MashAppUsageModel, "Usage model")
-
-	addOptionalString(&ApplicationMapper.schema, MashAppTags, "Tags, i.e. tracking metadata")
-	addOptionalString(&ApplicationMapper.schema, MashAppNotes, "Notes about the application.")
-	addOptionalString(&ApplicationMapper.schema, MashAppHowDidYouHear, "How did someone hear about the API?")
-	addOptionalString(&ApplicationMapper.schema, MashAppPreferredProtocol, "Protocol preference of developer, e.g. REST or SOAP")
-	addOptionalString(&ApplicationMapper.schema, MashAppPreferredOutput, "Output preference of developer, e.g. json or xml.")
-	addOptionalString(&ApplicationMapper.schema, MashAppExternalId, "ID of the application in an external system, e.g. Salesforce")
-	addOptionalString(&ApplicationMapper.schema, MashAppUri, "URI of the application")
-	addOptionalString(&ApplicationMapper.schema, MashAppOAuthRedirectUri, "OAuth 2 redirect URI")
+func (ai *ApplicationMapperImpl) fillAppSchemaBoilerplate() {
+	ai.SchemaBuilder().
+		AddComputedString(MashAppId, "Original application id").
+		AddComputedString(MashAppCreated, "Date/time the object was created").
+		AddComputedString(MashAppUpdated, "Date/time the object was last updated").
+		AddComputedString(MashAppOwnerUsername, "Owner user name of this application").
+		AddOptionalString(MashAppDescription, "Description of the application").
+		AddOptionalString(MashAppType, "Type of application").
+		AddOptionalBoolean(MashAppCommercial, "Whether or not the application is commercial in nature").
+		AddOptionalBoolean(MashAppAds, "Whether or not the application supports ads").
+		AddOptionalString(MashAppAdSystem, "Advertisement system").
+		AddOptionalString(MashAppUsageModel, "Usage model").
+		AddOptionalString(MashAppTags, "Tags, i.e. tracking metadata").
+		AddOptionalString(MashAppNotes, "Notes about the application.").
+		AddOptionalString(MashAppHowDidYouHear, "How did someone hear about the API?").
+		AddOptionalString(MashAppPreferredProtocol, "Protocol preference of developer, e.g. REST or SOAP").
+		AddOptionalString(MashAppPreferredOutput, "Output preference of developer, e.g. json or xml.").
+		AddOptionalString(MashAppExternalId, "ID of the application in an external system, e.g. Salesforce").
+		AddOptionalString(MashAppUri, "URI of the application").
+		AddOptionalString(MashAppOAuthRedirectUri, "OAuth 2 redirect URI")
 }
 
 func init() {
@@ -175,11 +172,11 @@ func init() {
 						Type: schema.TypeString,
 					},
 				},
-			}, // Schema
+			}, // schema
 		},
 	}
 
-	fillAppSchemaBoilerplate()
+	ApplicationMapper.fillAppSchemaBoilerplate()
 
 	ApplicationMapper.upsertFunc = func(d *schema.ResourceData) (Upsertable, V3ObjectIdentifier, diag.Diagnostics) {
 		return ApplicationMapper.UpsertableTyped(d)

@@ -27,11 +27,13 @@ func (etsm *emailTemplateSetMapperImpl) PersistTyped(set masherytypes.EmailTempl
 	return SetResourceFields(data, d)
 }
 
-func initEmailTemplateSetSchemaBoilerplate() {
-	addComputedString(&EmailTemplateSetMapper.schema, MashObjCreated, "Date/time this email template set was created")
-	addComputedString(&EmailTemplateSetMapper.schema, MashObjUpdated, "Date/time this email template set was updated")
-	addRequiredString(&EmailTemplateSetMapper.schema, MashObjName, "Email data set name")
-	addComputedOptionalString(&EmailTemplateSetMapper.schema, MashEmailTemplateSetType, "Email template set type")
+func (etsm *emailTemplateSetMapperImpl) initEmailTemplateSetSchemaBoilerplate() {
+	etsm.SchemaBuilder().
+		AddComputedString(MashObjCreated, "Date/time this email template set was created").
+		AddComputedString(MashObjUpdated, "Date/time this email template set was updated").
+		AddRequiredString(MashObjName, "Email data set name").
+		AddComputedOptionalString(MashEmailTemplateSetType, "Email template set type").
+		AddComputedString(MashEmailTemplateSetId, "Email set Id")
 }
 
 func init() {
@@ -58,6 +60,5 @@ func init() {
 		},
 	}
 
-	initEmailTemplateSetSchemaBoilerplate()
-	addComputedString(&EmailTemplateSetMapper.schema, MashEmailTemplateSetId, "Email set Id")
+	EmailTemplateSetMapper.initEmailTemplateSetSchemaBoilerplate()
 }

@@ -105,18 +105,16 @@ func (pkm *PackageKeyMapperImpl) PersistTyped(inp masherytypes.PackageKey, d *sc
 	return pkm.persistMap(inp.Identifier(), data, d)
 }
 
-func initPackageKeyBoilerplate() {
-	addComputedOptionalString(&PackageKeyMapper.schema, MashPackageKeyIdent, "Package key value")
-	addComputedOptionalString(&PackageKeyMapper.schema, MashPackageKeySecret, "Package key secret part")
-
-	addComputedString(&PackageKeyMapper.schema, MashPackageKeyCreated, "Date/time the object was created")
-	addComputedString(&PackageKeyMapper.schema, MashPackageKeyUpdated, "Date/time the object was last updated")
-
-	addRequiredInt(&PackageKeyMapper.schema, MashPackageKeyRateLimitCeiling, "Quota limit")
-	addOptionalBoolean(&PackageKeyMapper.schema, MashPackageKeyRateLimitExempt, "If set to true, package key can make unlimited number of calls")
-
-	addRequiredInt(&PackageKeyMapper.schema, MashPackageKeyQpsLimitCeiling, "Qps Limit")
-	addOptionalBoolean(&PackageKeyMapper.schema, MashPackageKeyQpsLimitExempt, "If set to true, package key can make unlimited number of calls per second")
+func (pkm *PackageKeyMapperImpl) initPackageKeyBoilerplate() {
+	pkm.SchemaBuilder().
+		AddComputedOptionalString(MashPackageKeyIdent, "Package key value").
+		AddComputedOptionalString(MashPackageKeySecret, "Package key secret part").
+		AddComputedString(MashPackageKeyCreated, "Date/time the object was created").
+		AddComputedString(MashPackageKeyUpdated, "Date/time the object was last updated").
+		AddRequiredInt(MashPackageKeyRateLimitCeiling, "Quota limit").
+		AddOptionalBoolean(MashPackageKeyRateLimitExempt, "If set to true, package key can make unlimited number of calls").
+		AddRequiredInt(MashPackageKeyQpsLimitCeiling, "Qps Limit").
+		AddOptionalBoolean(MashPackageKeyQpsLimitExempt, "If set to true, package key can make unlimited number of calls per second")
 }
 
 func init() {
@@ -195,5 +193,5 @@ func init() {
 			},
 		},
 	}
-	initPackageKeyBoilerplate()
+	PackageKeyMapper.initPackageKeyBoilerplate()
 }
