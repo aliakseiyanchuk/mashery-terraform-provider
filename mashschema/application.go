@@ -40,12 +40,33 @@ type ApplicationMapperImpl struct {
 }
 
 func (ai *ApplicationMapperImpl) UpsertableTyped(d *schema.ResourceData) (masherytypes.Application, V3ObjectIdentifier, diag.Diagnostics) {
+	rvd := diag.Diagnostics{}
+
 	mid := masherytypes.MemberIdentifier{}
-	CompoundIdFrom(&mid, ExtractString(d, MashAppOwner, ""))
+	if !CompoundIdFrom(&mid, ExtractString(d, MashAppOwner, "")) {
+		rvd = append(rvd, diag.Diagnostic{
+			Severity:      diag.Error,
+			Summary:       "malformed owner",
+			Detail:        "empty or invalid application owner; value must be from the id attribute of the desired member datasource or resource",
+			AttributePath: cty.GetAttrPath(MashAppOwner),
+		})
+	}
+
+	appId := masherytypes.ApplicationIdentifier{}
+	if len(d.Id()) > 0 {
+		if !CompoundIdFrom(&appId, d.Id()) {
+			rvd = append(rvd, diag.Diagnostic{
+				Severity:      diag.Error,
+				Summary:       "malformed application identity",
+				Detail:        "application identity is malformed, and it's a bug; please report to the maintainer",
+				AttributePath: cty.GetAttrPath(MashAppOwner),
+			})
+		}
+	}
 
 	return masherytypes.Application{
 		AddressableV3Object: masherytypes.AddressableV3Object{
-			Id:   d.Id(),
+			Id:   appId.ApplicationId,
 			Name: extractSetOrPrefixedString(d, MashAppName, MashAppNamePrefix),
 		},
 		Username:          mid.Username,
@@ -64,7 +85,7 @@ func (ai *ApplicationMapperImpl) UpsertableTyped(d *schema.ResourceData) (masher
 		Uri:               ExtractString(d, MashAppUri, ""),
 		OAuthRedirectUri:  ExtractString(d, MashAppOAuthRedirectUri, ""),
 		Eav:               extractEAVPointer(d, MashAppEAV),
-	}, mid, nil
+	}, mid, rvd
 }
 
 func (ai *ApplicationMapperImpl) PersistTyped(inp masherytypes.Application, d *schema.ResourceData) diag.Diagnostics {

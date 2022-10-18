@@ -3,14 +3,56 @@ package mashschema_test
 import (
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/stretchr/testify/assert"
+	"strings"
 	"terraform-provider-mashery/mashschema"
 	"testing"
 	"time"
 )
 
-func TestMashAppUpsertable(t *testing.T) {
+func TestApplicationEmptyConfiguration(t *testing.T) {
+	mapper := mashschema.ApplicationMapper
 	d := mashschema.ApplicationMapper.TestResourceData()
-	_ = d.Set(mashschema.MashAppOwner, "{\"mid\":\"a-b-c-d-e\",\"un\":\"m_username\"}")
+
+	_, _, dg := mapper.Upsertable(d)
+	assert.Equal(t, 1, len(dg))
+
+}
+
+func getPersistedIdOf(mapper mashschema.ResourceMapper, val interface{}) string {
+	d := mapper.TestResourceData()
+
+	mapper.SetState(val, d)
+	return d.Id()
+}
+
+func TestApplicationMinimalConfiguration(t *testing.T) {
+	memberObj := createCompleteMember()
+
+	mapper := mashschema.ApplicationMapper
+	data := map[string]interface{}{
+		mashschema.MashAppOwner: getPersistedIdOf(mashschema.MemberMapper, &memberObj),
+	}
+
+	d, dg := mapper.TestResourceDataWith(data)
+	assert.Equal(t, 0, len(dg))
+
+	upsert, ctx, rvd := mapper.UpsertableTyped(d)
+	assert.Equal(t, 0, len(rvd))
+
+	assert.True(t, assert.ObjectsAreEqualValues(memberObj.Identifier(), ctx))
+	assert.True(t, strings.HasPrefix(upsert.Name, "terraform-"))
+}
+
+func TestMashAppUpsertable(t *testing.T) {
+	mapper := mashschema.ApplicationMapper
+
+	memberObj := createCompleteMember()
+	data := map[string]interface{}{
+		mashschema.MashAppOwner: getPersistedIdOf(mashschema.MemberMapper, &memberObj),
+	}
+
+	d, dg := mapper.TestResourceDataWith(data)
+	assert.Equal(t, 0, len(dg))
 
 	now := masherytypes.MasheryJSONTime(time.Now())
 	eav := masherytypes.EAV(map[string]string{
@@ -24,7 +66,7 @@ func TestMashAppUpsertable(t *testing.T) {
 			Created: &now,
 			Updated: &now,
 		},
-		Username:          "m_username",
+		Username:          memberObj.Username,
 		Description:       "desc",
 		Type:              "Type",
 		Commercial:        true,
@@ -43,34 +85,17 @@ func TestMashAppUpsertable(t *testing.T) {
 	}
 
 	// Setting forward.
-	chk := mashschema.ApplicationMapper.SetState(&orig, d)
-	if len(chk) > 0 {
-		t.Errorf("Setting fields encountered %d errors", len(chk))
-	}
-	//mashery.assertResourceHasStringKey(t, d, mashschema.MashAppOwnerUsername, "m_username")
-	//mashery.assertResourceHasStringKey(t, d, mashschema.MashAppId, "appId")
-
-	d.SetId("{\"mid\":\"mid\",\"un\":\"m_username\",\"appId\":\"appId\"}")
+	chk := mapper.SetState(&orig, d)
+	assert.Equal(t, 0, len(chk), "Setting fields encountered %d errors", len(chk))
 
 	// Reading back
-	reverse, _, rvsDiags := mashschema.ApplicationMapper.UpsertableTyped(d)
-	LogErrorDiagnostics(t, "app", &rvsDiags)
+	reverse, userCtx, rvsDiags := mashschema.ApplicationMapper.UpsertableTyped(d)
+	assert.Equal(t, 0, len(rvsDiags))
+	assert.True(t, assert.ObjectsAreEqualValues(memberObj.Identifier(), userCtx))
 
-	assert.Equal(t, orig.Id, reverse.Id)
-	assert.Equal(t, orig.Name, reverse.Name)
-	assert.Equal(t, orig.Username, reverse.Username)
-	assert.Equal(t, orig.Description, reverse.Description)
-	assert.Equal(t, orig.Type, reverse.Type)
-	assert.Equal(t, orig.Commercial, reverse.Commercial)
-	assert.Equal(t, orig.Ads, reverse.Ads)
-	assert.Equal(t, orig.AdsSystem, reverse.AdsSystem)
-	assert.Equal(t, orig.UsageModel, reverse.UsageModel)
-	assert.Equal(t, orig.Tags, reverse.Tags)
-	assert.Equal(t, orig.Notes, reverse.Notes)
-	assert.Equal(t, orig.HowDidYouHear, reverse.HowDidYouHear)
-	assert.Equal(t, orig.PreferredProtocol, reverse.PreferredProtocol)
-	assert.Equal(t, orig.PreferredOutput, reverse.PreferredOutput)
-	assert.Equal(t, orig.Uri, reverse.Uri)
-	assert.Equal(t, orig.OAuthRedirectUri, reverse.OAuthRedirectUri)
-	assert.Equal(t, orig.Eav, reverse.Eav)
+	// Remove fields that are not set
+	orig.Created = nil
+	orig.Updated = nil
+
+	assert.True(t, assert.ObjectsAreEqualValues(orig, reverse))
 }

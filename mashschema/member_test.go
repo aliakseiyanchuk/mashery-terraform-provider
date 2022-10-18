@@ -1,7 +1,6 @@
 package mashschema_test
 
 import (
-	"fmt"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/stretchr/testify/assert"
 	"strings"
@@ -10,7 +9,11 @@ import (
 	"time"
 )
 
-func TestUpsertableFromEmptyConfiguration(t *testing.T) {
+func TestMemberMapperHasObjectName(t *testing.T) {
+	assert.True(t, len(mashschema.MemberMapper.V3ObjectName()) > 0)
+}
+
+func TestMemberUpsertableFromEmptyConfiguration(t *testing.T) {
 	d := mashschema.MemberMapper.TestResourceData()
 	m, ctx, dg := mashschema.MemberMapper.UpsertableTyped(d)
 
@@ -20,7 +23,7 @@ func TestUpsertableFromEmptyConfiguration(t *testing.T) {
 	assert.True(t, strings.HasPrefix(m.Username, "terraform-"))
 }
 
-func TestUpsertableFromUserNamePrefix(t *testing.T) {
+func TestMemberUpsertableFromUserNamePrefix(t *testing.T) {
 	cfg := map[string]interface{}{
 		mashschema.MashMemberUserNamePrefix: "dtt",
 	}
@@ -69,7 +72,7 @@ func createCompleteMember() masherytypes.Member {
 	return source
 }
 
-func TestV3MemberToResourceData(t *testing.T) {
+func TestMemberSchemaMapping(t *testing.T) {
 	mapper := mashschema.MemberMapper
 
 	d := mapper.TestResourceData()
@@ -92,7 +95,5 @@ func TestV3MemberToResourceData(t *testing.T) {
 	source.Created = nil
 	source.Updated = nil
 
-	fmt.Println(source)
-	fmt.Println(reverseUpsert)
 	assert.True(t, assert.ObjectsAreEqualValues(source, reverseUpsert))
 }

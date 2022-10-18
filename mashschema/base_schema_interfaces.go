@@ -83,6 +83,10 @@ type ResourceMapper interface {
 
 	// SetState Set the state the V3 object in the terraform schema
 	SetState(rv Upsertable, d *schema.ResourceData) diag.Diagnostics
+
+	TestResourceData() *schema.ResourceData
+
+	TestResourceDataWith(init map[string]interface{}) (*schema.ResourceData, diag.Diagnostics)
 }
 
 type ResourceMapperImpl struct {
