@@ -11,15 +11,21 @@ import (
 	"terraform-provider-mashery/mashschema"
 )
 
+type ReaderFunc func(context.Context, v3client.Client, mashschema.V3ObjectIdentifier) (mashschema.Upsertable, error)
+type CreatorFunc func(context.Context, v3client.Client, mashschema.Upsertable, mashschema.V3ObjectIdentifier) (mashschema.Upsertable, error)
+type UpdaterFunc func(context.Context, v3client.Client, mashschema.Upsertable) (mashschema.Upsertable, error)
+type DeleterFunc func(context.Context, v3client.Client, mashschema.V3ObjectIdentifier) error
+type OffendersCounterFunc func(context.Context, v3client.Client, mashschema.V3ObjectIdentifier) (int64, error)
+
 type ResourceTemplate struct {
 	Mapper mashschema.ResourceMapper
 
-	DoRead   func(context.Context, v3client.Client, mashschema.V3ObjectIdentifier) (mashschema.Upsertable, error)
-	DoCreate func(context.Context, v3client.Client, mashschema.Upsertable, mashschema.V3ObjectIdentifier) (mashschema.Upsertable, error)
-	DoUpdate func(context.Context, v3client.Client, mashschema.Upsertable) (mashschema.Upsertable, error)
-	DoDelete func(context.Context, v3client.Client, mashschema.V3ObjectIdentifier) error
+	DoRead   ReaderFunc
+	DoCreate CreatorFunc
+	DoUpdate UpdaterFunc
+	DoDelete DeleterFunc
 
-	DoCountOffending func(context.Context, v3client.Client, mashschema.V3ObjectIdentifier) (int64, error)
+	DoCountOffending OffendersCounterFunc
 }
 
 // TFDataSourceSchema returns the Terraform data source schema
