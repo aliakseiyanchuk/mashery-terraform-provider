@@ -35,22 +35,23 @@ func (t *ResourceTemplate) TFDataSourceSchema() *schema.Resource {
 		panic(fmt.Sprintf("Unsatisfied initialization: mapper and all CRUD method must be supplied"))
 	}
 
-	type ctxFunc = func(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics
-	selector := func(f ctxFunc) ctxFunc {
-		if f != nil {
-			return f
-		} else {
-			return schema.NoopContext
-		}
+	var readCtx schema.ReadContextFunc = nil
+	var updateCtx schema.UpdateContextFunc = nil
+
+	if t.DoRead != nil {
+		readCtx = t.Create
+	}
+	if t.DoUpdate != nil {
+		updateCtx = t.Update
 	}
 
 	return &schema.Resource{
 		Importer: &schema.ResourceImporter{
 			StateContext: t.Import,
 		},
-		ReadContext:   selector(t.Read),
+		ReadContext:   readCtx,
 		CreateContext: t.Create,
-		UpdateContext: selector(t.Update),
+		UpdateContext: updateCtx,
 		DeleteContext: t.Delete,
 		Schema:        t.Mapper.TerraformSchema(),
 	}
