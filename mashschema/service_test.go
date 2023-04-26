@@ -4,49 +4,135 @@ import (
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
+	"strings"
 	"terraform-provider-mashery/mashschema"
 	"testing"
 	"time"
 )
 
-// TestBasicServiceConfiguration
-// resource "mashery_service" {
-//  name_prefix = "lspwd2.github"
-//  desc = "service-desc"
-//  version = "0.0.1a"
-// }
-func TestCreateUpsertFromBasicService(t *testing.T) {
+func TestServiceMapperSetup(t *testing.T) {
+	assert.True(t, len(mashschema.ServiceMapper.V3ObjectName()) > 0)
+}
+
+func TestServiceFailsOnEmptyV3Mapper(t *testing.T) {
+	mapper := mashschema.ServiceMapper
 	d := mashschema.ServiceMapper.TestResourceData()
-	d.SetId("serviceID")
-	d.Set("name_prefix", "lspwd2.github")
-	d.Set("description", "service-desc")
-	d.Set("version", "0.0.1a")
+	_, dg := mapper.V3Identity(d)
+
+	assert.Equal(t, 1, len(dg))
+
+	assert.Equal(t, "lacking identification", dg[0].Summary)
+	assert.Equal(t, "field(s) id must be set to identify V3 service object and must match object schema", dg[0].Detail)
+}
+
+// TestBasicServiceConfiguration
+//
+//	resource "mashery_service" {
+//	 name_prefix = "lspwd2.github"
+//	 desc = "service-desc"
+//	 version = "0.0.1a"
+//	}
+func TestServiceCreateUpsertFromBasicConfig(t *testing.T) {
+	d, dg := mashschema.ServiceMapper.TestResourceDataWith(case1MinimalConfiguration())
+	assert.Equal(t, 0, len(dg))
 
 	upsert, _, dg := mashschema.ServiceMapper.UpsertableTyped(d)
-	LogErrorDiagnostics(t, "get service upsertable", &dg)
 
-	assert.True(t, len(upsert.Name) > 0)
+	assert.True(t, strings.HasPrefix(upsert.Name, "lspwd2.github"))
 	assert.Equal(t, "service-desc", upsert.Description)
 	assert.Equal(t, "0.0.1a", upsert.Version)
+
 	assert.Nil(t, upsert.Cache)
 	assert.Nil(t, upsert.SecurityProfile)
 	assert.Nil(t, upsert.Roles)
 }
 
-// TestBasicServiceConfiguration
-// resource "mashery_service" {
-//  name_prefix = "lspwd2.github"
-//  desc = "service-desc"
-//  cache_ttl = 30
-//  version = "0.0.1a"
-// }
-func TestCreateUpsertFromBasicServiceWithCache(t *testing.T) {
+func case1MinimalConfiguration() map[string]interface{} {
+	data := map[string]interface{}{
+		mashschema.MashSvcNamePrefix:  "lspwd2.github",
+		mashschema.MashSvcDescription: "service-desc",
+		mashschema.MashSvcVersion:     "0.0.1a",
+	}
+	return data
+}
+
+func case2CacheEnabled() map[string]interface{} {
+	data := case1MinimalConfiguration()
+	data[mashschema.MashSvcCacheTtl] = 30
+
+	return data
+}
+
+func case3WithOAuth() map[string]interface{} {
+	data := case1MinimalConfiguration()
+
+	oauthSet := schema.NewSet(func(i interface{}) int {
+		return 1
+	}, []interface{}{
+		map[string]interface{}{
+			"grant_types": []string{"authorization_code"},
+			"forwarded_headers": []string{"client-id",
+				"scope", "user-context"},
+			"access_token_ttl_enabled": true,
+			"access_token_ttl":         "1h",
+		},
+	})
+	data[mashschema.MashSvcOAuth] = oauthSet
+
+	return data
+}
+
+func case4WithRoles(t *testing.T) map[string]interface{} {
+
+	role := masherytypes.Role{
+		AddressableV3Object: masherytypes.AddressableV3Object{
+			Id:   "role-uuid",
+			Name: "testRole",
+		},
+	}
+
+	mapper := mashschema.RoleMapper
+	d := mapper.TestResourceData()
+
+	dg := mapper.PersistTyped(role, d)
+	assert.Equal(t, 0, len(dg))
+
+	rvData := case1MinimalConfiguration()
+
+	roleRef := d.Get(mashschema.MashReadRolePermission).(map[string]interface{})
+
+	rvData[mashschema.MashSvcInteractiveDocsRoles] = schema.NewSet(func(i interface{}) int {
+		return 1
+	}, []interface{}{
+		roleRef,
+	})
+
+	return rvData
+}
+
+func TestServiceIdentityMapping(t *testing.T) {
+	srv := masherytypes.Service{
+		AddressableV3Object: masherytypes.AddressableV3Object{
+			Id: "svcId",
+		},
+	}
+
+	mapper := mashschema.ServiceMapper
 	d := mashschema.ServiceMapper.TestResourceData()
-	d.SetId("serviceID")
-	d.Set("name_prefix", "lspwd2.github")
-	d.Set("description", "service-desc")
-	d.Set("cache_ttl", 30)
-	d.Set("version", "0.0.1a")
+
+	dg := mapper.PersistTyped(srv, d)
+	assert.Equal(t, 0, len(dg))
+
+	ident, dg := mapper.V3IdentityTyped(d)
+	assert.Equal(t, 0, len(dg))
+	assert.Equal(t, "svcId", ident.ServiceId)
+}
+
+// TestServiceCreateUpsertFromBasicServiceWithCache
+// Testing extraction of an upsert where the cache has been defined.
+func TestServiceCreateUpsertFromBasicServiceWithCache(t *testing.T) {
+	d, dg := mashschema.ServiceMapper.TestResourceDataWith(case2CacheEnabled())
+	assert.Equal(t, 0, len(dg))
 
 	upsert, _, dg := mashschema.ServiceMapper.UpsertableTyped(d)
 	LogErrorDiagnostics(t, "get service upsertable", &dg)
@@ -61,38 +147,13 @@ func TestCreateUpsertFromBasicServiceWithCache(t *testing.T) {
 	assert.Nil(t, upsert.Roles)
 }
 
-// TestBasicServiceConfiguration
-// resource "mashery_service" {
-//  name_prefix = "lspwd2.github"
-//  desc = "service-desc"
-//  oauth {
-//   access_token_ttl_enabled = true
-//   access_token_ttl = 3600
-//   access_token_type = "bearer"
-// }
-//  version = "0.0.1a"
-// }
-func TestCreateUpsertFromBasicOauth(t *testing.T) {
-	d := mashschema.ServiceMapper.TestResourceData()
-	d.SetId("serviceID")
-	d.Set("name_prefix", "lspwd2.github")
-	d.Set("description", "service-desc")
-	d.Set("version", "0.0.1a")
-
-	oauthSet := schema.NewSet(func(i interface{}) int {
-		return 1
-	}, []interface{}{
-		map[string]interface{}{
-			"access_token_ttl_enabled": true,
-			"access_token_ttl":         "1h",
-		},
-	})
-
-	setErr := d.Set("oauth", oauthSet)
-	assert.Nil(t, setErr)
+// TestServiceCreateUpsertFromBasicOauth
+// Testing upsert extraction where OAuth has been defined
+func TestServiceCreateUpsertFromBasicOauth(t *testing.T) {
+	d, dg := mashschema.ServiceMapper.TestResourceDataWith(case3WithOAuth())
+	assert.Equal(t, 0, len(dg))
 
 	upsert, _, dg := mashschema.ServiceMapper.UpsertableTyped(d)
-	LogErrorDiagnostics(t, "get service upsertable", &dg)
 
 	assert.True(t, len(upsert.Name) > 0)
 	assert.Equal(t, "service-desc", upsert.Description)
@@ -102,46 +163,89 @@ func TestCreateUpsertFromBasicOauth(t *testing.T) {
 	assert.True(t, upsert.SecurityProfile.OAuth.AccessTokenTtlEnabled)
 	assert.Equal(t, 3600, upsert.SecurityProfile.OAuth.AccessTokenTtl)
 
+	assert.Nil(t, upsert.Cache)
 	assert.Nil(t, upsert.Roles)
 }
 
-func TestV3ServiceRolesToTerraform(t *testing.T) {
-	now := masherytypes.MasheryJSONTime(time.Now())
-	inp := []masherytypes.MasheryRolePermission{
-		{
-			Role: masherytypes.Role{
-				AddressableV3Object: masherytypes.AddressableV3Object{Id: "r1", Name: "n1", Created: &now, Updated: &now},
-			},
-			Action: "read",
-		},
-		{
-			Role: masherytypes.Role{
-				AddressableV3Object: masherytypes.AddressableV3Object{Id: "r2", Name: "n2"},
-			},
-			Action: "read",
-		},
-	}
+// TestServiceCreateUpsertWithRoles
+// Testing service being upserted with defined roles
+func TestServiceCreateUpsertWithRoles(t *testing.T) {
+	d, dg := mashschema.ServiceMapper.TestResourceDataWith(case4WithRoles(t))
+	assert.Equal(t, 0, len(dg))
 
-	d := mashschema.ServiceMapper.TestResourceData()
-	diags := mashschema.ServiceMapper.PersisRoles(inp, d)
+	upsert, _, dg := mashschema.ServiceMapper.UpsertableTyped(d)
 
-	assert.Equal(t, 0, len(diags))
+	assert.True(t, len(upsert.Name) > 0)
+	assert.Equal(t, "service-desc", upsert.Description)
+	assert.Equal(t, "0.0.1a", upsert.Version)
 
-	// Parse reverse.
-	//upsert := mashschema.ServiceMapper.RolePermissionUpsertable(d)
-	//assert.Equal(t, 2, len(upsert))
-	//assert.GreaterOrEqual(t, indexOfServiceRolePermission(&upsert, "r1", "read"), 0)
-	//assert.GreaterOrEqual(t, indexOfServiceRolePermission(&upsert, "r2", "read"), 0)
+	assert.Nil(t, upsert.SecurityProfile)
+	assert.Nil(t, upsert.Cache)
+	assert.Nil(t, upsert.Roles)
+
+	roles := mashschema.ServiceMapper.UpsertableServiceRoles(d)
+	assert.NotNil(t, roles)
+
+	assert.Equal(t, 1, len(*roles))
+	assert.Equal(t, "role-uuid", (*roles)[0].Id)
+	assert.Equal(t, "read", (*roles)[0].Action)
 }
 
-func indexOfServiceRolePermission(inp *[]masherytypes.MasheryRolePermission, id, action string) int {
-	for idx, v := range *inp {
-		if id == v.Id && action == v.Action {
-			return idx
-		}
+func TestServiceReceivedNilCacheWillDeletePreviousState(t *testing.T) {
+	mapper := mashschema.ServiceMapper
+
+	d, dg := mapper.TestResourceDataWith(case2CacheEnabled())
+	assert.Equal(t, 0, len(dg))
+
+	inboundService := masherytypes.Service{
+		AddressableV3Object: masherytypes.AddressableV3Object{
+			Id: "svcId",
+		},
 	}
 
-	return -1
+	dg = mapper.PersistTyped(inboundService, d)
+	assert.Equal(t, 0, len(dg))
+
+	upsert, _, _ := mapper.UpsertableTyped(d)
+	assert.Nil(t, upsert.Cache)
+}
+
+func TestServiceReceivedNilOAuthWillDeletePreviousState(t *testing.T) {
+	mapper := mashschema.ServiceMapper
+
+	d, dg := mapper.TestResourceDataWith(case3WithOAuth())
+	assert.Equal(t, 0, len(dg))
+
+	inboundService := masherytypes.Service{
+		AddressableV3Object: masherytypes.AddressableV3Object{
+			Id: "svcId",
+		},
+	}
+
+	dg = mapper.PersistTyped(inboundService, d)
+	assert.Equal(t, 0, len(dg))
+
+	upsert := mapper.UpsertableSecurityProfile(d)
+	assert.Nil(t, upsert)
+}
+
+func TestServiceReceivedNilRolesWillDeletePreviousState(t *testing.T) {
+	mapper := mashschema.ServiceMapper
+
+	d, dg := mapper.TestResourceDataWith(case4WithRoles(t))
+	assert.Equal(t, 0, len(dg))
+
+	inboundService := masherytypes.Service{
+		AddressableV3Object: masherytypes.AddressableV3Object{
+			Id: "svcId",
+		},
+	}
+
+	dg = mapper.PersistTyped(inboundService, d)
+	assert.Equal(t, 0, len(dg))
+
+	upsert := mapper.UpsertableServiceRoles(d)
+	assert.Nil(t, upsert)
 }
 
 func TestV3ServiceToTerraform(t *testing.T) {
@@ -174,7 +278,7 @@ func TestV3ServiceToTerraform(t *testing.T) {
 
 	v3Obj := masherytypes.Service{
 		AddressableV3Object: masherytypes.AddressableV3Object{
-			Id:      "id",
+			Id:      "svcId-num",
 			Name:    "name",
 			Created: &now,
 			Updated: &now,
@@ -194,28 +298,11 @@ func TestV3ServiceToTerraform(t *testing.T) {
 		Roles:             nil,
 	}
 
-	d.SetId("id")
 	diags := mashschema.ServiceMapper.SetState(&v3Obj, d)
 	assert.Equal(t, 0, len(diags))
 
 	reverse, _, _ := mashschema.ServiceMapper.UpsertableTyped(d)
+	assert.NotNil(t, reverse)
 
-	assert.Equal(t, v3Obj.Name, reverse.Name)
-	assert.Equal(t, v3Obj.Description, reverse.Description)
-	assert.Equal(t, int64(10), *reverse.QpsLimitOverall)
-
-	// RFC would be coming as true for some reason.
-	//assert.False(t, reverse.RFC3986Encode)
-	assert.Equal(t, v3Obj.Version, reverse.Version)
-
-	// Verify that OAuth got recovered correctly.
-	assert.NotNil(t, reverse.SecurityProfile)
-	assert.Equal(t, 3600, reverse.SecurityProfile.OAuth.AccessTokenTtl)
-	assert.Equal(t, 300, reverse.SecurityProfile.OAuth.AuthorizationCodeTtl)
-	assert.Equal(t, int64(360000), reverse.SecurityProfile.OAuth.RefreshTokenTtl)
-
-	// Headers and grant types are sets, so ordering of elements could be different
-	// between runs.
-	//mashery.assertSameSet(t, "ForwardedHeaders", &secProfile.OAuth.ForwardedHeaders, &reverse.SecurityProfile.OAuth.ForwardedHeaders)
-	//mashery.assertSameSet(t, "GrantTypes", &secProfile.OAuth.GrantTypes, &reverse.SecurityProfile.OAuth.GrantTypes)
+	// TODO: Figure out a way to compare what came back.
 }

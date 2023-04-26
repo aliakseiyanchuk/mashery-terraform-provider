@@ -223,6 +223,14 @@ func ExtractString(d *schema.ResourceData, key string, impliedValue string) stri
 	}
 }
 
+func ToSet(inp []interface{}) *schema.Set {
+	rv := schema.Set{}
+	for k := range inp {
+		rv.Add(k)
+	}
+	return &rv
+}
+
 func convertSetToStringArray(inp interface{}) []string {
 	if set, ok := inp.(*schema.Set); ok {
 		rv := make([]string, set.Len())

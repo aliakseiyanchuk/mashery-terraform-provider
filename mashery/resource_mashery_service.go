@@ -37,7 +37,7 @@ func importMasheryService(ctx context.Context, d *schema.ResourceData, m interfa
 	} else if service == nil {
 		return []*schema.ResourceData{}, errors.New("no such service")
 	} else {
-		mashschema.ServiceMapper.PersistTyped(service, d)
+		mashschema.ServiceMapper.PersistTyped(*service, d)
 
 		roleDiags := serviceReadRoles(ctx, d, mashV3Cl)
 		if roleDiags.HasError() {
@@ -52,7 +52,12 @@ func importMasheryService(ctx context.Context, d *schema.ResourceData, m interfa
 }
 
 func serviceReadRoles(ctx context.Context, d *schema.ResourceData, v3cl v3client.Client) diag.Diagnostics {
-	if rv, err := v3cl.GetServiceRoles(ctx, d.Id()); err != nil {
+	svcId, dg := mashschema.ServiceMapper.V3Identity(d)
+	if len(dg) > 0 {
+		return dg
+	}
+
+	if rv, err := v3cl.GetServiceRoles(ctx, svcId.(masherytypes.ServiceIdentifier)); err != nil {
 		return diag.Diagnostics{diag.Diagnostic{
 			Severity: diag.Error,
 			Summary:  "error returned while retrieving roles",
@@ -74,7 +79,7 @@ func ServiceCreate(ctx context.Context, d *schema.ResourceData, m interface{}) d
 	} else {
 		d.SetId(rv.Id)
 
-		opDiagnostic := mashschema.ServiceMapper.PersistTyped(rv, d)
+		opDiagnostic := mashschema.ServiceMapper.PersistTyped(*rv, d)
 
 		// After the service has been created, portal access groups need to be pushed. Otherwise, default
 		// pre-populated list needs to be read.
@@ -88,13 +93,18 @@ func ServiceCreate(ctx context.Context, d *schema.ResourceData, m interface{}) d
 }
 
 func trySetServiceRoles(ctx context.Context, d *schema.ResourceData, mashV3Cl v3client.Client) diag.Diagnostics {
+	svcId, dg := mashschema.ServiceMapper.V3Identity(d)
+	if len(dg) > 0 {
+		return dg
+	}
+
 	opDiagnostic := diag.Diagnostics{}
 
 	if mashschema.ServiceMapper.IODocsRolesDefined(d) {
 		roles := mashschema.ServiceMapper.UpsertableServiceRoles(d)
 		doLogJson("Will attempt to set service roles with this upsertable", roles)
 
-		err := mashV3Cl.SetServiceRoles(ctx, d.Id(), *roles)
+		err := mashV3Cl.SetServiceRoles(ctx, svcId.(masherytypes.ServiceIdentifier), *roles)
 		if err != nil {
 			doLogf("Returned error: %s", err)
 			opDiagnostic = append(opDiagnostic, diag.Diagnostic{
@@ -115,7 +125,7 @@ func serviceRead(ctx context.Context, d *schema.ResourceData, m interface{}) dia
 	if rv, err := mashV3Cl.GetService(ctx, svcId); err != nil {
 		return diag.FromErr(err)
 	} else {
-		servDiags := mashschema.ServiceMapper.PersistTyped(rv, d)
+		servDiags := mashschema.ServiceMapper.PersistTyped(*rv, d)
 		rolesDiags := serviceReadRoles(ctx, d, mashV3Cl)
 
 		return append(servDiags, rolesDiags...)
@@ -124,7 +134,11 @@ func serviceRead(ctx context.Context, d *schema.ResourceData, m interface{}) dia
 
 func serviceUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	mashV3Cl := m.(v3client.Client)
-	updateDiagnostic := diag.Diagnostics{}
+
+	ident, updateDiagnostic := mashschema.ServiceMapper.V3IdentityTyped(d)
+	if len(updateDiagnostic) > 0 {
+		return updateDiagnostic
+	}
 
 	if mashschema.ServiceMapper.HasDirectUpsertableChanges(d) {
 		mashServ, _ := mashschema.ServiceMapper.DirectlyUpdateable(d)
@@ -132,7 +146,7 @@ func serviceUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) d
 		if rv, err := mashV3Cl.UpdateService(ctx, mashServ); err != nil {
 			return diag.FromErr(err)
 		} else {
-			upd := mashschema.ServiceMapper.PersistTyped(rv, d)
+			upd := mashschema.ServiceMapper.PersistTyped(*rv, d)
 			if len(upd) > 0 {
 				updateDiagnostic = append(updateDiagnostic, upd...)
 			}
@@ -140,9 +154,9 @@ func serviceUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) d
 	}
 
 	if mashschema.ServiceMapper.OAuthProfileChanged(d) {
-		curSet := mashschema.ServiceMapper.SecurityProfileUpsertable(d)
+		curSet := mashschema.ServiceMapper.UpsertableSecurityProfile(d)
 		if curSet == nil {
-			if err := mashV3Cl.DeleteServiceOAuthSecurityProfile(ctx, d.Id()); err != nil {
+			if err := mashV3Cl.DeleteServiceOAuthSecurityProfile(ctx, ident); err != nil {
 				updateDiagnostic = append(updateDiagnostic, diag.Diagnostic{
 					Severity: diag.Error,
 					Summary:  "could not delete oauth security profile",
@@ -153,8 +167,8 @@ func serviceUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) d
 				_ = mashschema.ServiceMapper.ClearServiceOAuthProfile(d)
 			}
 		} else {
-			requestedProfile := mashschema.ServiceMapper.SecurityProfileUpsertable(d)
-			if actualOAuth, err := mashV3Cl.UpdateServiceOAuthSecurityProfile(ctx, d.Id(), *requestedProfile.OAuth); err != nil {
+			requestedProfile := mashschema.ServiceMapper.UpsertableSecurityProfile(d)
+			if actualOAuth, err := mashV3Cl.UpdateServiceOAuthSecurityProfile(ctx, *requestedProfile.OAuth); err != nil {
 				updateDiagnostic = append(updateDiagnostic, diag.Diagnostic{
 					Severity: diag.Error,
 					Summary:  "could not update oauth security profile",
@@ -192,7 +206,7 @@ func serviceUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) d
 
 	if mashschema.ServiceMapper.IODocsRolesChanged(d) {
 		if roleUpsert := mashschema.ServiceMapper.UpsertableServiceRoles(d); roleUpsert != nil {
-			if err := mashV3Cl.SetServiceRoles(ctx, d.Id(), *roleUpsert); err != nil {
+			if err := mashV3Cl.SetServiceRoles(ctx, ident, *roleUpsert); err != nil {
 				updateDiagnostic = append(updateDiagnostic, diag.Diagnostic{
 					Severity: diag.Error,
 					Summary:  "could not emit roles",
@@ -200,7 +214,7 @@ func serviceUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) d
 				})
 			}
 		} else {
-			if err := mashV3Cl.DeleteServiceRoles(ctx, d.Id()); err != nil {
+			if err := mashV3Cl.DeleteServiceRoles(ctx, ident); err != nil {
 				updateDiagnostic = append(updateDiagnostic, diag.Diagnostic{
 					Severity: diag.Error,
 					Summary:  "could not delete service roles",

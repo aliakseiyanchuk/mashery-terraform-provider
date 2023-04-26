@@ -16,10 +16,18 @@ func masheryTimeNow() *masherytypes.MasheryJSONTime {
 	return &rv
 }
 
+// TestServiceWillCreateServiceWithoutRoles
+// Perform a simplest possible test from the following HCL configuration
+//
+//	resource "mashery_service" "lspwd2-first" {
+//	 name_prefix = "x002924"
+//	 version = "0.0.1a"
+//	}
 func TestServiceWillCreateServiceWithoutRoles(t *testing.T) {
 
 	tf := map[string]interface{}{
-		mashschema.MashSvcName: "mock-service",
+		mashschema.MashSvcName:    "mock-service",
+		mashschema.MashSvcVersion: "0.0.1a",
 	}
 
 	d, dg := mashschema.ServiceMapper.TestResourceDataWith(tf)
@@ -33,6 +41,7 @@ func TestServiceWillCreateServiceWithoutRoles(t *testing.T) {
 			Created: masheryTimeNow(),
 			Updated: masheryTimeNow(),
 		},
+		Version:      "0.0.1a",
 		RobotsPolicy: "robots",
 	}, nil).Once()
 

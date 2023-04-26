@@ -183,8 +183,16 @@ func init() {
 	}
 
 	ApplicationMapper.persistFunc = func(rv interface{}, d *schema.ResourceData) diag.Diagnostics {
-		ptr := rv.(*masherytypes.Application)
-		return ApplicationMapper.PersistTyped(*ptr, d)
+		if ptr, ok := rv.(*masherytypes.Application); ok {
+			return ApplicationMapper.PersistTyped(*ptr, d)
+		} else if val, ok := rv.(masherytypes.Application); ok {
+			return ApplicationMapper.PersistTyped(val, d)
+		} else {
+			return diag.Diagnostics{diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  "unsupported object",
+			}}
+		}
 	}
 
 	ApplicationMapper.v3Identity = func(d *schema.ResourceData) (interface{}, diag.Diagnostics) {

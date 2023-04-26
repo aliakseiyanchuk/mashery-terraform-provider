@@ -410,7 +410,7 @@ func (smi *ServiceMapperImpl) HasDirectUpsertableModifications(d *schema.Resourc
 	return d.HasChanges(MashSvcName, MashSvcDescription, MashSvcQpsLimitOverall, MashSvcServiceRFC3986Encode, MashSvcVersion)
 }
 
-func (smi *ServiceMapperImpl) PersistPermissions(inp []masherytypes.MasheryRolePermission) []map[string]interface{} {
+func (smi *ServiceMapperImpl) PersistPermissions(inp []masherytypes.RolePermission) []map[string]interface{} {
 	rv := make([]map[string]interface{}, len(inp))
 	for idx, v := range inp {
 		rv[idx] = map[string]interface{}{
@@ -422,8 +422,8 @@ func (smi *ServiceMapperImpl) PersistPermissions(inp []masherytypes.MasheryRoleP
 	return rv
 }
 
-func (smi *ServiceMapperImpl) RolePermissionUpsertable(inp map[string]interface{}) masherytypes.MasheryRolePermission {
-	return masherytypes.MasheryRolePermission{
+func (smi *ServiceMapperImpl) RolePermissionUpsertable(inp map[string]interface{}) masherytypes.RolePermission {
+	return masherytypes.RolePermission{
 		Role: masherytypes.Role{
 			AddressableV3Object: masherytypes.AddressableV3Object{
 				Id: inp[MashObjId].(string),
@@ -433,10 +433,10 @@ func (smi *ServiceMapperImpl) RolePermissionUpsertable(inp map[string]interface{
 	}
 }
 
-func (smi *ServiceMapperImpl) UpsertableServiceRoles(d *schema.ResourceData) *[]masherytypes.MasheryRolePermission {
+func (smi *ServiceMapperImpl) UpsertableServiceRoles(d *schema.ResourceData) *[]masherytypes.RolePermission {
 	if setRaw, ok := d.GetOk(MashSvcInteractiveDocsRoles); ok {
 		set, _ := setRaw.(*schema.Set)
-		rv := make([]masherytypes.MasheryRolePermission, set.Len())
+		rv := make([]masherytypes.RolePermission, set.Len())
 
 		for idx, vRaw := range set.List() {
 			v, _ := vRaw.(map[string]interface{})
@@ -461,7 +461,7 @@ func (smi *ServiceMapperImpl) HasDirectUpsertableChanges(d *schema.ResourceData)
 	return d.HasChanges(serviceDirectUpsertable...)
 }
 
-func (smi *ServiceMapperImpl) PersistTyped(inp *masherytypes.Service, d *schema.ResourceData) diag.Diagnostics {
+func (smi *ServiceMapperImpl) PersistTyped(inp masherytypes.Service, d *schema.ResourceData) diag.Diagnostics {
 	data := map[string]interface{}{
 		MashSvcId:                   inp.Id,
 		MashSvcName:                 inp.Name,
@@ -491,10 +491,10 @@ func (smi *ServiceMapperImpl) PersistTyped(inp *masherytypes.Service, d *schema.
 		data[MashSvcCacheTtl] = 0
 	}
 
-	return SetResourceFields(data, d)
+	return smi.persistMap(inp.Identifier(), data, d)
 }
 
-func (smi *ServiceMapperImpl) PersisRoles(inp []masherytypes.MasheryRolePermission, d *schema.ResourceData) diag.Diagnostics {
+func (smi *ServiceMapperImpl) PersisRoles(inp []masherytypes.RolePermission, d *schema.ResourceData) diag.Diagnostics {
 	conv := smi.PersistPermissions(inp)
 	if err := d.Set(MashSvcInteractiveDocsRoles, conv); err != nil {
 		return diag.FromErr(err)
@@ -521,9 +521,14 @@ func (smi *ServiceMapperImpl) CacheUpsertable(d *schema.ResourceData) *masheryty
 	}
 }
 
-func (smi *ServiceMapperImpl) SecurityProfileUpsertable(d *schema.ResourceData) *masherytypes.MasherySecurityProfile {
+func (smi *ServiceMapperImpl) UpsertableSecurityProfile(d *schema.ResourceData) *masherytypes.MasherySecurityProfile {
 	if getSetLength(d.Get(MashSvcOAuth)) > 0 {
-		oauth := masherytypes.MasheryOAuth{}
+
+		ident, _ := smi.V3IdentityTyped(d)
+
+		oauth := masherytypes.MasheryOAuth{
+			ParentService: ident,
+		}
 
 		if inpRaw, ok := d.GetOk(MashSvcOAuth); ok {
 			tfOauth := unwrapStructFromTerraformSet(inpRaw)
@@ -589,16 +594,32 @@ func (smi *ServiceMapperImpl) DirectlyUpdateable(d *schema.ResourceData) (masher
 	return mashServ, nil
 }
 
+func (smi *ServiceMapperImpl) V3IdentityTyped(d *schema.ResourceData) (masherytypes.ServiceIdentifier, diag.Diagnostics) {
+	rv := masherytypes.ServiceIdentifier{}
+	if CompoundIdFrom(&rv, d.Id()) {
+		return rv, nil
+	} else {
+		return rv, diag.Diagnostics{smi.lackingIdentificationDiagnostic("id")}
+	}
+}
+
 func (smi *ServiceMapperImpl) UpsertableTyped(d *schema.ResourceData) (masherytypes.Service, V3ObjectIdentifier, diag.Diagnostics) {
 
 	mashServ, _ := smi.DirectlyUpdateable(d)
+
+	if len(d.Id()) > 0 {
+		svcIdent := masherytypes.ServiceIdentifier{}
+		if CompoundIdFrom(&svcIdent, d.Id()) {
+			mashServ.Id = svcIdent.ServiceId
+		}
+	}
 
 	ttl := extractInt(d, MashSvcCacheTtl, 0)
 	if ttl > 0 {
 		mashServ.Cache = &masherytypes.ServiceCache{CacheTtl: ttl}
 	}
 
-	mashServ.SecurityProfile = smi.SecurityProfileUpsertable(d)
+	mashServ.SecurityProfile = smi.UpsertableSecurityProfile(d)
 
 	return mashServ, nil, nil
 }
@@ -627,20 +648,27 @@ func inheritMasheryDataSourceSchema() {
 func init() {
 	ServiceMapper = &ServiceMapperImpl{
 		ResourceMapperImpl{
-			schema: ServiceSchema,
+			v3ObjectName: "service",
+			schema:       ServiceSchema,
 			v3Identity: func(d *schema.ResourceData) (interface{}, diag.Diagnostics) {
-				return masherytypes.ServiceIdentifier{
-					ServiceId: d.Id(),
-				}, nil
+				return ServiceMapper.V3IdentityTyped(d)
+			},
+			upsertFunc: func(d *schema.ResourceData) (Upsertable, V3ObjectIdentifier, diag.Diagnostics) {
+				return ServiceMapper.UpsertableTyped(d)
+			},
+			persistFunc: func(rv interface{}, d *schema.ResourceData) diag.Diagnostics {
+				if ptr, ok := rv.(*masherytypes.Service); ok {
+					return ServiceMapper.PersistTyped(*ptr, d)
+				} else if val, ok := rv.(masherytypes.Service); ok {
+					return ServiceMapper.PersistTyped(val, d)
+				} else {
+					return diag.Diagnostics{diag.Diagnostic{
+						Severity: diag.Error,
+						Summary:  "unsupported object",
+					}}
+				}
 			},
 		},
 	}
 	inheritMasheryDataSourceSchema()
-
-	ServiceMapper.upsertFunc = func(d *schema.ResourceData) (Upsertable, V3ObjectIdentifier, diag.Diagnostics) {
-		return ServiceMapper.UpsertableTyped(d)
-	}
-	ServiceMapper.persistFunc = func(rv interface{}, d *schema.ResourceData) diag.Diagnostics {
-		return ServiceMapper.PersistTyped(rv.(*masherytypes.Service), d)
-	}
 }

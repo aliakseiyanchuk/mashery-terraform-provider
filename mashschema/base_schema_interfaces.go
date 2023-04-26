@@ -129,7 +129,7 @@ func (rmi *ResourceMapperImpl) persistMap(inp interface{}, fields map[string]int
 func (rmi *ResourceMapperImpl) lackingIdentificationDiagnostic(fields ...string) diag.Diagnostic {
 	return diag.Diagnostic{
 		Severity: diag.Error,
-		Summary:  "Lacking identification",
+		Summary:  "lacking identification",
 		Detail:   fmt.Sprintf("field(s) %s must be set to identify V3 %s object and must match object schema", strings.Join(fields, ", "), rmi.v3ObjectName),
 	}
 }

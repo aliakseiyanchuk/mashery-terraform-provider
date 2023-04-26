@@ -40,8 +40,8 @@ func (rm *RoleMapperImpl) PersistTyped(inp masherytypes.Role, d *schema.Resource
 
 func (rm *RoleMapperImpl) rolePermission(inp *masherytypes.Role, perm string) map[string]interface{} {
 	return map[string]interface{}{
-		MashObjId:      inp.Id,
-		MashObjName:    inp.Name,
+		MashObjId: inp.Id,
+		//MashObjName:    inp.Name,
 		MashRoleAction: perm,
 	}
 }
