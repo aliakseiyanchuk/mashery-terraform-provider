@@ -40,7 +40,6 @@ const (
 
 	providerQPSField            = "qps"
 	providerNetworkLatencyField = "network_latency"
-	providerV3Token             = "v3_token"
 )
 
 var providerConfigSchema = map[string]*schema.Schema{
@@ -269,7 +268,7 @@ func providerConfigure(_ context.Context, d *schema.ResourceData) (interface{}, 
 		})
 	}
 
-	if tknRaw, ok := d.GetOk(providerV3Token); ok {
+	if tknRaw, ok := d.GetOk(vaultTokenField); ok {
 		tkn := tknRaw.(string)
 		// Mashery tokens is 24 characters long. This condition is a built-in protection for the
 		// developer passing invalid tokens
