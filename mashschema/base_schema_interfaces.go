@@ -34,6 +34,14 @@ type DataSourceMapperImpl struct {
 	persistMany  PersistManyFunc
 }
 
+func (dsmi *DataSourceMapperImpl) TerraformSchema() TFResourceSchema {
+	if len(dsmi.schema) > 0 {
+		return dsmi.schema
+	} else {
+		panic("attempt to return uninitialized schema")
+	}
+}
+
 func (dsmi *DataSourceMapperImpl) V3ObjectName() string {
 	if len(dsmi.v3ObjectName) > 0 {
 		return dsmi.v3ObjectName

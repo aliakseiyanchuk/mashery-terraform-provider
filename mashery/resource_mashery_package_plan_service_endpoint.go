@@ -10,7 +10,7 @@ import (
 var PackagePlanServiceEndpointResource *ResourceTemplate
 
 func init() {
-	PackagePlanResource = &ResourceTemplate{
+	PackagePlanServiceEndpointResource = &ResourceTemplate{
 		Mapper: mashschema.PlanServiceEndpointMapper,
 		DoCreate: func(ctx context.Context, client v3client.Client, upsertable mashschema.Upsertable, identifier mashschema.V3ObjectIdentifier) (mashschema.Upsertable, error) {
 			return client.CreatePlanEndpoint(ctx, upsertable.(masherytypes.PackagePlanServiceEndpointIdentifier))
