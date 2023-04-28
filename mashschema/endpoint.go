@@ -11,7 +11,8 @@ import (
 
 var outboundTransportProtocolEnum = []string{"use-inbound", "http", "https"}
 var requestProtocolEnum = []string{"rest", "soap", "xml-rpc", "json-rpc", "other"}
-var connectionTimeoutForSystemDomainRequestEnum = []int{2, 5, 10, 20, 30, 45, 60}
+var supportedEndpointAuthTypes = []string{"apiKey", "apiKeyAndSecret_MD5", "apiKeyAndSecret_SHA256", "secureHash_SHA256", "custom"}
+var connectionTimeoutForSystemDomainRequestEnum = []int{2, 3, 4, 5, 6, 7}
 var connectionTimeoutForSystemDomainResponseEnum = []int{2, 5, 10, 20, 30, 45, 60, 120, 300, 600, 900, 1200}
 
 const (
@@ -113,12 +114,12 @@ var EndpointProcessorSchema = map[string]*schema.Schema{
 		Description: "Pre-processor is enabled",
 	},
 	MashEndpointProcessorPreConfig: {
-		Type:     schema.TypeList,
+		Type:     schema.TypeMap,
 		Optional: true,
 		Elem:     stringElem(),
 	},
 	MashEndpointProcessorPostConfig: {
-		Type:     schema.TypeList,
+		Type:     schema.TypeMap,
 		Optional: true,
 		Elem:     stringElem(),
 	},
@@ -194,7 +195,7 @@ var EndpointSchema = map[string]*schema.Schema{
 	MashEndpointConnectionTimeoutForSystemDomainRequest: {
 		Type:        schema.TypeInt,
 		Optional:    true,
-		Default:     10,
+		Default:     5,
 		Description: "Timeout to connect to the back-end",
 		ValidateDiagFunc: func(i interface{}, path cty.Path) diag.Diagnostics {
 			return validateIntValueInSet(i, path, &connectionTimeoutForSystemDomainRequestEnum)
@@ -379,7 +380,9 @@ var EndpointSchema = map[string]*schema.Schema{
 		Type:        schema.TypeString,
 		Required:    true,
 		Description: "Authentication type for the endpoint",
-		// TODO: add constriant on the authentication options
+		ValidateDiagFunc: func(i interface{}, path cty.Path) diag.Diagnostics {
+			return validateStringValueInSet(i, path, &supportedEndpointAuthTypes)
+		},
 	},
 	MashEndpointRequestPathAlias: {
 		Type:        schema.TypeString,
@@ -555,8 +558,8 @@ func (sem *ServiceEndpointMapperImpl) processorUpsertableFromMap(tfProcMap map[s
 	rv := masherytypes.Processor{
 		PreProcessEnabled:  tfProcMap[MashEndpointProcessorPreProcessEnabled].(bool),
 		PostProcessEnabled: tfProcMap[MashEndpointProcessorPostProcessEnabled].(bool),
-		PreInputs:          sem.schemaArrayToString(tfProcMap[MashEndpointProcessorPreConfig].([]interface{})),
-		PostInputs:         sem.schemaArrayToString(tfProcMap[MashEndpointProcessorPostConfig].([]interface{})),
+		PreInputs:          schemaMapToStringMap(tfProcMap[MashEndpointProcessorPreConfig]),
+		PostInputs:         schemaMapToStringMap(tfProcMap[MashEndpointProcessorPostConfig]),
 		Adapter:            tfProcMap[MashEndpointProcessorAdapter].(string),
 	}
 	return rv
@@ -630,7 +633,7 @@ func (sem *ServiceEndpointMapperImpl) UpsertableTyped(d *schema.ResourceData) (m
 		HighSecurity:                               ExtractBool(d, MashEndpointHighSecurity, false),
 		HostPassthroughIncludedInBackendCallHeader: ExtractBool(d, MashEndpointHostPassthroughIncludedInBackendCallHeader, true),
 		InboundSslRequired:                         ExtractBool(d, MashEndpointInboundSslRequired, true),
-		InboundMutualSslRequired:                   ExtractBool(d, MashEndpointInboundMutualSslRequired, true),
+		InboundMutualSslRequired:                   ExtractBool(d, MashEndpointInboundMutualSslRequired, false),
 		JsonpCallbackParameter:                     ExtractString(d, MashEndpointJsonpCallbackParameter, ""),
 		JsonpCallbackParameterValue:                ExtractString(d, MashEndpointJsonpCallbackParameterValue, ""),
 		ScheduledMaintenanceEvent:                  nil,

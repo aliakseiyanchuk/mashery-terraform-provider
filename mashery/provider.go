@@ -84,12 +84,6 @@ var providerConfigSchema = map[string]*schema.Schema{
 		DefaultFunc: schema.EnvDefaultFunc(envV3Latency, "173ms"),
 		Description: "Mean travel time between machine where the Terraform is running and Mashery API. Defaults to 173 (milliseconds).",
 	},
-	"token": {
-		Type:        schema.TypeString,
-		Optional:    true,
-		DefaultFunc: schema.EnvDefaultFunc(envV3Token, ""),
-		Description: "Actual access token to be used. For best use, obtain this from Vault",
-	},
 }
 
 // ----------------------------------------------------------------------------------------------
@@ -273,7 +267,9 @@ func providerConfigure(_ context.Context, d *schema.ResourceData) (interface{}, 
 		// Mashery tokens is 24 characters long. This condition is a built-in protection for the
 		// developer passing invalid tokens
 		if len(tkn) > 20 {
+			doLogf("Received token: %s", tkn)
 			tokenProvider = v3client.NewFixedTokenProvider(tkn)
+			doLogf("Provider is initialized with explicitly supplied token")
 		} else {
 			diags = append(diags, diag.Diagnostic{
 				Severity: diag.Error,
@@ -292,7 +288,6 @@ func providerConfigure(_ context.Context, d *schema.ResourceData) (interface{}, 
 		}
 
 		cl = v3client.NewHttpClient(clParams)
-		doLogf("Provider is initialized with explicitly supplied token")
 	} else {
 		doLogf("WARN: no suitable provider authentication methods exist")
 	}
