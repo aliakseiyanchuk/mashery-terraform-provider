@@ -52,12 +52,12 @@ func importMasheryService(ctx context.Context, d *schema.ResourceData, m interfa
 }
 
 func serviceReadRoles(ctx context.Context, d *schema.ResourceData, v3cl v3client.Client) diag.Diagnostics {
-	svcId, dg := mashschema.ServiceMapper.V3Identity(d)
+	svcId, dg := mashschema.ServiceMapper.V3IdentityTyped(d)
 	if len(dg) > 0 {
 		return dg
 	}
 
-	if rv, err := v3cl.GetServiceRoles(ctx, svcId.(masherytypes.ServiceIdentifier)); err != nil {
+	if rv, err := v3cl.GetServiceRoles(ctx, svcId); err != nil {
 		return diag.Diagnostics{diag.Diagnostic{
 			Severity: diag.Error,
 			Summary:  "error returned while retrieving roles",
@@ -93,7 +93,7 @@ func ServiceCreate(ctx context.Context, d *schema.ResourceData, m interface{}) d
 }
 
 func trySetServiceRoles(ctx context.Context, d *schema.ResourceData, mashV3Cl v3client.Client) diag.Diagnostics {
-	svcId, dg := mashschema.ServiceMapper.V3Identity(d)
+	svcId, dg := mashschema.ServiceMapper.V3IdentityTyped(d)
 	if len(dg) > 0 {
 		return dg
 	}
@@ -104,7 +104,7 @@ func trySetServiceRoles(ctx context.Context, d *schema.ResourceData, mashV3Cl v3
 		roles := mashschema.ServiceMapper.UpsertableServiceRoles(d)
 		doLogJson("Will attempt to set service roles with this upsertable", roles)
 
-		err := mashV3Cl.SetServiceRoles(ctx, svcId.(masherytypes.ServiceIdentifier), *roles)
+		err := mashV3Cl.SetServiceRoles(ctx, svcId, *roles)
 		if err != nil {
 			doLogf("Returned error: %s", err)
 			opDiagnostic = append(opDiagnostic, diag.Diagnostic{
@@ -120,7 +120,10 @@ func trySetServiceRoles(ctx context.Context, d *schema.ResourceData, mashV3Cl v3
 
 func serviceRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	mashV3Cl := m.(v3client.Client)
-	svcId := masherytypes.ServiceIdentifier{ServiceId: d.Id()}
+	svcId, dg := mashschema.ServiceMapper.V3IdentityTyped(d)
+	if len(dg) > 0 {
+		return dg
+	}
 
 	if rv, err := mashV3Cl.GetService(ctx, svcId); err != nil {
 		return diag.FromErr(err)
@@ -230,7 +233,10 @@ func serviceUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) d
 
 func serviceDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(v3client.Client)
-	svcId := masherytypes.ServiceIdentifier{ServiceId: d.Id()}
+	svcId, dg := mashschema.ServiceMapper.V3IdentityTyped(d)
+	if len(dg) > 0 {
+		return dg
+	}
 
 	// Verify that it's safe to delete this Mashery service, that it doesn't have
 	// endpoints left to be associated with it, possibly unmanaged.
