@@ -180,7 +180,7 @@ var OAuthSecurityProfileSchema = map[string]*schema.Schema{
 		Computed:    true,
 		Description: "MAC token algorithm",
 		ValidateDiagFunc: func(inp interface{}, pth cty.Path) diag.Diagnostics {
-			return validateStringValueInSet(inp, pth, &supportedMasheryMacAlgorithms)
+			return ValidateStringValueInSet(inp, pth, &supportedMasheryMacAlgorithms)
 		},
 	},
 	MashSvcOAuthQpsLimitCeiling: {

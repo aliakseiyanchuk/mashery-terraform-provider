@@ -43,7 +43,7 @@ type PlanMapperImpl struct {
 var rateLimitPeriodEnum = []string{MashDurationMinute, MashDurationHourly, MashDurationDay, MashDurationMonth}
 
 var PlanSchema = map[string]*schema.Schema{
-	MashPackagekId: {
+	MashPackageId: {
 		Type:        schema.TypeString,
 		Required:    true,
 		Description: "Package Id, to which this plan belongs",
@@ -156,7 +156,7 @@ var PlanSchema = map[string]*schema.Schema{
 		Optional: true,
 		Computed: true,
 		ValidateDiagFunc: func(i interface{}, path cty.Path) diag.Diagnostics {
-			return validateStringValueInSet(i, path, &rateLimitPeriodEnum)
+			return ValidateStringValueInSet(i, path, &rateLimitPeriodEnum)
 		},
 	},
 	MashPlanResponseFilterOverrideAllowed: {
@@ -183,7 +183,7 @@ func (pmi *PlanMapperImpl) UpsertableTyped(d *schema.ResourceData) (masherytypes
 
 	// Recover the package identifier
 	pkIdent := masherytypes.PackageIdentifier{}
-	if !CompoundIdFrom(&pkIdent, ExtractString(d, MashPackagekId, "")) {
+	if !CompoundIdFrom(&pkIdent, ExtractString(d, MashPackageId, "")) {
 		rvd = append(rvd, diag.Diagnostic{
 			Severity: diag.Error,
 			Summary:  "incomplete package identifier",

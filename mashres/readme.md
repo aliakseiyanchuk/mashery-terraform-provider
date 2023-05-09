@@ -1,0 +1,1 @@
+# Generified Mashery resources

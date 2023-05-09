@@ -353,7 +353,7 @@ var EndpointSchema = map[string]*schema.Schema{
 		Default:     "https",
 		Description: "Outbound request protocol, defaults to https",
 		ValidateDiagFunc: func(i interface{}, path cty.Path) diag.Diagnostics {
-			return validateStringValueInSet(i, path, &outboundTransportProtocolEnum)
+			return ValidateStringValueInSet(i, path, &outboundTransportProtocolEnum)
 		},
 	},
 	MashEndpointProcessor: {
@@ -391,7 +391,7 @@ var EndpointSchema = map[string]*schema.Schema{
 		Optional: true,
 		Default:  "rest",
 		ValidateDiagFunc: func(i interface{}, path cty.Path) diag.Diagnostics {
-			return validateStringValueInSet(i, path, &requestProtocolEnum)
+			return ValidateStringValueInSet(i, path, &requestProtocolEnum)
 		},
 	},
 	MashEndpointOauthGrantTypes: {
@@ -555,9 +555,9 @@ func (sem *ServiceEndpointMapperImpl) processorUpsertableFromMap(tfProcMap map[s
 	rv := masherytypes.Processor{
 		PreProcessEnabled:  tfProcMap[MashEndpointProcessorPreProcessEnabled].(bool),
 		PostProcessEnabled: tfProcMap[MashEndpointProcessorPostProcessEnabled].(bool),
-		PreInputs:          sem.schemaArrayToString(tfProcMap[MashEndpointProcessorPreConfig].([]interface{})),
-		PostInputs:         sem.schemaArrayToString(tfProcMap[MashEndpointProcessorPostConfig].([]interface{})),
-		Adapter:            tfProcMap[MashEndpointProcessorAdapter].(string),
+		//PreInputs:          sem.schemaArrayToString(tfProcMap[MashEndpointProcessorPreConfig].([]interface{})),
+		//PostInputs:         sem.schemaArrayToString(tfProcMap[MashEndpointProcessorPostConfig].([]interface{})),
+		Adapter: tfProcMap[MashEndpointProcessorAdapter].(string),
 	}
 	return rv
 }

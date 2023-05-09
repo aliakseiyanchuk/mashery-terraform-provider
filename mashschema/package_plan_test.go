@@ -27,7 +27,7 @@ func TestV3PlanUpsertableFromMinimalInputs(t *testing.T) {
 	//packId := "packId"
 	//planName := "planName"
 
-	//mashery.assertOk(t, d.Set(mashschema.MashPackagekId, packId))
+	//mashery.assertOk(t, d.Set(mashschema.MashPackageId, packId))
 	//mashery.assertOk(t, d.Set(mashschema.MashPlanName, planName))
 
 	//upsert := mashschema.V3PlanUpsertable(d)

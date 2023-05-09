@@ -243,7 +243,7 @@ func init() {
 								Required:    true,
 								Description: "Id of this message",
 								ValidateDiagFunc: func(i interface{}, path cty.Path) diag.Diagnostics {
-									return validateStringValueInSet(i, path, &validErrorSetMessageId)
+									return ValidateStringValueInSet(i, path, &validErrorSetMessageId)
 								},
 							},
 							MashSvrErrorSetMessageStatus: {

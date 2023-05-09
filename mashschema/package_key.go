@@ -150,7 +150,7 @@ func init() {
 					Optional: true,
 					Computed: true,
 					ValidateDiagFunc: func(i interface{}, path cty.Path) diag.Diagnostics {
-						return validateStringValueInSet(i, path, &mashPackageKeyStatusEnum)
+						return ValidateStringValueInSet(i, path, &mashPackageKeyStatusEnum)
 					},
 				},
 				MashPackageKeyLimits: {

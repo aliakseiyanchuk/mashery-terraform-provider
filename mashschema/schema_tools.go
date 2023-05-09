@@ -98,7 +98,7 @@ func toStringArray(inp interface{}) []string {
 	}
 }
 
-func validateStringValueInSet(inp interface{}, pth cty.Path, lst *[]string) diag.Diagnostics {
+func ValidateStringValueInSet(inp interface{}, pth cty.Path, lst *[]string) diag.Diagnostics {
 	rv := diag.Diagnostics{}
 
 	if str, ok := inp.(string); ok {
@@ -296,7 +296,7 @@ func extractInt(d *schema.ResourceData, key string, impliedValue int) int {
 	}
 }
 
-func extractIntPointer(d *schema.ResourceData, key string) *int {
+func ExtractIntPointer(d *schema.ResourceData, key string) *int {
 	if v, exists := d.GetOk(key); exists {
 		if rv, ok := v.(int); ok {
 			return &rv
@@ -341,6 +341,13 @@ func schemaMapToStringMap(v interface{}) map[string]string {
 			} else {
 				rv[k] = fmt.Sprintf("%s", v)
 			}
+		}
+
+		return rv
+	} else if mp, ok := v.(map[string]string); ok {
+		rv := make(map[string]string, len(mp))
+		for k, v := range mp {
+			rv[k] = v
 		}
 
 		return rv

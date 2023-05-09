@@ -55,12 +55,12 @@ func (pcm *ProcessorChaiMapperImpl) ComputeChain(d *schema.ResourceData) mashery
 				postProcessors = append(postProcessors, v3Cfg.Adapter)
 			}
 
-			if len(v3Cfg.PreInputs) > 0 {
-				preCfg = append(preCfg, pcm.adapterPrefixed(v3Cfg.Adapter, v3Cfg.PreInputs)...)
-			}
-			if len(v3Cfg.PostInputs) > 0 {
-				postCfg = append(postCfg, pcm.adapterPrefixed(v3Cfg.Adapter, v3Cfg.PostInputs)...)
-			}
+			//if len(v3Cfg.PreInputs) > 0 {
+			//	preCfg = append(preCfg, pcm.adapterPrefixed(v3Cfg.Adapter, v3Cfg.PreInputs)...)
+			//}
+			//if len(v3Cfg.PostInputs) > 0 {
+			//	postCfg = append(postCfg, pcm.adapterPrefixed(v3Cfg.Adapter, v3Cfg.PostInputs)...)
+			//}
 		}
 	}
 
@@ -71,8 +71,8 @@ func (pcm *ProcessorChaiMapperImpl) ComputeChain(d *schema.ResourceData) mashery
 		postCfg = append(postCfg, fmt.Sprintf("processors:%s", strings.Join(postProcessors, ",")))
 	}
 
-	mergedCfg.PreInputs = preCfg
-	mergedCfg.PostInputs = postCfg
+	//mergedCfg.PreInputs = preCfg
+	//mergedCfg.PostInputs = postCfg
 
 	return mergedCfg
 }

@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	MashPackagekId                      = "package_id"
+	MashPackageId                       = "package_id"
 	MashPackName                        = "name"
 	MashPackNamePrefix                  = "name_prefix"
 	MashPackCreated                     = "created"
@@ -41,7 +41,7 @@ const (
 	MashDurationMonth  = "month"
 )
 
-var notifyDeveloperPeriodEnum = []string{MashDurationMinute, MashDurationHourly,
+var NotifyDeveloperPeriodEnum = []string{MashDurationMinute, MashDurationHourly,
 	MashDurationDay, MashDurationWeek, MashDurationMonth}
 var notifyAdminPeriodEnum = []string{MashDurationMinute, MashDurationHourly,
 	MashDurationDay, MashDurationWeek, MashDurationMonth}
@@ -53,7 +53,7 @@ type PackageMapperImpl struct {
 }
 
 var PackageSchema = map[string]*schema.Schema{
-	MashPackagekId: {
+	MashPackageId: {
 		Type:        schema.TypeString,
 		Computed:    true,
 		Description: "Package Id",
@@ -88,6 +88,7 @@ var PackageSchema = map[string]*schema.Schema{
 		Description:   "Package description",
 		ConflictsWith: []string{MashPackTags},
 	},
+	// Not implmennted
 	MashPackTags: {
 		Type:        schema.TypeMap,
 		Optional:    true,
@@ -102,7 +103,7 @@ var PackageSchema = map[string]*schema.Schema{
 		Optional: true,
 		Default:  "hour",
 		ValidateDiagFunc: func(i interface{}, path cty.Path) diag.Diagnostics {
-			return validateStringValueInSet(i, path, &notifyDeveloperPeriodEnum)
+			return ValidateStringValueInSet(i, path, &NotifyDeveloperPeriodEnum)
 		},
 	},
 	MashPackNotifyDeveloperNearQuota: {
@@ -131,7 +132,7 @@ var PackageSchema = map[string]*schema.Schema{
 		//Default:     "day",
 		Description: "Package admin notification",
 		ValidateDiagFunc: func(i interface{}, path cty.Path) diag.Diagnostics {
-			return validateStringValueInSet(i, path, &notifyAdminPeriodEnum)
+			return ValidateStringValueInSet(i, path, &notifyAdminPeriodEnum)
 		},
 	},
 	MashPackNotifyAdminNearQuota: {
@@ -216,11 +217,11 @@ func (pmi *PackageMapperImpl) UpsertableTyped(d *schema.ResourceData) (masheryty
 		NotifyAdminOverQuota:        ExtractBool(d, MashPackNotifyAdminOverQuota, false),
 		NotifyAdminOverThrottle:     ExtractBool(d, MashPackNotifyDeveloperOverThrottle, false),
 		NotifyAdminEmails:           strings.Join(ExtractStringArray(d, MashPackNotifyAdminEmails, &EmptyStringArray), ","),
-		NearQuotaThreshold:          extractIntPointer(d, MashPackNearQuotaThreshold),
+		NearQuotaThreshold:          ExtractIntPointer(d, MashPackNearQuotaThreshold),
 		Eav:                         ExtractStringMap(d, MashPackEAVs),
 		KeyAdapter:                  ExtractString(d, MashPackKeyAdapter, ""),
-		KeyLength:                   extractIntPointer(d, MashPackKeyLength),
-		SharedSecretLength:          extractIntPointer(d, MashPackSharedSecretLength),
+		KeyLength:                   ExtractIntPointer(d, MashPackKeyLength),
+		SharedSecretLength:          ExtractIntPointer(d, MashPackSharedSecretLength),
 		Plans:                       nil,
 	}
 
@@ -243,7 +244,7 @@ func (pmi *PackageMapperImpl) splitAddressToSet(str string) []interface{} {
 
 func (pmi *PackageMapperImpl) PersistTyped(pack masherytypes.Package, d *schema.ResourceData) diag.Diagnostics {
 	data := map[string]interface{}{
-		MashPackagekId:      pack.Id,
+		MashPackageId:       pack.Id,
 		MashPackCreated:     pack.Created.ToString(),
 		MashPackUpdated:     pack.Updated.ToString(),
 		MashPackName:        pack.Name,

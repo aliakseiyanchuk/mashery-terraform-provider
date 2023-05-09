@@ -1,0 +1,1 @@
+# Generified Terraform Mashery Schemas

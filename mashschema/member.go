@@ -176,7 +176,7 @@ func init() {
 					Computed:    true,
 					Description: "Area status",
 					ValidateDiagFunc: func(i interface{}, path cty.Path) diag.Diagnostics {
-						return validateStringValueInSet(i, path, &memberAreaStatusEnum)
+						return ValidateStringValueInSet(i, path, &memberAreaStatusEnum)
 					},
 				},
 				// Roles are not implemented.
