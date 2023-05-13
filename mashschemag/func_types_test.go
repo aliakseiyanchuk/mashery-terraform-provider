@@ -18,14 +18,47 @@ func TestMaps(t *testing.T) {
 
 	assert.Equal(t, reflect.Ptr, fld.Type().Kind())
 	assert.Equal(t, reflect.Map, fld.Type().Elem().Kind())
-
 }
 
-func autoTestBoolMappings[ParentIdent, Ident, MType any](t *testing.T, sb *tfmapper.SchemaBuilder[ParentIdent, Ident, MType], supplier funcsupport.Supplier[MType]) {
+func autoTestIdentity[ParentIdent, Ident, MType any](t *testing.T, sb *tfmapper.SchemaBuilder[ParentIdent, Ident, MType], ref Ident) {
+	mapper := sb.Mapper()
+	testState := sb.TestResourceData()
+
+	err := mapper.AssignIdentity(ref, testState)
+	assert.Nil(t, err)
+
+	readBack, idErr := mapper.Identity(testState)
+	assert.Nil(t, idErr)
+
+	assert.True(t, reflect.DeepEqual(ref, readBack))
+}
+
+func autoTestParentIdentity[ParentIdent, Ident, MType any](t *testing.T, sb *tfmapper.SchemaBuilder[ParentIdent, Ident, MType], ref ParentIdent) {
+	mapper := sb.Mapper()
+	testState := sb.TestResourceData()
+
+	err := mapper.TestSetPrentIdentity(ref, testState)
+	assert.Nil(t, err)
+
+	readBack, idErr := mapper.ParentIdentity(testState)
+	assert.Nil(t, idErr)
+
+	assert.True(t, reflect.DeepEqual(ref, readBack))
+}
+
+func autoTestMappings[ParentIdent, Ident, MType any](t *testing.T, sb *tfmapper.SchemaBuilder[ParentIdent, Ident, MType], supplier funcsupport.Supplier[MType], except ...string) {
+	autoTestBoolMappings(t, sb, supplier, except...)
+	autoTestStringMappings(t, sb, supplier, except...)
+	autoTestIntMappings(t, sb, supplier, except...)
+	autoTestInt64PtrMappings(t, sb, supplier, except...)
+	autoTestEAVMappings(t, sb, supplier, except...)
+}
+
+func autoTestBoolMappings[ParentIdent, Ident, MType any](t *testing.T, sb *tfmapper.SchemaBuilder[ParentIdent, Ident, MType], supplier funcsupport.Supplier[MType], except ...string) {
 	ref := supplier()
-	boolFields := enumerateFields(ref, func(in reflect.Type) bool {
+	boolFields := matchingFieldsOf(ref, func(in reflect.Type) bool {
 		return in.Kind() == reflect.Bool
-	})
+	}, except...)
 
 	for _, fldName := range boolFields {
 		mapper := sb.Mapper()
@@ -55,21 +88,9 @@ func reflectGetBool(i interface{}, fldName string) bool {
 
 func autoTestStringMappings[ParentIdent, Ident, MType any](t *testing.T, sb *tfmapper.SchemaBuilder[ParentIdent, Ident, MType], supplier funcsupport.Supplier[MType], except ...string) {
 	ref := supplier()
-	stringFieldsRaw := enumerateFields(ref, func(in reflect.Type) bool {
+	stringFields := matchingFieldsOf(ref, func(in reflect.Type) bool {
 		return in.Kind() == reflect.String
-	})
-
-	var stringFields []string
-
-outer:
-	for _, fld := range stringFieldsRaw {
-		for _, exclField := range except {
-			if fld == exclField {
-				continue outer
-			}
-		}
-		stringFields = append(stringFields, fld)
-	}
+	}, except...)
 
 	for _, fldName := range stringFields {
 		fmt.Println("Testing field " + fldName)
