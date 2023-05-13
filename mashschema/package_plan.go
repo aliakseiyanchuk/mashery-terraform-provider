@@ -40,7 +40,7 @@ type PlanMapperImpl struct {
 	ResourceMapperImpl
 }
 
-var rateLimitPeriodEnum = []string{MashDurationMinute, MashDurationHourly, MashDurationDay, MashDurationMonth}
+var RateLimitPeriodEnum = []string{MashDurationMinute, MashDurationHourly, MashDurationDay, MashDurationMonth}
 
 var PlanSchema = map[string]*schema.Schema{
 	MashPackageId: {
@@ -156,7 +156,7 @@ var PlanSchema = map[string]*schema.Schema{
 		Optional: true,
 		Computed: true,
 		ValidateDiagFunc: func(i interface{}, path cty.Path) diag.Diagnostics {
-			return ValidateStringValueInSet(i, path, &rateLimitPeriodEnum)
+			return ValidateStringValueInSet(i, path, &RateLimitPeriodEnum)
 		},
 	},
 	MashPlanResponseFilterOverrideAllowed: {
@@ -208,12 +208,12 @@ func (pmi *PlanMapperImpl) UpsertableTyped(d *schema.ResourceData) (masherytypes
 		SelfServiceKeyProvisioningEnabled: ExtractBool(d, MashPlanSelfServiceKeyProvisioningEnabled, false),
 		AdminKeyProvisioningEnabled:       ExtractBool(d, MashPlanAdminKeyProvisioningEnabled, false),
 		Notes:                             ExtractString(d, MashPlanNotes, ""),
-		MaxNumKeysAllowed:                 extractInt(d, MashPlanMaxNumKeysAllowed, 2),
-		NumKeysBeforeReview:               extractInt(d, MashPlanNumKeysBeforeReview, 1),
-		QpsLimitCeiling:                   extractInt64Pointer(d, MashPlanQpsLimitCeiling, 0),
+		MaxNumKeysAllowed:                 ExtractInt(d, MashPlanMaxNumKeysAllowed, 2),
+		NumKeysBeforeReview:               ExtractInt(d, MashPlanNumKeysBeforeReview, 1),
+		QpsLimitCeiling:                   ExtractInt64Pointer(d, MashPlanQpsLimitCeiling, 0),
 		QpsLimitExempt:                    ExtractBool(d, MashPlanQpsLimitExempt, false),
 		QpsLimitKeyOverrideAllowed:        ExtractBool(d, MashPlanQpsLimitKeyOverrideAllowed, false),
-		RateLimitCeiling:                  extractInt64Pointer(d, MashPlanRateLimitCeiling, 0),
+		RateLimitCeiling:                  ExtractInt64Pointer(d, MashPlanRateLimitCeiling, 0),
 		RateLimitExempt:                   ExtractBool(d, MashPlanRateLimitExempt, false),
 		RateLimitKeyOverrideAllowed:       ExtractBool(d, MashPlanRateLimitKeyOverrideAllowed, false),
 		RateLimitPeriod:                   ExtractString(d, MashPlanRateLimitPeriod, ""),

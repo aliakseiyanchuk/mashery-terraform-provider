@@ -288,7 +288,7 @@ func ExtractIfModifiedStringPointer(d *schema.ResourceData, key string) *string 
 	}
 }
 
-func extractInt(d *schema.ResourceData, key string, impliedValue int) int {
+func ExtractInt(d *schema.ResourceData, key string, impliedValue int) int {
 	if v, exists := d.GetOk(key); exists {
 		return v.(int)
 	} else {
@@ -316,7 +316,7 @@ func intPointerToInt(inp *int64) int {
 	}
 }
 
-func extractInt64Pointer(d *schema.ResourceData, key string, threshold int64) *int64 {
+func ExtractInt64Pointer(d *schema.ResourceData, key string, threshold int64) *int64 {
 	if v, exists := d.GetOk(key); exists {
 		if rv, ok := v.(int); ok {
 			rv64 := int64(rv)

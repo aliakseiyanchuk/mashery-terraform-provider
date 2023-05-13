@@ -10,7 +10,7 @@ import (
 )
 
 type ReaderFunc[Ident any, MType any] func(context.Context, v3client.Client, Ident) (*MType, error)
-type CreatorFunc[ParentIdent any, Ident any, MType any] func(context.Context, v3client.Client, ParentIdent, MType) (*MType, Ident, error)
+type CreatorFunc[ParentIdent any, Ident any, MType any] func(context.Context, v3client.Client, ParentIdent, MType) (*MType, *Ident, error)
 type UpdaterFunc[Ident any, MType any] func(context.Context, v3client.Client, Ident, MType) (*MType, error)
 type DeleterFunc[Ident any] func(context.Context, v3client.Client, Ident) error
 type OffendersCounterFunc[Ident any] func(context.Context, v3client.Client, Ident) (int64, error)
@@ -83,14 +83,26 @@ func (rt *ResourceTemplate[ParentIdent, Ident, MType]) Create(ctx context.Contex
 			Summary:  fmt.Sprintf("unexpected error returned from Mashery V3 api during creating object"),
 			Detail:   fmt.Sprintf("create operation on Mashery V3 api has returned the following error: %s", err.Error()),
 		}}
+	} else if ident == nil {
+		return diag.Diagnostics{diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  fmt.Sprintf("create function returned a nil identity"),
+			Detail:   fmt.Sprintf("create functions must return a non-nil identifier if create operation has been successful"),
+		}}
+	} else if readBack == nil {
+		return diag.Diagnostics{diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  fmt.Sprintf("create function returned a nil object"),
+			Detail:   fmt.Sprintf("create functions must return a non-nil object if create operation has been successful"),
+		}}
 	}
 
 	rv := diag.Diagnostics{}
 	if setRV := rt.Mapper.RemoteToSchema(readBack, state); len(setRV) > 0 {
-		rv = append(rv, setRV...)
+		rv = setRV
 	}
 
-	if idRV := rt.Mapper.AssignIdentity(ident, state); idRV != nil {
+	if idRV := rt.Mapper.AssignIdentity(*ident, state); idRV != nil {
 		rv = append(rv, diag.Diagnostic{
 			Severity: diag.Error,
 			Detail:   "was unable to assign the identity to this resource",

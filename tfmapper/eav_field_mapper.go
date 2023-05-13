@@ -2,30 +2,33 @@ package tfmapper
 
 import (
 	"fmt"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"terraform-provider-mashery/mashschema"
 )
 
-type StringMap map[string]string
-
-type StringMapFieldMapper[MType any] struct {
+type EAVFieldMapper[MType any] struct {
 	FieldMapperBase
 
-	Locator LocatorFunc[MType, *StringMap]
+	Locator LocatorFunc[MType, *masherytypes.EAV]
 }
 
-func (sfm *StringMapFieldMapper[MType]) RemoteToSchema(remote *MType, state *schema.ResourceData) *diag.Diagnostic {
+func (sfm *EAVFieldMapper[MType]) RemoteToSchema(remote *MType, state *schema.ResourceData) *diag.Diagnostic {
 	remoteVal := sfm.Locator(remote)
 
 	var setErr error
 
-	if remoteVal == nil {
+	if *remoteVal == nil {
 		emptyMap := map[string]string{}
 		setErr = state.Set(sfm.Key, emptyMap)
 	} else {
-		setErr = state.Set(sfm.Key, *remoteVal)
+		passMap := map[string]string{}
+		for k, v := range **remoteVal {
+			passMap[k] = v
+		}
+		setErr = state.Set(sfm.Key, passMap)
 	}
 
 	// TOOO: repeating code that can be moved to the common method
@@ -41,12 +44,20 @@ func (sfm *StringMapFieldMapper[MType]) RemoteToSchema(remote *MType, state *sch
 	}
 }
 
-func (sfm *StringMapFieldMapper[MType]) SchemaToRemote(state *schema.ResourceData, remote *MType) {
+func (sfm *EAVFieldMapper[MType]) SchemaToRemote(state *schema.ResourceData, remote *MType) {
 	// TODO: A candidate for the functional composition
 	if sfm.Schema.Computed && !sfm.Schema.Optional {
 		return
 	}
 
 	val := mashschema.ExtractStringMap(state, sfm.Key)
-	*sfm.Locator(remote) = (*StringMap)(&val)
+	if len(val) == 0 {
+		*sfm.Locator(remote) = nil
+	} else {
+		eav := masherytypes.EAV{}
+		for k, v := range val {
+			eav[k] = v
+		}
+		*sfm.Locator(remote) = &eav
+	}
 }

@@ -24,7 +24,7 @@ var PackageResourceSchemaBuilder = tfmapper.NewSchemaBuilder[tfmapper.Orphan, ma
 // Field mappers
 // ------------------------------------------------------------------------------------------------------------------
 
-func initPackageId() {
+func init() {
 	PackageResourceSchemaBuilder.Add(&tfmapper.StringFieldMapper[masherytypes.Package]{
 		Locator: func(in *masherytypes.Package) *string {
 			return &in.Id
@@ -40,7 +40,7 @@ func initPackageId() {
 	})
 }
 
-func initPackageCreatedAndUpdated() {
+func init() {
 	PackageResourceSchemaBuilder.Add(&tfmapper.DateMapper[masherytypes.Package]{
 		Locator: func(in *masherytypes.Package) *masherytypes.MasheryJSONTime {
 			return in.Created
@@ -68,7 +68,7 @@ func initPackageCreatedAndUpdated() {
 	})
 }
 
-func initPackageName() {
+func init() {
 	PackageResourceSchemaBuilder.Add(&tfmapper.SerOrPrefixedFieldMapper[masherytypes.Package]{
 		StringFieldMapper: tfmapper.StringFieldMapper[masherytypes.Package]{
 			Locator: func(in *masherytypes.Package) *string {
@@ -101,7 +101,7 @@ func initPackageName() {
 	})
 }
 
-func initPackageDescription() {
+func init() {
 	PackageResourceSchemaBuilder.Add(&tfmapper.StringFieldMapper[masherytypes.Package]{
 		Locator: func(in *masherytypes.Package) *string {
 			return &in.Description
@@ -119,7 +119,7 @@ func initPackageDescription() {
 	})
 }
 
-func initPackageDeveloperNotificationPeriod() {
+func init() {
 	PackageResourceSchemaBuilder.Add(&tfmapper.StringFieldMapper[masherytypes.Package]{
 		Locator: func(in *masherytypes.Package) *string {
 			return &in.NotifyDeveloperPeriod
@@ -138,7 +138,7 @@ func initPackageDeveloperNotificationPeriod() {
 	})
 }
 
-func initDeveloperNotificationFlags() {
+func init() {
 	PackageResourceSchemaBuilder.Add(&tfmapper.BoolFieldMapper[masherytypes.Package]{
 		Locator: func(in *masherytypes.Package) *bool {
 			return &in.NotifyDeveloperNearQuota
@@ -181,7 +181,7 @@ func initDeveloperNotificationFlags() {
 	})
 }
 
-func initPackageAdminNotificationPeriod() {
+func init() {
 	PackageResourceSchemaBuilder.Add(&tfmapper.StringFieldMapper[masherytypes.Package]{
 		Locator: func(in *masherytypes.Package) *string {
 			return &in.NotifyAdminPeriod
@@ -200,7 +200,7 @@ func initPackageAdminNotificationPeriod() {
 	})
 }
 
-func initPackageAdminNotificationFlags() {
+func init() {
 	PackageResourceSchemaBuilder.Add(&tfmapper.BoolFieldMapper[masherytypes.Package]{
 		Locator: func(in *masherytypes.Package) *bool {
 			return &in.NotifyAdminNearQuota
@@ -243,7 +243,7 @@ func initPackageAdminNotificationFlags() {
 	})
 }
 
-func initNotifyAdminEmails() {
+func init() {
 	PackageResourceSchemaBuilder.Add(&tfmapper.PluggableFiledMapperBase[masherytypes.Package]{
 		FieldMapperBase: tfmapper.FieldMapperBase{
 			Key: mashschema.MashPackNotifyAdminEmails,
@@ -292,7 +292,7 @@ func initNotifyAdminEmails() {
 	})
 }
 
-func initPackageNearQuotaThreshold() {
+func init() {
 	PackageResourceSchemaBuilder.Add(&tfmapper.IntPointerFieldMapper[masherytypes.Package]{
 		Locator: func(in *masherytypes.Package) **int {
 			return &in.NearQuotaThreshold
@@ -309,27 +309,27 @@ func initPackageNearQuotaThreshold() {
 	})
 }
 
-func initPackageEAVs() {
-	PackageResourceSchemaBuilder.Add(&tfmapper.StringMapFieldMapper[masherytypes.Package]{
-		Locator: func(in *masherytypes.Package) *tfmapper.StringMap {
-			return (*tfmapper.StringMap)(&in.Eav)
-		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
-			Key: mashschema.MashPackEAVs,
-			Schema: &schema.Schema{
-				Type:        schema.TypeMap,
-				Optional:    true,
-				Computed:    true,
-				Description: "Extended attribute values",
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
-			},
-		},
-	})
+func init() {
+	//PackageResourceSchemaBuilder.Add(&tfmapper.StringMapFieldMapper[masherytypes.Package]{
+	//	Locator: func(in *masherytypes.Package) **tfmapper.StringMap {
+	//		return &in.Eav
+	//	},
+	//	FieldMapperBase: tfmapper.FieldMapperBase{
+	//		Key: mashschema.MashPackEAVs,
+	//		Schema: &schema.Schema{
+	//			Type:        schema.TypeMap,
+	//			Optional:    true,
+	//			Computed:    true,
+	//			Description: "Extended attribute values",
+	//			Elem: &schema.Schema{
+	//				Type: schema.TypeString,
+	//			},
+	//		},
+	//	},
+	//})
 }
 
-func initKeyAdapter() {
+func init() {
 	PackageResourceSchemaBuilder.Add(&tfmapper.StringFieldMapper[masherytypes.Package]{
 		Locator: func(in *masherytypes.Package) *string {
 			return &in.KeyAdapter
@@ -345,7 +345,7 @@ func initKeyAdapter() {
 	})
 }
 
-func initPackageKeySettings() {
+func init() {
 	PackageResourceSchemaBuilder.Add(&tfmapper.IntPointerFieldMapper[masherytypes.Package]{
 		Locator: func(in *masherytypes.Package) **int {
 			return &in.KeyLength
@@ -373,20 +373,4 @@ func initPackageKeySettings() {
 			},
 		},
 	})
-}
-
-func init() {
-	initPackageId()
-	initPackageCreatedAndUpdated()
-	initPackageName()
-	initPackageDescription()
-	initPackageDeveloperNotificationPeriod()
-	initDeveloperNotificationFlags()
-	initPackageAdminNotificationPeriod()
-	initPackageAdminNotificationFlags()
-	initNotifyAdminEmails()
-	initPackageNearQuotaThreshold()
-	initPackageEAVs()
-	initKeyAdapter()
-	initPackageKeySettings()
 }

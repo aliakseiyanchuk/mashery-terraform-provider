@@ -511,7 +511,7 @@ func (smi *ServiceMapperImpl) IODocsRolesDefined(d *schema.ResourceData) bool {
 // Terraform -> V3 conversion routines
 
 func (smi *ServiceMapperImpl) CacheUpsertable(d *schema.ResourceData) *masherytypes.ServiceCache {
-	cacheTTL := extractInt(d, MashSvcCacheTtl, 0)
+	cacheTTL := ExtractInt(d, MashSvcCacheTtl, 0)
 	if cacheTTL > 0 {
 		return &masherytypes.ServiceCache{
 			CacheTtl: cacheTTL,
@@ -586,7 +586,7 @@ func (smi *ServiceMapperImpl) DirectlyUpdateable(d *schema.ResourceData) (masher
 			Name: extractSetOrPrefixedString(d, MashSvcName, MashSvcNamePrefix),
 		},
 		Description:     ExtractString(d, MashSvcDescription, "Managed by Terraform"),
-		QpsLimitOverall: extractInt64Pointer(d, MashSvcQpsLimitOverall, -1),
+		QpsLimitOverall: ExtractInt64Pointer(d, MashSvcQpsLimitOverall, -1),
 		RFC3986Encode:   ExtractBool(d, MashSvcServiceRFC3986Encode, true),
 		Version:         ExtractString(d, MashSvcVersion, "0.0.1-TF"),
 	}
@@ -614,7 +614,7 @@ func (smi *ServiceMapperImpl) UpsertableTyped(d *schema.ResourceData) (masheryty
 		}
 	}
 
-	ttl := extractInt(d, MashSvcCacheTtl, 0)
+	ttl := ExtractInt(d, MashSvcCacheTtl, 0)
 	if ttl > 0 {
 		mashServ.Cache = &masherytypes.ServiceCache{CacheTtl: ttl}
 	}

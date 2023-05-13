@@ -52,10 +52,10 @@ func (pkm *PackageKeyMapperImpl) UpsertableTyped(d *schema.ResourceData) (masher
 		Apikey: ExtractStringPointer(d, MashPackageKeyIdent),
 		Secret: ExtractStringPointer(d, MashPackageKeySecret),
 
-		RateLimitCeiling: extractInt64Pointer(d, MashPackageKeyRateLimitCeiling, 0),
+		RateLimitCeiling: ExtractInt64Pointer(d, MashPackageKeyRateLimitCeiling, 0),
 		RateLimitExempt:  ExtractBool(d, MashPackageKeyRateLimitExempt, false),
 
-		QpsLimitCeiling: extractInt64Pointer(d, MashPackageKeyQpsLimitCeiling, 0),
+		QpsLimitCeiling: ExtractInt64Pointer(d, MashPackageKeyQpsLimitCeiling, 0),
 		QpsLimitExempt:  ExtractBool(d, MashPackageKeyQpsLimitExempt, false),
 
 		Status: ExtractString(d, MashPackageKeyStatus, "waiting"),

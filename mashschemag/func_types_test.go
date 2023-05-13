@@ -1,0 +1,257 @@
+package mashschemag
+
+import (
+	"fmt"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
+	"github.com/stretchr/testify/assert"
+	"reflect"
+	"terraform-provider-mashery/funcsupport"
+	"terraform-provider-mashery/tfmapper"
+	"testing"
+)
+
+func TestMaps(t *testing.T) {
+	obj := masherytypes.Plan{}
+
+	val := reflect.Indirect(reflect.ValueOf(&obj))
+	fld := val.FieldByName("Eav")
+
+	assert.Equal(t, reflect.Ptr, fld.Type().Kind())
+	assert.Equal(t, reflect.Map, fld.Type().Elem().Kind())
+
+}
+
+func autoTestBoolMappings[ParentIdent, Ident, MType any](t *testing.T, sb *tfmapper.SchemaBuilder[ParentIdent, Ident, MType], supplier funcsupport.Supplier[MType]) {
+	ref := supplier()
+	boolFields := enumerateFields(ref, func(in reflect.Type) bool {
+		return in.Kind() == reflect.Bool
+	})
+
+	for _, fldName := range boolFields {
+		mapper := sb.Mapper()
+		testState := sb.TestResourceData()
+
+		in := supplier()
+		reflectSetBool(&in, fldName, true)
+
+		mapper.RemoteToSchema(&in, testState)
+
+		readBack := supplier()
+		mapper.SchemaToRemote(testState, &readBack)
+
+		assert.True(t, reflectGetBool(readBack, fldName), "mismatching read/write on field %s", fldName)
+	}
+}
+
+func reflectSetBool(i interface{}, fldName string, boolVal bool) {
+	val := reflect.Indirect(reflect.ValueOf(i))
+	val.FieldByName(fldName).SetBool(boolVal)
+}
+
+func reflectGetBool(i interface{}, fldName string) bool {
+	val := reflect.Indirect(reflect.ValueOf(i))
+	return val.FieldByName(fldName).Bool()
+}
+
+func autoTestStringMappings[ParentIdent, Ident, MType any](t *testing.T, sb *tfmapper.SchemaBuilder[ParentIdent, Ident, MType], supplier funcsupport.Supplier[MType], except ...string) {
+	ref := supplier()
+	stringFieldsRaw := enumerateFields(ref, func(in reflect.Type) bool {
+		return in.Kind() == reflect.String
+	})
+
+	var stringFields []string
+
+outer:
+	for _, fld := range stringFieldsRaw {
+		for _, exclField := range except {
+			if fld == exclField {
+				continue outer
+			}
+		}
+		stringFields = append(stringFields, fld)
+	}
+
+	for _, fldName := range stringFields {
+		fmt.Println("Testing field " + fldName)
+		mapper := sb.Mapper()
+		testState := sb.TestResourceData()
+
+		in := supplier()
+
+		fldValue := "string-under-test-" + fldName
+		reflectSetString(&in, fldName, fldValue)
+
+		mapper.RemoteToSchema(&in, testState)
+
+		readBack := supplier()
+		mapper.SchemaToRemote(testState, &readBack)
+
+		assert.Equal(t, fldValue, reflectGetString(readBack, fldName), "mismatching read/write on string field %s", fldName)
+	}
+}
+
+func reflectSetString(i interface{}, fldName string, stringVal string) {
+	val := reflect.Indirect(reflect.ValueOf(i))
+	val.FieldByName(fldName).SetString(stringVal)
+}
+
+func reflectGetString(i interface{}, fldName string) string {
+	val := reflect.Indirect(reflect.ValueOf(i))
+	return val.FieldByName(fldName).String()
+}
+
+func matchingFieldsOf(i interface{}, predicate funcsupport.Predicate[reflect.Type], except ...string) []string {
+	rvFieldsRaw := enumerateFields(i, predicate)
+	var rvFields []string
+
+outer:
+	for _, fld := range rvFieldsRaw {
+		for _, exclField := range except {
+			if fld == exclField {
+				continue outer
+			}
+		}
+		rvFields = append(rvFields, fld)
+	}
+
+	return rvFields
+}
+
+// ------------------------------------------------------------------------------
+// Int field mappers
+
+func autoTestIntMappings[ParentIdent, Ident, MType any](t *testing.T, sb *tfmapper.SchemaBuilder[ParentIdent, Ident, MType], supplier funcsupport.Supplier[MType], expectFields ...string) {
+	ref := supplier()
+
+	intFields := matchingFieldsOf(&ref, func(in reflect.Type) bool {
+		return in.Kind() == reflect.Int
+	}, expectFields...)
+
+	for idx, fldName := range intFields {
+		mapper := sb.Mapper()
+		testState := sb.TestResourceData()
+
+		in := supplier()
+
+		fldValue := 100 + idx
+		reflectSetInt(&in, fldName, fldValue)
+
+		mapper.RemoteToSchema(&in, testState)
+
+		readBack := supplier()
+		mapper.SchemaToRemote(testState, &readBack)
+
+		assert.Equal(t, fldValue, reflectGetInt(readBack, fldName), "mismatching read/write on int field %s", fldName)
+	}
+}
+
+func reflectSetInt(i interface{}, fldName string, intVal int) {
+	val := reflect.Indirect(reflect.ValueOf(i))
+	val.FieldByName(fldName).SetInt(int64(intVal))
+}
+
+func reflectGetInt(i interface{}, fldName string) int {
+	val := reflect.Indirect(reflect.ValueOf(i))
+	return int(val.FieldByName(fldName).Int())
+}
+
+func autoTestInt64PtrMappings[ParentIdent, Ident, MType any](t *testing.T, sb *tfmapper.SchemaBuilder[ParentIdent, Ident, MType], supplier funcsupport.Supplier[MType], expectFields ...string) {
+	ref := supplier()
+
+	intFields := matchingFieldsOf(&ref, func(in reflect.Type) bool {
+		return in.Kind() == reflect.Ptr && in.Elem().Kind() == reflect.Int64
+	}, expectFields...)
+
+	for idx, fldName := range intFields {
+		mapper := sb.Mapper()
+		testState := sb.TestResourceData()
+
+		in := supplier()
+
+		var fldValue = int64(100 + idx)
+		reflectSetInt64Ptr(&in, fldName, &fldValue)
+
+		mapper.RemoteToSchema(&in, testState)
+
+		readBack := supplier()
+		mapper.SchemaToRemote(testState, &readBack)
+
+		readBackPtr := reflectGetInt64Ptr(&readBack, fldName)
+		assert.NotNil(t, readBackPtr, "read back pointer should not be null at this point")
+		assert.Equal(t, fldValue, *readBackPtr, "mismatching read/write on int field %s", fldName)
+	}
+}
+
+func reflectSetInt64Ptr(i interface{}, fldName string, intVal *int64) {
+	val := reflect.Indirect(reflect.ValueOf(i))
+	val.FieldByName(fldName).Set(reflect.ValueOf(intVal))
+}
+
+func reflectGetInt64Ptr(i interface{}, fldName string) *int64 {
+	val := reflect.Indirect(reflect.ValueOf(i))
+	if rvPtr := val.FieldByName(fldName).Interface(); rvPtr != nil {
+		return rvPtr.(*int64)
+	} else {
+		return nil
+	}
+}
+
+func autoTestEAVMappings[ParentIdent, Ident, MType any](t *testing.T, sb *tfmapper.SchemaBuilder[ParentIdent, Ident, MType], supplier funcsupport.Supplier[MType], expectFields ...string) {
+	ref := supplier()
+
+	mapFields := matchingFieldsOf(&ref, func(in reflect.Type) bool {
+		return in.Kind() == reflect.Ptr && in.Elem().Name() == "EAV"
+	}, expectFields...)
+
+	for _, fldName := range mapFields {
+		mapper := sb.Mapper()
+		testState := sb.TestResourceData()
+
+		in := supplier()
+
+		var fldValue = masherytypes.EAV{
+			"Field-" + fldName: "Field-" + fldName + "-Value",
+		}
+		reflectSetEAV(&in, fldName, &fldValue)
+
+		mapper.RemoteToSchema(&in, testState)
+
+		readBack := supplier()
+		mapper.SchemaToRemote(testState, &readBack)
+
+		readBackPtr := reflectGetEAV(&readBack, fldName)
+		assert.NotNil(t, readBackPtr, "read back pointer should not be null at this point")
+		assert.True(t, reflect.DeepEqual(&fldValue, readBackPtr), "mismatching read/write on map field %s", fldName)
+	}
+}
+
+func reflectSetEAV(i interface{}, fldName string, intVal *masherytypes.EAV) {
+	val := reflect.Indirect(reflect.ValueOf(i))
+	val.FieldByName(fldName).Set(reflect.ValueOf(intVal))
+}
+
+func reflectGetEAV(i interface{}, fldName string) *masherytypes.EAV {
+	val := reflect.Indirect(reflect.ValueOf(i))
+	if rvPtr := val.FieldByName(fldName).Interface(); rvPtr != nil {
+		return rvPtr.(*masherytypes.EAV)
+	} else {
+		return nil
+	}
+}
+
+// --------------
+// Enumerate the fields of struct based on the predicate of the field kind type
+
+func enumerateFields(i interface{}, predicate funcsupport.Predicate[reflect.Type]) []string {
+	var rv []string
+
+	val := reflect.Indirect(reflect.ValueOf(i))
+
+	for i := 0; i < val.NumField(); i++ {
+		if predicate(val.Field(i).Type()) {
+			rv = append(rv, val.Type().Field(i).Name)
+		}
+	}
+
+	return rv
+}

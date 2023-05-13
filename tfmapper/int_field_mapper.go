@@ -8,13 +8,13 @@ import (
 	"terraform-provider-mashery/mashschema"
 )
 
-type IntPointerFieldMapper[MType any] struct {
+type IntFieldMapper[MType any] struct {
 	FieldMapperBase
 
-	Locator LocatorFunc[MType, *int]
+	Locator LocatorFunc[MType, int]
 }
 
-func (sfm *IntPointerFieldMapper[MType]) RemoteToSchema(remote *MType, state *schema.ResourceData) *diag.Diagnostic {
+func (sfm *IntFieldMapper[MType]) RemoteToSchema(remote *MType, state *schema.ResourceData) *diag.Diagnostic {
 	remoteVal := sfm.Locator(remote)
 
 	if remoteVal != nil {
@@ -32,11 +32,16 @@ func (sfm *IntPointerFieldMapper[MType]) RemoteToSchema(remote *MType, state *sc
 	return nil
 }
 
-func (sfm *IntPointerFieldMapper[MType]) SchemaToRemote(state *schema.ResourceData, remote *MType) {
+func (sfm *IntFieldMapper[MType]) SchemaToRemote(state *schema.ResourceData, remote *MType) {
 	if sfm.Schema.Computed && !sfm.Schema.Optional {
 		return
 	}
 
-	val := mashschema.ExtractIntPointer(state, sfm.Key)
+	implied := 0
+	if schemaDefault, ok := sfm.Schema.Default.(int); ok {
+		implied = schemaDefault
+	}
+
+	val := mashschema.ExtractInt(state, sfm.Key, implied)
 	*sfm.Locator(remote) = val
 }

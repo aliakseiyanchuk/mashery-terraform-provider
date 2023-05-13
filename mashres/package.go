@@ -19,11 +19,12 @@ func init() {
 			return client.GetPackage(ctx, identifier)
 		},
 
-		DoCreate: func(ctx context.Context, client v3client.Client, orphan tfmapper.Orphan, m masherytypes.Package) (*masherytypes.Package, masherytypes.PackageIdentifier, error) {
+		DoCreate: func(ctx context.Context, client v3client.Client, orphan tfmapper.Orphan, m masherytypes.Package) (*masherytypes.Package, *masherytypes.PackageIdentifier, error) {
 			if createdPackage, err := client.CreatePackage(ctx, m); err != nil {
-				return nil, masherytypes.PackageIdentifier{}, err
+				return nil, nil, err
 			} else {
-				return createdPackage, createdPackage.Identifier(), nil
+				rvIdent := createdPackage.Identifier()
+				return createdPackage, &rvIdent, nil
 			}
 		},
 

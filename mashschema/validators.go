@@ -9,6 +9,19 @@ import (
 	"time"
 )
 
+func ValidateNonEmptyString(i interface{}, path cty.Path) diag.Diagnostics {
+	rv := diag.Diagnostics{}
+	str := i.(string)
+	if len(str) == 0 {
+		rv = append(rv, diag.Diagnostic{
+			Severity:      diag.Error,
+			Summary:       "invalid argument: this field string cannot be empty",
+			AttributePath: path,
+		})
+	}
+	return rv
+}
+
 func validateDuration(i interface{}, path cty.Path) diag.Diagnostics {
 	if _, err := time.ParseDuration(i.(string)); err != nil {
 		return diag.Diagnostics{diag.Diagnostic{

@@ -4,8 +4,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"reflect"
 	"terraform-provider-mashery/mashschema"
 )
 
@@ -35,8 +37,10 @@ func (sb *SchemaBuilder[ParentIdent, Ident, MType]) Identity(mapper IdentityMapp
 	return sb
 }
 
-func (sb *SchemaBuilder[ParentIdent, Ident, MType]) ParentIdentity(key string, fieldSchema *schema.Schema, mapper IdentityMapper[ParentIdent]) *SchemaBuilder[ParentIdent, Ident, MType] {
-	sb.resourceSchema[key] = fieldSchema
+func (sb *SchemaBuilder[ParentIdent, Ident, MType]) ParentIdentity(mapper ParentIdentityMapper[ParentIdent]) *SchemaBuilder[ParentIdent, Ident, MType] {
+	ensureUniqueSchemaKey(sb.resourceSchema, mapper.GetKey())
+	sb.resourceSchema[mapper.GetKey()] = mapper.GetSchema()
+
 	sb.parentIdentityMapper = mapper
 	return sb
 }
@@ -47,22 +51,25 @@ func (sb *SchemaBuilder[ParentIdent, Ident, MType]) RootIdentity(mapper Identity
 }
 
 func (sb *SchemaBuilder[ParentIdent, Ident, MType]) Add(field FieldMapper[MType]) *SchemaBuilder[ParentIdent, Ident, MType] {
+	resourceSchema := sb.resourceSchema
 	if comp, ok := field.(CompositeFieldMapper); ok {
 		for k, v := range comp.GetCompositeSchema() {
-			if sb.resourceSchema[k] != nil {
-				panic(fmt.Sprintf("duplicate key %s; change code or use composite", k))
-			}
-			sb.resourceSchema[k] = v
+			ensureUniqueSchemaKey(resourceSchema, k)
+			resourceSchema[k] = v
 		}
 	} else {
-		if sb.resourceSchema[field.GetKey()] != nil {
-			panic(fmt.Sprintf("duplicate key %s; change code or use composite", field.GetKey()))
-		}
-		sb.resourceSchema[field.GetKey()] = field.GetSchema()
+		ensureUniqueSchemaKey(resourceSchema, field.GetKey())
+		resourceSchema[field.GetKey()] = field.GetSchema()
 	}
 
 	sb.fields = append(sb.fields, field)
 	return sb
+}
+
+func ensureUniqueSchemaKey(resourceSchema TFResourceSchema, k string) {
+	if resourceSchema[k] != nil {
+		panic(fmt.Sprintf("duplicate key %s; change code or use composite", k))
+	}
 }
 
 func (sb *SchemaBuilder[ParentIdent, Ident, MType]) AddComposite(field FieldMapper[MType], extras map[string]*schema.Schema) *SchemaBuilder[ParentIdent, Ident, MType] {
@@ -109,6 +116,12 @@ func (m *Mapper[ParentIdent, Ident, MType]) ParentIdentity(state *schema.Resourc
 	return m.parentIdentityMapper.Identity(state)
 }
 
+// TestSetPrentIdentity set the identity of the resource. This method should be used only within the context of the
+// unit tests. For actual terraform scripts, these need to be set using references
+func (m *Mapper[ParentIdent, Ident, MType]) TestSetPrentIdentity(ident ParentIdent, state *schema.ResourceData) error {
+	return m.parentIdentityMapper.Assign(ident, state)
+}
+
 func (m *Mapper[ParentIdent, Ident, MType]) AssignIdentity(ident Ident, state *schema.ResourceData) error {
 	return m.identityMapper.Assign(ident, state)
 }
@@ -131,7 +144,6 @@ func (m *Mapper[ParentIdent, Ident, MType]) RemoteToSchema(remote *MType, state 
 
 func (m *Mapper[ParentIdent, Ident, MType]) SchemaToRemote(state *schema.ResourceData, remote *MType) {
 	for _, k := range m.fields {
-		fmt.Println("Mapping " + k.GetKey())
 		k.SchemaToRemote(state, remote)
 	}
 }
@@ -197,9 +209,37 @@ type IdentityMapper[Ident any] interface {
 	Assign(ident Ident, state *schema.ResourceData) error
 }
 
+type ParentIdentityMapper[Ident any] interface {
+	IdentityMapper[Ident]
+
+	GetKey() string
+	GetSchema() *schema.Schema
+	ValidateIdent(interface{}, cty.Path) diag.Diagnostics
+}
+
 type JsonIdentityMapper[Ident any] struct {
-	Key          string
-	IdentityFunc func() Ident
+	Key               string
+	Schema            schema.Schema
+	IdentityFunc      func() Ident
+	ValidateIdentFunc func(inp Ident) bool
+}
+
+func (im *JsonIdentityMapper[Ident]) PrepareParentMapper() *JsonIdentityMapper[Ident] {
+	im.Schema.ValidateDiagFunc = im.ValidateIdent
+
+	return im
+}
+
+func (im *JsonIdentityMapper[Ident]) Validate(ident Ident) bool {
+	return im.ValidateIdentFunc(ident)
+}
+
+func (im *JsonIdentityMapper[Ident]) GetKey() string {
+	return im.Key
+}
+
+func (im *JsonIdentityMapper[Ident]) GetSchema() *schema.Schema {
+	return &im.Schema
 }
 
 func (im *JsonIdentityMapper[Ident]) Identity(state *schema.ResourceData) (Ident, error) {
@@ -213,7 +253,33 @@ func (im *JsonIdentityMapper[Ident]) Identity(state *schema.ResourceData) (Ident
 		err := unwrapJSON(state.Id(), &rv)
 		return rv, err
 	}
+}
 
+func (im *JsonIdentityMapper[Ident]) ValidateIdent(i interface{}, path cty.Path) diag.Diagnostics {
+	rv := diag.Diagnostics{}
+
+	if str, ok := i.(string); ok {
+		ident := im.IdentityFunc()
+		if err := unwrapJSON(str, &ident); err != nil {
+			rv = append(rv, diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  fmt.Sprintf("supplied value is not a valid wrapped json"),
+				Detail:   fmt.Sprintf("could not parse supplied value as type %s", reflect.TypeOf(ident).Name()),
+			})
+		} else if !im.ValidateIdentFunc(ident) {
+			rv = append(rv, diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  fmt.Sprintf("supplied identity is not valid"),
+			})
+		}
+	} else {
+		rv = append(rv, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  fmt.Sprintf("supplied value for field %s is not string", im.Key),
+		})
+	}
+
+	return rv
 }
 
 func (im *JsonIdentityMapper[Ident]) Assign(ident Ident, state *schema.ResourceData) error {
