@@ -1,0 +1,50 @@
+package mashres
+
+import (
+	"context"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
+	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
+	"terraform-provider-mashery/mashschemag"
+)
+
+var PackagePlanServiceResource *ResourceTemplate[masherytypes.PackagePlanIdentifier, masherytypes.PackagePlanServiceIdentifier, mashschemag.PackagePlanServiceParam]
+
+func init() {
+	PackagePlanServiceResource = &ResourceTemplate[masherytypes.PackagePlanIdentifier, masherytypes.PackagePlanServiceIdentifier, mashschemag.PackagePlanServiceParam]{
+		Schema: mashschemag.PackagePlanServiceResourceSchemaBuilder.ResourceSchema(),
+		Mapper: mashschemag.PackagePlanServiceResourceSchemaBuilder.Mapper(),
+
+		DoRead: func(ctx context.Context, client v3client.Client, identifier masherytypes.PackagePlanServiceIdentifier) (*mashschemag.PackagePlanServiceParam, error) {
+			serviceExists, err := client.CheckPlanServiceExists(ctx, identifier)
+			if serviceExists {
+				return &mashschemag.PackagePlanServiceParam{}, err
+			} else {
+				return nil, err
+			}
+		},
+
+		DoCreate: func(ctx context.Context, client v3client.Client, identifier masherytypes.PackagePlanIdentifier, m mashschemag.PackagePlanServiceParam) (*mashschemag.PackagePlanServiceParam, *masherytypes.PackagePlanServiceIdentifier, error) {
+
+			ident := masherytypes.PackagePlanServiceIdentifier{
+				ServiceIdentifier:     m.ServiceIdentifier,
+				PackagePlanIdentifier: identifier,
+			}
+
+			if _, err := client.CreatePlanService(ctx, ident); err != nil {
+				return nil, nil, err
+			} else {
+				return &m, &ident, nil
+			}
+		},
+
+		// Update is not required: it will be delete-only
+
+		DoDelete: func(ctx context.Context, client v3client.Client, identifier masherytypes.PackagePlanServiceIdentifier) error {
+			return client.DeletePlanService(ctx, identifier)
+		},
+
+		DoCountOffending: func(ctx context.Context, client v3client.Client, identifier masherytypes.PackagePlanServiceIdentifier) (int64, error) {
+			return client.CountPlanEndpoints(ctx, identifier)
+		},
+	}
+}

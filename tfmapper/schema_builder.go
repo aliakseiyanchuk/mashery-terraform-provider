@@ -3,6 +3,7 @@ package tfmapper
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -148,12 +149,28 @@ func (m *Mapper[ParentIdent, Ident, MType]) SchemaToRemote(state *schema.Resourc
 	}
 }
 
+func (m *Mapper[ParentIdent, Ident, MType]) TestAssign(key string, state *schema.ResourceData, i interface{}) error {
+	for _, fm := range m.fields {
+		if fm.GetKey() == key {
+			if fms, ok := fm.(FieldMapperSetter); ok {
+				return fms.ValueToSchema(i, state)
+			}
+		}
+	}
+
+	return errors.New("could not find mapper for this field")
+}
+
 type FieldMapper[MType any] interface {
 	GetKey() string
 	GetSchema() *schema.Schema
 
 	RemoteToSchema(remote *MType, state *schema.ResourceData) *diag.Diagnostic
 	SchemaToRemote(state *schema.ResourceData, remote *MType)
+}
+
+type FieldMapperSetter interface {
+	ValueToSchema(i interface{}, state *schema.ResourceData) error
 }
 
 type CompositeFieldMapper interface {
@@ -255,7 +272,7 @@ func (im *JsonIdentityMapper[Ident]) Identity(state *schema.ResourceData) (Ident
 	}
 }
 
-func (im *JsonIdentityMapper[Ident]) ValidateIdent(i interface{}, path cty.Path) diag.Diagnostics {
+func (im *JsonIdentityMapper[Ident]) ValidateIdent(i interface{}, _ cty.Path) diag.Diagnostics {
 	rv := diag.Diagnostics{}
 
 	if str, ok := i.(string); ok {
