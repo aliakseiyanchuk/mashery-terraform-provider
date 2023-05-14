@@ -61,10 +61,6 @@ func (sfm *JsonIdentityFieldMapper[Ident, MType]) RemoteToSchema(_ *MType, _ *sc
 }
 
 func (sfm *JsonIdentityFieldMapper[Ident, MType]) SchemaToRemote(state *schema.ResourceData, remote *MType) {
-	if sfm.Schema.Computed && !sfm.Schema.Optional {
-		return
-	}
-
 	ident := sfm.IdentityFunc()
 	val := mashschema.ExtractString(state, sfm.Key, "")
 	_ = unwrapJSON(val, &ident)

@@ -33,10 +33,6 @@ func (sfm *IntPointerFieldMapper[MType]) RemoteToSchema(remote *MType, state *sc
 }
 
 func (sfm *IntPointerFieldMapper[MType]) SchemaToRemote(state *schema.ResourceData, remote *MType) {
-	if sfm.Schema.Computed && !sfm.Schema.Optional {
-		return
-	}
-
 	val := mashschema.ExtractIntPointer(state, sfm.Key)
 	*sfm.Locator(remote) = val
 }

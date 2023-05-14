@@ -29,10 +29,6 @@ func (sfm *StringFieldMapper[MType]) RemoteToSchema(remote *MType, state *schema
 }
 
 func (sfm *StringFieldMapper[MType]) SchemaToRemote(state *schema.ResourceData, remote *MType) {
-	if sfm.Schema.Computed && !sfm.Schema.Optional {
-		return
-	}
-
 	impliedValue := ""
 	if v, ok := sfm.Schema.Default.(string); ok {
 		impliedValue = v

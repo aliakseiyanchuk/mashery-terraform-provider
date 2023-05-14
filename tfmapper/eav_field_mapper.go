@@ -45,11 +45,6 @@ func (sfm *EAVFieldMapper[MType]) RemoteToSchema(remote *MType, state *schema.Re
 }
 
 func (sfm *EAVFieldMapper[MType]) SchemaToRemote(state *schema.ResourceData, remote *MType) {
-	// TODO: A candidate for the functional composition
-	if sfm.Schema.Computed && !sfm.Schema.Optional {
-		return
-	}
-
 	val := mashschema.ExtractStringMap(state, sfm.Key)
 	if len(val) == 0 {
 		*sfm.Locator(remote) = nil

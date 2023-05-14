@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"reflect"
+	"terraform-provider-mashery/funcsupport"
 	"terraform-provider-mashery/mashschema"
 )
 
@@ -24,6 +25,19 @@ type SchemaBuilder[ParentIdent any, Ident any, MType any] struct {
 	identityMapper       IdentityMapper[Ident]
 	parentIdentityMapper IdentityMapper[ParentIdent]
 	fields               []FieldMapper[MType]
+}
+
+func MergeSchemas(schemas ...map[string]*schema.Schema) map[string]*schema.Schema {
+	var rv = map[string]*schema.Schema{}
+
+	for _, s := range schemas {
+		for k, v := range s {
+			ensureUniqueSchemaKey(rv, k)
+			rv[k] = v
+		}
+	}
+
+	return rv
 }
 
 func NewSchemaBuilder[ParentIdent any, Ident any, MType any]() *SchemaBuilder[ParentIdent, Ident, MType] {
@@ -145,6 +159,27 @@ func (m *Mapper[ParentIdent, Ident, MType]) RemoteToSchema(remote *MType, state 
 
 func (m *Mapper[ParentIdent, Ident, MType]) SchemaToRemote(state *schema.ResourceData, remote *MType) {
 	for _, k := range m.fields {
+		// Fully computed fields do not need to be explicitly mapped
+		if k.GetSchema().Computed && !k.GetSchema().Optional {
+			continue
+		}
+
+		// If the mapper is interested in receiving the modification of the field (e.g. to avoid making unnecessary)
+		// calls, it will receive the modification.
+
+		if comp, ok := k.(CompositeFieldMapper); ok {
+			keys := make([]string, len(comp.GetCompositeSchema()))
+			idx := 0
+
+			for k, _ := range comp.GetCompositeSchema() {
+				keys[idx] = k
+				idx++
+			}
+			k.ConsumeModification(state.HasChanges(keys...))
+		} else {
+			k.ConsumeModification(state.HasChange(k.GetKey()))
+		}
+
 		k.SchemaToRemote(state, remote)
 	}
 }
@@ -165,6 +200,8 @@ type FieldMapper[MType any] interface {
 	GetKey() string
 	GetSchema() *schema.Schema
 
+	ConsumeModification(mod bool)
+
 	RemoteToSchema(remote *MType, state *schema.ResourceData) *diag.Diagnostic
 	SchemaToRemote(state *schema.ResourceData, remote *MType)
 }
@@ -181,7 +218,14 @@ type FieldMapperBase struct {
 	Key    string
 	Schema *schema.Schema
 
-	ParentIdentityKey string
+	ParentIdentityKey    string
+	ModificationConsumer funcsupport.Consumer[bool]
+}
+
+func (fmb *FieldMapperBase) ConsumeModification(how bool) {
+	if fmb.ModificationConsumer != nil {
+		fmb.ModificationConsumer(how)
+	}
 }
 
 type PluggableFiledMapperBase[MType any] struct {

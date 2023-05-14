@@ -33,10 +33,6 @@ func (sfm *IntFieldMapper[MType]) RemoteToSchema(remote *MType, state *schema.Re
 }
 
 func (sfm *IntFieldMapper[MType]) SchemaToRemote(state *schema.ResourceData, remote *MType) {
-	if sfm.Schema.Computed && !sfm.Schema.Optional {
-		return
-	}
-
 	implied := 0
 	if schemaDefault, ok := sfm.Schema.Default.(int); ok {
 		implied = schemaDefault

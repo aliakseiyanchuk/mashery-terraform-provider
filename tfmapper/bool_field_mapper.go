@@ -29,10 +29,6 @@ func (sfm *BoolFieldMapper[MType]) RemoteToSchema(remote *MType, state *schema.R
 }
 
 func (sfm *BoolFieldMapper[MType]) SchemaToRemote(state *schema.ResourceData, remote *MType) {
-	if sfm.Schema.Computed && !sfm.Schema.Optional {
-		return
-	}
-
 	impliedValue := false
 	if v, ok := sfm.Schema.Default.(bool); ok {
 		impliedValue = v

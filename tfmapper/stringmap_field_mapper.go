@@ -42,11 +42,6 @@ func (sfm *StringMapFieldMapper[MType]) RemoteToSchema(remote *MType, state *sch
 }
 
 func (sfm *StringMapFieldMapper[MType]) SchemaToRemote(state *schema.ResourceData, remote *MType) {
-	// TODO: A candidate for the functional composition
-	if sfm.Schema.Computed && !sfm.Schema.Optional {
-		return
-	}
-
 	val := mashschema.ExtractStringMap(state, sfm.Key)
 	*sfm.Locator(remote) = (*StringMap)(&val)
 }
