@@ -27,6 +27,10 @@ type SchemaBuilder[ParentIdent any, Ident any, MType any] struct {
 	fields               []FieldMapper[MType]
 }
 
+func (sb *SchemaBuilder[ParentIdent, Ident, MType]) MapperAndTestData() (*Mapper[ParentIdent, Ident, MType], *schema.ResourceData) {
+	return sb.Mapper(), sb.TestResourceData()
+}
+
 func MergeSchemas(schemas ...map[string]*schema.Schema) map[string]*schema.Schema {
 	var rv = map[string]*schema.Schema{}
 
@@ -177,7 +181,7 @@ func (m *Mapper[ParentIdent, Ident, MType]) SchemaToRemote(state *schema.Resourc
 		// If the mapper is interested in receiving the modification of the field (e.g. to avoid making unnecessary)
 		// calls, it will receive the modification.
 
-		k.ConsumeModification(m.mapperHasModifications(state, k))
+		k.ConsumeModification(remote, m.mapperHasModifications(state, k))
 		k.SchemaToRemote(state, remote)
 	}
 }
@@ -187,7 +191,7 @@ func (m *Mapper[ParentIdent, Ident, MType]) mapperHasModifications(state *schema
 		keys := make([]string, len(comp.GetCompositeSchema()))
 		idx := 0
 
-		for k, _ := range comp.GetCompositeSchema() {
+		for k := range comp.GetCompositeSchema() {
 			keys[idx] = k
 			idx++
 		}
@@ -213,7 +217,7 @@ type FieldMapper[MType any] interface {
 	GetKey() string
 	GetSchema() *schema.Schema
 
-	ConsumeModification(mod bool)
+	ConsumeModification(out *MType, mod bool)
 
 	RemoteToSchema(remote *MType, state *schema.ResourceData) *diag.Diagnostic
 	SchemaToRemote(state *schema.ResourceData, remote *MType)
@@ -227,22 +231,22 @@ type CompositeFieldMapper interface {
 	GetCompositeSchema() map[string]*schema.Schema
 }
 
-type FieldMapperBase struct {
+type FieldMapperBase[MType any] struct {
 	Key    string
 	Schema *schema.Schema
 
 	ParentIdentityKey    string
-	ModificationConsumer funcsupport.Consumer[bool]
+	ModificationConsumer funcsupport.BiConsumer[*MType, bool]
 }
 
-func (fmb *FieldMapperBase) ConsumeModification(how bool) {
+func (fmb *FieldMapperBase[MType]) ConsumeModification(out *MType, how bool) {
 	if fmb.ModificationConsumer != nil {
-		fmb.ModificationConsumer(how)
+		fmb.ModificationConsumer(out, how)
 	}
 }
 
 type PluggableFiledMapperBase[MType any] struct {
-	FieldMapperBase
+	FieldMapperBase[MType]
 
 	RemoteToSchemaFunc func(remote *MType, key string, state *schema.ResourceData) *diag.Diagnostic
 	SchemaToRemoteFunc func(state *schema.ResourceData, key string, remote *MType)
@@ -270,11 +274,11 @@ func (cmb *CompositeMapperBase) GetCompositeSchema() map[string]*schema.Schema {
 	return cmb.CompositeSchema
 }
 
-func (fmb *FieldMapperBase) GetKey() string {
+func (fmb *FieldMapperBase[MType]) GetKey() string {
 	return fmb.Key
 }
 
-func (fmb *FieldMapperBase) GetSchema() *schema.Schema {
+func (fmb *FieldMapperBase[MType]) GetSchema() *schema.Schema {
 	return fmb.Schema
 }
 

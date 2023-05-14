@@ -42,7 +42,7 @@ func init() {
 		Locator: func(in *masherytypes.Plan) *string {
 			return &in.Id
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Plan]{
 			Key: mashschema.MashPlanId,
 			Schema: &schema.Schema{
 				Type:        schema.TypeString,
@@ -54,7 +54,7 @@ func init() {
 		Locator: func(in *masherytypes.Plan) *masherytypes.MasheryJSONTime {
 			return in.Created
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Plan]{
 			Key: mashschema.MashPackCreated,
 			Schema: &schema.Schema{
 				Type:        schema.TypeString,
@@ -66,7 +66,7 @@ func init() {
 		Locator: func(in *masherytypes.Plan) *masherytypes.MasheryJSONTime {
 			return in.Updated
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Plan]{
 			Key: mashschema.MashPackUpdated,
 			Schema: &schema.Schema{
 				Type:        schema.TypeString,
@@ -78,7 +78,7 @@ func init() {
 		Locator: func(in *masherytypes.Plan) *string {
 			return &in.Status
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Plan]{
 			Key: mashschema.MashPlanStatus,
 			Schema: &schema.Schema{
 				Type:        schema.TypeString,
@@ -90,7 +90,7 @@ func init() {
 		Locator: func(in *masherytypes.Plan) *string {
 			return &in.EmailTemplateSetId
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Plan]{
 			Key: mashschema.MashPlanEmailTemplateSetId,
 			Schema: &schema.Schema{
 				Type:        schema.TypeString,
@@ -106,7 +106,7 @@ func init() {
 		Locator: func(in *masherytypes.Plan) *string {
 			return &in.Name
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Plan]{
 			Key: mashschema.MashPlanName,
 			Schema: &schema.Schema{
 				Type:             schema.TypeString,
@@ -119,7 +119,7 @@ func init() {
 		Locator: func(in *masherytypes.Plan) *string {
 			return &in.Description
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Plan]{
 			Key: mashschema.MashPlanDescription,
 			Schema: &schema.Schema{
 				Type:     schema.TypeString,
@@ -131,7 +131,7 @@ func init() {
 		Locator: func(in *masherytypes.Plan) **masherytypes.EAV {
 			return &in.Eav
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Plan]{
 			Key: mashschema.MashPlanEAV,
 			Schema: &schema.Schema{
 				Type:        schema.TypeMap,
@@ -162,7 +162,7 @@ func init() {
 		Locator: func(in *masherytypes.Plan) *bool {
 			return &in.SelfServiceKeyProvisioningEnabled
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Plan]{
 			Key:    mashschema.MashPlanSelfServiceKeyProvisioningEnabled,
 			Schema: &optionalBool,
 		},
@@ -170,7 +170,7 @@ func init() {
 		Locator: func(in *masherytypes.Plan) *bool {
 			return &in.AdminKeyProvisioningEnabled
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Plan]{
 			Key:    mashschema.MashPlanAdminKeyProvisioningEnabled,
 			Schema: &optionalBool,
 		},
@@ -178,7 +178,7 @@ func init() {
 		Locator: func(in *masherytypes.Plan) *string {
 			return &in.Notes
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Plan]{
 			Key:    mashschema.MashPlanNotes,
 			Schema: &optionalString,
 		},
@@ -186,7 +186,7 @@ func init() {
 		Locator: func(in *masherytypes.Plan) *bool {
 			return &in.QpsLimitExempt
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Plan]{
 			Key: mashschema.MashPlanQpsLimitExempt,
 			Schema: &schema.Schema{
 				Type:          schema.TypeBool,
@@ -199,7 +199,7 @@ func init() {
 		Locator: func(in *masherytypes.Plan) *bool {
 			return &in.QpsLimitKeyOverrideAllowed
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Plan]{
 			Key:    mashschema.MashPlanQpsLimitKeyOverrideAllowed,
 			Schema: &optionalBool,
 		},
@@ -207,7 +207,7 @@ func init() {
 		Locator: func(in *masherytypes.Plan) *bool {
 			return &in.RateLimitExempt
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Plan]{
 			Key:    mashschema.MashPlanRateLimitExempt,
 			Schema: &optionalBool,
 		},
@@ -215,7 +215,7 @@ func init() {
 		Locator: func(in *masherytypes.Plan) *bool {
 			return &in.RateLimitKeyOverrideAllowed
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Plan]{
 			Key:    mashschema.MashPlanRateLimitKeyOverrideAllowed,
 			Schema: &optionalBool,
 		},
@@ -223,7 +223,7 @@ func init() {
 		Locator: func(in *masherytypes.Plan) *bool {
 			return &in.ResponseFilterOverrideAllowed
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Plan]{
 			Key:    mashschema.MashPlanResponseFilterOverrideAllowed,
 			Schema: &optionalBool,
 		},
@@ -235,7 +235,7 @@ func init() {
 		Locator: func(in *masherytypes.Plan) *int {
 			return &in.MaxNumKeysAllowed
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Plan]{
 			Key: mashschema.MashPlanMaxNumKeysAllowed,
 			Schema: &schema.Schema{
 				Type:     schema.TypeInt,
@@ -247,7 +247,7 @@ func init() {
 		Locator: func(in *masherytypes.Plan) *int {
 			return &in.NumKeysBeforeReview
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Plan]{
 			Key: mashschema.MashPlanNumKeysBeforeReview,
 			Schema: &schema.Schema{
 				Type:     schema.TypeInt,
@@ -259,7 +259,7 @@ func init() {
 		Locator: func(in *masherytypes.Plan) *string {
 			return &in.RateLimitPeriod
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Plan]{
 			Key: mashschema.MashPlanRateLimitPeriod,
 			Schema: &schema.Schema{
 				Type:     schema.TypeString,
@@ -279,7 +279,7 @@ func init() {
 		Locator: func(in *masherytypes.Plan) **int64 {
 			return &in.QpsLimitCeiling
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Plan]{
 			Key: mashschema.MashPlanQpsLimitCeiling,
 			Schema: &schema.Schema{
 				Type:     schema.TypeInt,
@@ -291,7 +291,7 @@ func init() {
 		Locator: func(in *masherytypes.Plan) **int64 {
 			return &in.RateLimitCeiling
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Plan]{
 			Key: mashschema.MashPlanRateLimitCeiling,
 			Schema: &schema.Schema{
 				Type:     schema.TypeInt,

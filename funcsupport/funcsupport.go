@@ -9,3 +9,4 @@ type Predicate[MType any] func(in MType) bool
 type Function[In any, Out any] func(in In) Out
 
 type Consumer[MType any] func(in MType)
+type BiConsumer[AType any, BType any] func(a AType, b BType)

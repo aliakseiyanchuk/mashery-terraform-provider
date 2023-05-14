@@ -10,7 +10,7 @@ import (
 )
 
 type EAVFieldMapper[MType any] struct {
-	FieldMapperBase
+	FieldMapperBase[MType]
 
 	Locator LocatorFunc[MType, *masherytypes.EAV]
 }

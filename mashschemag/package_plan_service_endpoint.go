@@ -43,7 +43,7 @@ func init() {
 
 func init() {
 	mapper := tfmapper.JsonIdentityFieldMapper[masherytypes.ServiceEndpointIdentifier, PackagePlanServiceEndpointParam]{
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[PackagePlanServiceEndpointParam]{
 			Key: mashschema.MashEndpointId,
 			Schema: &schema.Schema{
 				Type:        schema.TypeString,

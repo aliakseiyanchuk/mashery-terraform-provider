@@ -9,7 +9,7 @@ import (
 )
 
 type Int64PointerFieldMapper[MType any] struct {
-	FieldMapperBase
+	FieldMapperBase[MType]
 
 	Locator LocatorFunc[MType, *int64]
 }

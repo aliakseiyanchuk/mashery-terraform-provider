@@ -11,11 +11,14 @@ import (
 )
 
 type JsonIdentityFieldMapper[Ident any, MType any] struct {
-	FieldMapperBase
+	FieldMapperBase[MType]
 
 	IdentityFunc      funcsupport.Supplier[Ident]
 	Locator           LocatorFunc[MType, Ident]
+	PreviousLocator   LocatorFunc[MType, Ident]
 	ValidateIdentFunc func(Ident) bool
+
+	NullFunction funcsupport.Function[*MType, bool]
 }
 
 func (sfm *JsonIdentityFieldMapper[Ident, MType]) PrepareMapper() *JsonIdentityFieldMapper[Ident, MType] {
@@ -55,15 +58,53 @@ func (sfm *JsonIdentityFieldMapper[Ident, MType]) ValidateDiag(i interface{}, _ 
 	return rv
 }
 
-func (sfm *JsonIdentityFieldMapper[Ident, MType]) RemoteToSchema(_ *MType, _ *schema.ResourceData) *diag.Diagnostic {
-	// Nothing to do
+func (sfm *JsonIdentityFieldMapper[Ident, MType]) RemoteToSchema(v *MType, state *schema.ResourceData) *diag.Diagnostic {
+	// If the code has defined a null-checker function, this makes this mapper
+	// writeable
+	if sfm.NullFunction != nil {
+		val := ""
+
+		if !sfm.NullFunction(v) {
+			val = wrapJSON(sfm.Locator(v))
+
+			if err := state.Set(sfm.Key, val); err != nil {
+				return &diag.Diagnostic{
+					Severity: diag.Error,
+					Summary:  fmt.Sprintf("unable to set string value: %s", err.Error()),
+				}
+			}
+		}
+	}
+
 	return nil
 }
 
 func (sfm *JsonIdentityFieldMapper[Ident, MType]) SchemaToRemote(state *schema.ResourceData, remote *MType) {
+	sfm.schemaToRemoteCurrent(state, remote)
+	sfm.schemaToRemotePrevious(state, remote)
+}
+
+func (sfm *JsonIdentityFieldMapper[Ident, MType]) schemaToRemoteCurrent(state *schema.ResourceData, remote *MType) {
 	ident := sfm.IdentityFunc()
+
 	val := mashschema.ExtractString(state, sfm.Key, "")
-	_ = unwrapJSON(val, &ident)
+	if len(val) > 0 {
+		_ = unwrapJSON(val, &ident)
+	}
 
 	*sfm.Locator(remote) = ident
+}
+
+func (sfm *JsonIdentityFieldMapper[Ident, MType]) schemaToRemotePrevious(state *schema.ResourceData, remote *MType) {
+	if sfm.PreviousLocator != nil {
+		prevIdent := sfm.IdentityFunc()
+		beforeRaw, _ := state.GetChange(sfm.Key)
+		before := beforeRaw.(string)
+
+		if len(before) > 0 {
+			_ = unwrapJSON(before, &prevIdent)
+		}
+
+		*sfm.PreviousLocator(remote) = prevIdent
+	}
 }

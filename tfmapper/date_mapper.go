@@ -10,7 +10,7 @@ import (
 
 // DateMapper mapper that expects
 type DateMapper[MType any] struct {
-	FieldMapperBase
+	FieldMapperBase[MType]
 
 	Locator LocatorFunc[MType, masherytypes.MasheryJSONTime]
 }

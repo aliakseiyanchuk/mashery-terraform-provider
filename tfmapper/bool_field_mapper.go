@@ -9,7 +9,7 @@ import (
 )
 
 type BoolFieldMapper[MType any] struct {
-	FieldMapperBase
+	FieldMapperBase[MType]
 
 	Locator LocatorFunc[MType, bool]
 }

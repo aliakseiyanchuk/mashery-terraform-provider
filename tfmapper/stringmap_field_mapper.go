@@ -11,7 +11,7 @@ import (
 type StringMap map[string]string
 
 type StringMapFieldMapper[MType any] struct {
-	FieldMapperBase
+	FieldMapperBase[MType]
 
 	Locator LocatorFunc[MType, *StringMap]
 }

@@ -29,7 +29,7 @@ func init() {
 		Locator: func(in *masherytypes.Package) *string {
 			return &in.Id
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Package]{
 			Key: mashschema.MashPackageId,
 			Schema: &schema.Schema{
 				Type:        schema.TypeString,
@@ -45,7 +45,7 @@ func init() {
 		Locator: func(in *masherytypes.Package) *masherytypes.MasheryJSONTime {
 			return in.Created
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Package]{
 			Key: mashschema.MashPackCreated,
 			Schema: &schema.Schema{
 				Type:        schema.TypeString,
@@ -57,7 +57,7 @@ func init() {
 		Locator: func(in *masherytypes.Package) *masherytypes.MasheryJSONTime {
 			return in.Updated
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Package]{
 			Key: mashschema.MashPackUpdated,
 			Schema: &schema.Schema{
 				Type:        schema.TypeString,
@@ -75,7 +75,7 @@ func init() {
 				return &in.Name
 			},
 
-			FieldMapperBase: tfmapper.FieldMapperBase{
+			FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Package]{
 				Key: mashschema.MashPackName,
 			},
 		},
@@ -106,7 +106,7 @@ func init() {
 		Locator: func(in *masherytypes.Package) *string {
 			return &in.Description
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Package]{
 			Key: mashschema.MashPackDescription,
 			Schema: &schema.Schema{
 				Type:          schema.TypeString,
@@ -124,7 +124,7 @@ func init() {
 		Locator: func(in *masherytypes.Package) *string {
 			return &in.NotifyDeveloperPeriod
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Package]{
 			Key: mashschema.MashPackNotifyDeveloperPeriod,
 			Schema: &schema.Schema{
 				Type:     schema.TypeString,
@@ -143,7 +143,7 @@ func init() {
 		Locator: func(in *masherytypes.Package) *bool {
 			return &in.NotifyDeveloperNearQuota
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Package]{
 			Key: mashschema.MashPackNotifyDeveloperNearQuota,
 			Schema: &schema.Schema{
 				Type:        schema.TypeBool,
@@ -156,7 +156,7 @@ func init() {
 		Locator: func(in *masherytypes.Package) *bool {
 			return &in.NotifyDeveloperOverQuota
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Package]{
 			Key: mashschema.MashPackNotifyDeveloperOverQuota,
 			Schema: &schema.Schema{
 				Type:        schema.TypeBool,
@@ -169,7 +169,7 @@ func init() {
 		Locator: func(in *masherytypes.Package) *bool {
 			return &in.NotifyDeveloperOverThrottle
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Package]{
 			Key: mashschema.MashPackNotifyDeveloperOverThrottle,
 			Schema: &schema.Schema{
 				Type:        schema.TypeBool,
@@ -186,7 +186,7 @@ func init() {
 		Locator: func(in *masherytypes.Package) *string {
 			return &in.NotifyAdminPeriod
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Package]{
 			Key: mashschema.MashPackNotifyAdminPeriod,
 			Schema: &schema.Schema{
 				Type:     schema.TypeString,
@@ -205,7 +205,7 @@ func init() {
 		Locator: func(in *masherytypes.Package) *bool {
 			return &in.NotifyAdminNearQuota
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Package]{
 			Key: mashschema.MashPackNotifyAdminNearQuota,
 			Schema: &schema.Schema{
 				Type:        schema.TypeBool,
@@ -218,7 +218,7 @@ func init() {
 		Locator: func(in *masherytypes.Package) *bool {
 			return &in.NotifyAdminOverQuota
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Package]{
 			Key: mashschema.MashPackNotifyAdminOverQuota,
 			Schema: &schema.Schema{
 				Type:        schema.TypeBool,
@@ -231,7 +231,7 @@ func init() {
 		Locator: func(in *masherytypes.Package) *bool {
 			return &in.NotifyAdminOverThrottle
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Package]{
 			Key: mashschema.MashPackNotifyAdminOverThrottle,
 			Schema: &schema.Schema{
 				Type:        schema.TypeBool,
@@ -245,7 +245,7 @@ func init() {
 
 func init() {
 	PackageResourceSchemaBuilder.Add(&tfmapper.PluggableFiledMapperBase[masherytypes.Package]{
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Package]{
 			Key: mashschema.MashPackNotifyAdminEmails,
 			Schema: &schema.Schema{
 				Type:        schema.TypeSet,
@@ -297,7 +297,7 @@ func init() {
 		Locator: func(in *masherytypes.Package) **int {
 			return &in.NearQuotaThreshold
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Package]{
 			Key: mashschema.MashPackNearQuotaThreshold,
 			Schema: &schema.Schema{
 				Type:        schema.TypeInt,
@@ -334,7 +334,7 @@ func init() {
 		Locator: func(in *masherytypes.Package) *string {
 			return &in.KeyAdapter
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Package]{
 			Key: mashschema.MashPackKeyAdapter,
 			Schema: &schema.Schema{
 				Type:        schema.TypeString,
@@ -350,7 +350,7 @@ func init() {
 		Locator: func(in *masherytypes.Package) **int {
 			return &in.KeyLength
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Package]{
 			Key: mashschema.MashPackKeyLength,
 			Schema: &schema.Schema{
 				Type:        schema.TypeInt,
@@ -363,7 +363,7 @@ func init() {
 		Locator: func(in *masherytypes.Package) **int {
 			return &in.SharedSecretLength
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Package]{
 			Key: mashschema.MashPackSharedSecretLength,
 			Schema: &schema.Schema{
 				Type:        schema.TypeInt,

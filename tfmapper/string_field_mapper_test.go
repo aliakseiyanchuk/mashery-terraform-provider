@@ -14,7 +14,7 @@ func TestStringFieldMapperExpectedOperation(t *testing.T) {
 		Locator: func(in *masherytypes.Endpoint) *string {
 			return &in.ApiKeyValueLocationKey
 		},
-		FieldMapperBase: FieldMapperBase{
+		FieldMapperBase: FieldMapperBase[masherytypes.Endpoint]{
 			Key: "tf_path",
 			Schema: &schema.Schema{
 				Type:        schema.TypeString,
@@ -47,7 +47,7 @@ func TestStringFieldMapperUsingDefaultValues(t *testing.T) {
 		Locator: func(in *masherytypes.Endpoint) *string {
 			return &in.ApiKeyValueLocationKey
 		},
-		FieldMapperBase: FieldMapperBase{
+		FieldMapperBase: FieldMapperBase[masherytypes.Endpoint]{
 			Key: "tf_path",
 			Schema: &schema.Schema{
 				Type:        schema.TypeString,
@@ -75,7 +75,7 @@ func TestStringFieldMapperWillReturnErrorOnErrorMapping(t *testing.T) {
 		Locator: func(in *masherytypes.Endpoint) *string {
 			return &in.ApiKeyValueLocationKey
 		},
-		FieldMapperBase: FieldMapperBase{
+		FieldMapperBase: FieldMapperBase[masherytypes.Endpoint]{
 			Key: "tf_path",
 			Schema: &schema.Schema{
 				Type:        schema.TypeInt,
