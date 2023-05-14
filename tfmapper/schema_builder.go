@@ -123,6 +123,16 @@ type Mapper[ParentIdent any, Ident any, MType any] struct {
 	fields               []FieldMapper[MType]
 }
 
+func (m *Mapper[ParentIdent, Ident, MType]) StateModified(state *schema.ResourceData) bool {
+	for _, fld := range m.fields {
+		if m.mapperHasModifications(state, fld) {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (m *Mapper[ParentIdent, Ident, MType]) Identity(state *schema.ResourceData) (Ident, error) {
 	return m.identityMapper.Identity(state)
 }
@@ -167,20 +177,23 @@ func (m *Mapper[ParentIdent, Ident, MType]) SchemaToRemote(state *schema.Resourc
 		// If the mapper is interested in receiving the modification of the field (e.g. to avoid making unnecessary)
 		// calls, it will receive the modification.
 
-		if comp, ok := k.(CompositeFieldMapper); ok {
-			keys := make([]string, len(comp.GetCompositeSchema()))
-			idx := 0
-
-			for k, _ := range comp.GetCompositeSchema() {
-				keys[idx] = k
-				idx++
-			}
-			k.ConsumeModification(state.HasChanges(keys...))
-		} else {
-			k.ConsumeModification(state.HasChange(k.GetKey()))
-		}
-
+		k.ConsumeModification(m.mapperHasModifications(state, k))
 		k.SchemaToRemote(state, remote)
+	}
+}
+
+func (m *Mapper[ParentIdent, Ident, MType]) mapperHasModifications(state *schema.ResourceData, fld FieldMapper[MType]) bool {
+	if comp, ok := fld.(CompositeFieldMapper); ok {
+		keys := make([]string, len(comp.GetCompositeSchema()))
+		idx := 0
+
+		for k, _ := range comp.GetCompositeSchema() {
+			keys[idx] = k
+			idx++
+		}
+		return state.HasChanges(keys...)
+	} else {
+		return state.HasChange(fld.GetKey())
 	}
 }
 

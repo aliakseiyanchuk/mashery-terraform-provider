@@ -51,6 +51,27 @@ func (mt *MultiResourceTemplate[ParentIdent, Ident]) WithEachTemplate(ctx contex
 	return rv
 }
 
+func (mt *MultiResourceTemplate[ParentIdent, Ident]) WithEachTemplateIfModified(ctx context.Context, state *schema.ResourceData, m interface{}, fLoc ContextLocator[ParentIdent, Ident]) diag.Diagnostics {
+	rv := diag.Diagnostics{}
+
+	for _, t := range mt.Templates {
+		if t.Mapper.StateModified(state) {
+			f := fLoc(t)
+			if f != nil {
+				dg := f(ctx, state, m)
+				if len(dg) > 0 {
+					rv = append(dg)
+				}
+				if dg.HasError() {
+					return rv
+				}
+			}
+		}
+	}
+
+	return rv
+}
+
 func (mt *MultiResourceTemplate[ParentIdent, Ident]) Read(ctx context.Context, state *schema.ResourceData, m interface{}) diag.Diagnostics {
 	return mt.WithEachTemplate(ctx, state, m, func(in *ResourceTemplate[ParentIdent, Ident, any]) ContextFunc {
 		return in.Read
@@ -64,7 +85,7 @@ func (mt *MultiResourceTemplate[ParentIdent, Ident]) Create(ctx context.Context,
 }
 
 func (mt *MultiResourceTemplate[ParentIdent, Ident]) Update(ctx context.Context, state *schema.ResourceData, m interface{}) diag.Diagnostics {
-	return mt.WithEachTemplate(ctx, state, m, func(in *ResourceTemplate[ParentIdent, Ident, any]) ContextFunc {
+	return mt.WithEachTemplateIfModified(ctx, state, m, func(in *ResourceTemplate[ParentIdent, Ident, any]) ContextFunc {
 		return in.Update
 	})
 }
