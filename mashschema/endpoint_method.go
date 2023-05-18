@@ -63,8 +63,8 @@ func (semm *ServiceEndpointMethodMapperImpl) PersistTyped(inp masherytypes.Servi
 		MashServiceEndpointMethodId:         inp.Id,
 		MashObjCreated:                      inp.Created.ToString(),
 		MashObjUpdated:                      inp.Updated.ToString(),
-		MashServiceEndpointMethodSampleJson: nullForEmptyString(inp.SampleJsonResponse),
-		MashServiceEndpointMethodSampleXml:  nullForEmptyString(inp.SampleXmlResponse),
+		MashServiceEndpointMethodSampleJson: NullForEmptyString(inp.SampleJsonResponse),
+		MashServiceEndpointMethodSampleXml:  NullForEmptyString(inp.SampleXmlResponse),
 	}
 
 	return semm.persistMap(inp.Identifier(), data, d)

@@ -511,7 +511,7 @@ func afterApplyKnown(source string) string {
 	}
 }
 
-func nullForEmptyString(inp string) interface{} {
+func NullForEmptyString(inp string) interface{} {
 	if len(inp) > 0 {
 		return inp
 	} else {

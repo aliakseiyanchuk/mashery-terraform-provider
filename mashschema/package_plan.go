@@ -253,7 +253,7 @@ func (pmi *PlanMapperImpl) PersistTyped(pln masherytypes.Plan, d *schema.Resourc
 
 		MashPlanResponseFilterOverrideAllowed: pln.ResponseFilterOverrideAllowed,
 		MashPlanStatus:                        pln.Status,
-		MashPlanEmailTemplateSetId:            nullForEmptyString(pln.EmailTemplateSetId),
+		MashPlanEmailTemplateSetId:            NullForEmptyString(pln.EmailTemplateSetId),
 	}
 
 	return pmi.persistMap(pln.Identifier(), data, d)
