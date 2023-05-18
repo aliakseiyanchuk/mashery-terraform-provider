@@ -28,7 +28,8 @@ func init() {
 		},
 
 		DoUpdate: func(ctx context.Context, client v3client.Client, identifier masherytypes.ServiceEndpointIdentifier, m masherytypes.Endpoint) (*masherytypes.Endpoint, error) {
-			m.Id = identifier.ServiceId
+			m.Id = identifier.EndpointId
+			m.ParentServiceId = identifier.ServiceIdentifier
 
 			if updatedService, err := client.UpdateEndpoint(ctx, m); err != nil {
 				return nil, err
