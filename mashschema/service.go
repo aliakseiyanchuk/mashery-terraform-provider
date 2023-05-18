@@ -531,7 +531,7 @@ func (smi *ServiceMapperImpl) UpsertableSecurityProfile(d *schema.ResourceData) 
 		}
 
 		if inpRaw, ok := d.GetOk(MashSvcOAuth); ok {
-			tfOauth := unwrapStructFromTerraformSet(inpRaw)
+			tfOauth := UnwrapStructFromTerraformSet(inpRaw)
 
 			oauth.AccessTokenTtlEnabled = tfOauth[MashSvcOAuthAccessTokenTtlEnabled].(bool)
 			oauth.AccessTokenTtl = int64(smi.durationToSeconds(tfOauth[MashSvcOAuthAccessTokenTtl].(string)))

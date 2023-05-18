@@ -158,7 +158,7 @@ outer:
 			}
 		}
 
-		assert.Failf(t, "mismatching read/write on string array field %s: string %s is not found in the target array", field, k)
+		assert.Failf(t, "mismatching read/write on string array", "field %s: string %s is not found in the target array", field, k)
 	}
 }
 
@@ -306,6 +306,47 @@ func reflectGetEAV(i interface{}, fldName string) *masherytypes.EAV {
 	val := reflect.Indirect(reflect.ValueOf(i))
 	if rvPtr := val.FieldByName(fldName).Interface(); rvPtr != nil {
 		return rvPtr.(*masherytypes.EAV)
+	} else {
+		return nil
+	}
+}
+
+func autoTestStringPtrMappings[ParentIdent, Ident, MType any](t *testing.T, sb *tfmapper.SchemaBuilder[ParentIdent, Ident, MType], supplier funcsupport.Supplier[MType], expectFields ...string) {
+	ref := supplier()
+
+	mapFields := matchingFieldsOf(&ref, func(in reflect.Type) bool {
+		return in.Kind() == reflect.Ptr && in.Elem().Kind() == reflect.String
+	}, expectFields...)
+
+	for _, fldName := range mapFields {
+		mapper := sb.Mapper()
+		testState := sb.TestResourceData()
+
+		in := supplier()
+
+		var fldValue = "Field-" + fldName + "-Value"
+		reflectSetStringPtr(&in, fldName, &fldValue)
+
+		mapper.RemoteToSchema(&in, testState)
+
+		readBack := supplier()
+		mapper.SchemaToRemote(testState, &readBack)
+
+		readBackPtr := reflectGetStringPtr(&readBack, fldName)
+		assert.NotNil(t, readBackPtr, "read back pointer should not be null at this point")
+		assert.Equal(t, fldValue, *readBackPtr, "mismatching read/write on map field %s", fldName)
+	}
+}
+
+func reflectSetStringPtr(i interface{}, fldName string, intVal *string) {
+	val := reflect.Indirect(reflect.ValueOf(i))
+	val.FieldByName(fldName).Set(reflect.ValueOf(intVal))
+}
+
+func reflectGetStringPtr(i interface{}, fldName string) *string {
+	val := reflect.Indirect(reflect.ValueOf(i))
+	if rvPtr := val.FieldByName(fldName).Interface(); rvPtr != nil {
+		return rvPtr.(*string)
 	} else {
 		return nil
 	}

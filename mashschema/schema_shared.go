@@ -72,7 +72,7 @@ func DataSourceBaseSchema() map[string]*schema.Schema {
 
 // Validate that the set of strings contains valid regular expressions.
 func validateRegularExpressionSet(i interface{}, path cty.Path) diag.Diagnostics {
-	opts := schemaSetToStringArray(i)
+	opts := SchemaSetToStringArray(i)
 
 	rv := diag.Diagnostics{}
 

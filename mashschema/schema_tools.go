@@ -122,7 +122,7 @@ func ValidateStringValueInSet(inp interface{}, pth cty.Path, lst *[]string) diag
 	return rv
 }
 
-func validateIntValueInSet(inp interface{}, pth cty.Path, lst *[]int) diag.Diagnostics {
+func ValidateIntValueInSet(inp interface{}, pth cty.Path, lst *[]int) diag.Diagnostics {
 	v := inp.(int)
 	for _, c := range *lst {
 		if v == c {
@@ -189,7 +189,7 @@ func getSetLength(inp interface{}) int {
 
 // Unwraps a struct -- or, effectively, map[string]interface{} from terraform-encoded
 // set input.
-func unwrapStructFromTerraformSet(inp interface{}) map[string]interface{} {
+func UnwrapStructFromTerraformSet(inp interface{}) map[string]interface{} {
 	if inpAsSet, ok := inp.(*schema.Set); ok {
 		if inpAsSet.Len() >= 1 {
 			uStruct := inpAsSet.List()[0]
@@ -339,8 +339,16 @@ func ExtractInt64Pointer(d *schema.ResourceData, key string, threshold int64) *i
 	return nil
 }
 
-func schemaMapToStringMap(v interface{}) map[string]string {
+func SchemaMapToStringMap(v interface{}) map[string]string {
+	return SchemaMapToStringMapWithEmpty(v, false)
+}
+
+func SchemaMapToStringMapWithEmpty(v interface{}, emptyAsNil bool) map[string]string {
 	if mp, ok := v.(map[string]interface{}); ok {
+		if emptyAsNil && len(mp) == 0 {
+			return nil
+		}
+
 		rv := make(map[string]string, len(mp))
 
 		for k, v := range mp {
@@ -353,6 +361,10 @@ func schemaMapToStringMap(v interface{}) map[string]string {
 
 		return rv
 	} else if mp, ok := v.(map[string]string); ok {
+		if emptyAsNil && len(mp) == 0 {
+			return nil
+		}
+
 		rv := make(map[string]string, len(mp))
 		for k, v := range mp {
 			rv[k] = v
@@ -360,7 +372,11 @@ func schemaMapToStringMap(v interface{}) map[string]string {
 
 		return rv
 	} else {
-		return map[string]string{}
+		if emptyAsNil && len(mp) == 0 {
+			return nil
+		} else {
+			return map[string]string{}
+		}
 	}
 }
 
@@ -368,7 +384,7 @@ func schemaMapToStringMap(v interface{}) map[string]string {
 // without affecting the state of data in the mashschema.ResourceData structure.
 func ExtractStringMap(d *schema.ResourceData, key string) map[string]string {
 	if v, exists := d.GetOk(key); exists {
-		return schemaMapToStringMap(v)
+		return SchemaMapToStringMap(v)
 	}
 
 	return map[string]string{}
@@ -415,7 +431,7 @@ func extractStringFieldOfStruct(d *schema.ResourceData, key string, structKey st
 
 // Utility method allowing using Set or List interchangeably when it comes to the extraction
 // of data from the Terraform resource state.
-func schemaSetToStringArray(v interface{}) []string {
+func SchemaSetToStringArray(v interface{}) []string {
 	if schSet, ok := v.(*schema.Set); ok {
 		rv := make([]string, schSet.Len())
 		for i, iStr := range schSet.List() {
@@ -462,7 +478,7 @@ func ConvertInterfaceArrayToStringArray(inp []interface{}) []string {
 // implied value
 func ExtractStringArray(d *schema.ResourceData, key string, implied *[]string) []string {
 	if v, exists := d.GetOk(key); exists {
-		return schemaSetToStringArray(v)
+		return SchemaSetToStringArray(v)
 	}
 
 	// Return the implied data elements, since the input is not understood.
@@ -474,7 +490,7 @@ func ExtractStringArray(d *schema.ResourceData, key string, implied *[]string) [
 	return rv
 }
 
-func safeLookupStringPointer(src *map[string]interface{}, key string) *string {
+func SafeLookupStringPointer(src *map[string]interface{}, key string) *string {
 	v := (*src)[key]
 	if v != nil {
 		if str, ok := v.(string); ok {

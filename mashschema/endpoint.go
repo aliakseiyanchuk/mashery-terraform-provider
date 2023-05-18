@@ -9,10 +9,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-var outboundTransportProtocolEnum = []string{"use-inbound", "http", "https"}
-var requestProtocolEnum = []string{"rest", "soap", "xml-rpc", "json-rpc", "other"}
-var connectionTimeoutForSystemDomainRequestEnum = []int{2, 5, 10, 20, 30, 45, 60}
-var connectionTimeoutForSystemDomainResponseEnum = []int{2, 5, 10, 20, 30, 45, 60, 120, 300, 600, 900, 1200}
+var OutboundTransportProtocolEnum = []string{"use-inbound", "http", "https"}
+var RequestProtocolEnum = []string{"rest", "soap", "xml-rpc", "json-rpc", "other"}
+var ConnectionTimeoutForSystemDomainRequestEnum = []int{2, 5, 10, 20, 30, 45, 60} // Mashery has recently changed this
+var ConnectionTimeoutForSystemDomainResponseEnum = []int{2, 5, 10, 20, 30, 45, 60, 120, 300, 600, 900, 1200}
 
 const (
 	MashEndpointId                          = "endpoint_id"
@@ -113,12 +113,12 @@ var EndpointProcessorSchema = map[string]*schema.Schema{
 		Description: "Pre-processor is enabled",
 	},
 	MashEndpointProcessorPreConfig: {
-		Type:     schema.TypeList,
+		Type:     schema.TypeMap,
 		Optional: true,
 		Elem:     stringElem(),
 	},
 	MashEndpointProcessorPostConfig: {
-		Type:     schema.TypeList,
+		Type:     schema.TypeMap,
 		Optional: true,
 		Elem:     stringElem(),
 	},
@@ -197,7 +197,7 @@ var EndpointSchema = map[string]*schema.Schema{
 		Default:     10,
 		Description: "Timeout to connect to the back-end",
 		ValidateDiagFunc: func(i interface{}, path cty.Path) diag.Diagnostics {
-			return validateIntValueInSet(i, path, &connectionTimeoutForSystemDomainRequestEnum)
+			return ValidateIntValueInSet(i, path, &ConnectionTimeoutForSystemDomainRequestEnum)
 		},
 	},
 	MashEndpointConnectionTimeoutForSystemDomainResponse: {
@@ -206,7 +206,7 @@ var EndpointSchema = map[string]*schema.Schema{
 		Default:     60,
 		Description: "Timeout to receive response from the back-end",
 		ValidateDiagFunc: func(i interface{}, path cty.Path) diag.Diagnostics {
-			return validateIntValueInSet(i, path, &connectionTimeoutForSystemDomainResponseEnum)
+			return ValidateIntValueInSet(i, path, &ConnectionTimeoutForSystemDomainResponseEnum)
 		},
 	},
 	MashEndpointCookiesDuringHttpRedirectsEnabled: {
@@ -353,7 +353,7 @@ var EndpointSchema = map[string]*schema.Schema{
 		Default:     "https",
 		Description: "Outbound request protocol, defaults to https",
 		ValidateDiagFunc: func(i interface{}, path cty.Path) diag.Diagnostics {
-			return ValidateStringValueInSet(i, path, &outboundTransportProtocolEnum)
+			return ValidateStringValueInSet(i, path, &OutboundTransportProtocolEnum)
 		},
 	},
 	MashEndpointProcessor: {
@@ -391,7 +391,7 @@ var EndpointSchema = map[string]*schema.Schema{
 		Optional: true,
 		Default:  "rest",
 		ValidateDiagFunc: func(i interface{}, path cty.Path) diag.Diagnostics {
-			return ValidateStringValueInSet(i, path, &requestProtocolEnum)
+			return ValidateStringValueInSet(i, path, &RequestProtocolEnum)
 		},
 	},
 	MashEndpointOauthGrantTypes: {
@@ -491,12 +491,12 @@ func (sem *ServiceEndpointMapperImpl) GetServiceId(d *schema.ResourceData) strin
 
 func (sem *ServiceEndpointMapperImpl) cacheUpsertable(d *schema.ResourceData) *masherytypes.Cache {
 	if cacheSet, exists := d.GetOk(MashEndpointCache); exists {
-		tfCache := unwrapStructFromTerraformSet(cacheSet)
+		tfCache := UnwrapStructFromTerraformSet(cacheSet)
 
 		// TODO: unsafe lookups from the map. Should be extracted to avoid panic
 		rv := masherytypes.Cache{
 			ClientSurrogateControlEnabled: tfCache[MashEndpointCacheClientSurrogateControlEnabled].(bool),
-			ContentCacheKeyHeaders:        schemaSetToStringArray(tfCache[MashEndpointCacheContentCacheKeyHeaders]),
+			ContentCacheKeyHeaders:        SchemaSetToStringArray(tfCache[MashEndpointCacheContentCacheKeyHeaders]),
 		}
 
 		return &rv
@@ -507,7 +507,7 @@ func (sem *ServiceEndpointMapperImpl) cacheUpsertable(d *schema.ResourceData) *m
 
 func (sem *ServiceEndpointMapperImpl) corsUpsertable(d *schema.ResourceData) *masherytypes.Cors {
 	if corsSet, exists := d.GetOk(MashEndpointCors); exists {
-		tfCors := unwrapStructFromTerraformSet(corsSet)
+		tfCors := UnwrapStructFromTerraformSet(corsSet)
 
 		rv := masherytypes.Cors{
 			AllDomainsEnabled: tfCors[MashEndpointCorsAllDomainsEnabled].(bool),
@@ -522,7 +522,7 @@ func (sem *ServiceEndpointMapperImpl) corsUpsertable(d *schema.ResourceData) *ma
 
 func (sem *ServiceEndpointMapperImpl) processorUpsertable(d *schema.ResourceData) *masherytypes.Processor {
 	if procSet, exists := d.GetOk(MashEndpointProcessor); exists {
-		tfProcMap := unwrapStructFromTerraformSet(procSet)
+		tfProcMap := UnwrapStructFromTerraformSet(procSet)
 
 		rv := sem.processorUpsertableFromMap(tfProcMap)
 
@@ -575,14 +575,14 @@ func (sem *ServiceEndpointMapperImpl) domainsArrayUpsertable(d *schema.ResourceD
 
 func (sem *ServiceEndpointMapperImpl) systemDomainAuthenticationUpsertable(d *schema.ResourceData) *masherytypes.SystemDomainAuthentication {
 	if sysDomainSet, exists := d.GetOk(MashEndpointSystemDomainAuthentication); exists {
-		tfSysDomain := unwrapStructFromTerraformSet(sysDomainSet)
+		tfSysDomain := UnwrapStructFromTerraformSet(sysDomainSet)
 
 		// TODO: Unsafe lookups
 		rv := masherytypes.SystemDomainAuthentication{
 			Type:        tfSysDomain[MashEndpointSystemDomainAuthenticationType].(string),
-			Username:    safeLookupStringPointer(&tfSysDomain, MashEndpointSystemDomainAuthenticationUsername),
-			Certificate: safeLookupStringPointer(&tfSysDomain, MashEndpointSystemDomainAuthenticationCertificate),
-			Password:    safeLookupStringPointer(&tfSysDomain, MashEndpointSystemDomainAuthenticationPassword),
+			Username:    SafeLookupStringPointer(&tfSysDomain, MashEndpointSystemDomainAuthenticationUsername),
+			Certificate: SafeLookupStringPointer(&tfSysDomain, MashEndpointSystemDomainAuthenticationCertificate),
+			Password:    SafeLookupStringPointer(&tfSysDomain, MashEndpointSystemDomainAuthenticationPassword),
 		}
 
 		return &rv
