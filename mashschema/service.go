@@ -20,7 +20,7 @@ var supportedForwardedHeaders = []string{
 }
 
 var supportedMasheryGrantTypes = []string{"authorization_code", "implicit", "password", "client_credentials"}
-var supportedMasheryMacAlgorithms = []string{"hmac-sha-1", "hmac-sha-256"}
+var SupportedMasheryMacAlgorithms = []string{"hmac-sha-1", "hmac-sha-256"}
 
 const (
 	MashSvcOAuthAccessTokenTtlEnabled       = "access_token_ttl_enabled"
@@ -89,7 +89,7 @@ var OAuthSecurityProfileSchema = map[string]*schema.Schema{
 		Optional:         true,
 		Description:      "Access token expires after the specified time has passed. TTL time is specified in seconds",
 		Default:          "1h",
-		ValidateDiagFunc: validateDuration,
+		ValidateDiagFunc: ValidateDuration,
 	},
 	MashSvcOAuthAccessTokenType: {
 		Type:        schema.TypeString,
@@ -120,7 +120,7 @@ var OAuthSecurityProfileSchema = map[string]*schema.Schema{
 		Optional:         true,
 		Default:          "5m",
 		Description:      "Authorization Code will expire after the specified time has passed. TTL time is specified in seconds.",
-		ValidateDiagFunc: validateDuration,
+		ValidateDiagFunc: ValidateDuration,
 	},
 	MashSvcOAuthForwardedHeaders: {
 		Type:     schema.TypeSet,
@@ -180,21 +180,21 @@ var OAuthSecurityProfileSchema = map[string]*schema.Schema{
 		Computed:    true,
 		Description: "MAC token algorithm",
 		ValidateDiagFunc: func(inp interface{}, pth cty.Path) diag.Diagnostics {
-			return ValidateStringValueInSet(inp, pth, &supportedMasheryMacAlgorithms)
+			return ValidateStringValueInSet(inp, pth, &SupportedMasheryMacAlgorithms)
 		},
 	},
 	MashSvcOAuthQpsLimitCeiling: {
 		Type:             schema.TypeInt,
 		Optional:         true,
 		Default:          0,
-		ValidateDiagFunc: validateZeroOrGreater,
+		ValidateDiagFunc: ValidateZeroOrGreater,
 		Description:      "The throttle limit, i.e. calls per second, is applied to all access tokens granted for the API",
 	},
 	MashSvcOAuthRateLimitCeiling: {
 		Type:             schema.TypeInt,
 		Optional:         true,
 		Default:          0,
-		ValidateDiagFunc: validateZeroOrGreater,
+		ValidateDiagFunc: ValidateZeroOrGreater,
 		Description:      "The quota limit is applied to all access tokens granted for the API.",
 	},
 	MashSvcOAuthRefreshTokenTtl: {
@@ -202,7 +202,7 @@ var OAuthSecurityProfileSchema = map[string]*schema.Schema{
 		Optional:         true,
 		Default:          "768h",
 		Description:      "The refresh token gets expired after it crosses the TTL value",
-		ValidateDiagFunc: validateDuration,
+		ValidateDiagFunc: ValidateDuration,
 	},
 	MashSvcOAuthSecureTokensEnabled: {
 		Type:        schema.TypeBool,
@@ -271,7 +271,7 @@ var ServiceSchema = map[string]*schema.Schema{
 		Type:             schema.TypeInt,
 		Optional:         true,
 		Default:          0,
-		ValidateDiagFunc: validateZeroOrGreater,
+		ValidateDiagFunc: ValidateZeroOrGreater,
 		Description:      "Maximum number of calls handled per second (QPS) across all developer keys for the API. Most customers do not set a value for this particular setting.",
 	},
 	MashSvcServiceRFC3986Encode: {
@@ -283,7 +283,7 @@ var ServiceSchema = map[string]*schema.Schema{
 		Type:             schema.TypeInt,
 		Optional:         true,
 		Default:          0,
-		ValidateDiagFunc: validateZeroOrGreater,
+		ValidateDiagFunc: ValidateZeroOrGreater,
 	},
 	MashSvcOAuth: {
 		Type:     schema.TypeSet,
@@ -514,7 +514,7 @@ func (smi *ServiceMapperImpl) CacheUpsertable(d *schema.ResourceData) *masheryty
 	cacheTTL := ExtractInt(d, MashSvcCacheTtl, 0)
 	if cacheTTL > 0 {
 		return &masherytypes.ServiceCache{
-			CacheTtl: cacheTTL,
+			CacheTtl: int64(cacheTTL),
 		}
 	} else {
 		return nil
@@ -534,10 +534,10 @@ func (smi *ServiceMapperImpl) UpsertableSecurityProfile(d *schema.ResourceData) 
 			tfOauth := unwrapStructFromTerraformSet(inpRaw)
 
 			oauth.AccessTokenTtlEnabled = tfOauth[MashSvcOAuthAccessTokenTtlEnabled].(bool)
-			oauth.AccessTokenTtl = int(smi.durationToSeconds(tfOauth[MashSvcOAuthAccessTokenTtl].(string)))
+			oauth.AccessTokenTtl = int64(smi.durationToSeconds(tfOauth[MashSvcOAuthAccessTokenTtl].(string)))
 			oauth.AccessTokenType = tfOauth[MashSvcOAuthAccessTokenType].(string)
 			oauth.AllowMultipleToken = tfOauth[MashSvcOAuthAllowMultipleToken].(bool)
-			oauth.AuthorizationCodeTtl = int(smi.durationToSeconds(tfOauth[MashSvcOAuthAuthorizationCodeTtl].(string)))
+			oauth.AuthorizationCodeTtl = int64(smi.durationToSeconds(tfOauth[MashSvcOAuthAuthorizationCodeTtl].(string)))
 			oauth.ForwardedHeaders = convertSetToStringArray(tfOauth[MashSvcOAuthForwardedHeaders])
 			oauth.MasheryTokenApiEnabled = tfOauth[MashSvcOAuthMasheryTokenApiEnabled].(bool)
 			oauth.RefreshTokenEnabled = tfOauth[MashSvcOAuthRefreshTokenEnabled].(bool)
@@ -616,7 +616,7 @@ func (smi *ServiceMapperImpl) UpsertableTyped(d *schema.ResourceData) (masheryty
 
 	ttl := ExtractInt(d, MashSvcCacheTtl, 0)
 	if ttl > 0 {
-		mashServ.Cache = &masherytypes.ServiceCache{CacheTtl: ttl}
+		mashServ.Cache = &masherytypes.ServiceCache{CacheTtl: int64(ttl)}
 	}
 
 	mashServ.SecurityProfile = smi.UpsertableSecurityProfile(d)

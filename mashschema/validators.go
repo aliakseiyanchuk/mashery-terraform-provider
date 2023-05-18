@@ -22,7 +22,7 @@ func ValidateNonEmptyString(i interface{}, path cty.Path) diag.Diagnostics {
 	return rv
 }
 
-func validateDuration(i interface{}, path cty.Path) diag.Diagnostics {
+func ValidateDuration(i interface{}, path cty.Path) diag.Diagnostics {
 	if _, err := time.ParseDuration(i.(string)); err != nil {
 		return diag.Diagnostics{diag.Diagnostic{
 			Severity:      diag.Error,
@@ -35,7 +35,7 @@ func validateDuration(i interface{}, path cty.Path) diag.Diagnostics {
 	}
 }
 
-func validateZeroOrGreater(i interface{}, path cty.Path) diag.Diagnostics {
+func ValidateZeroOrGreater(i interface{}, path cty.Path) diag.Diagnostics {
 	if v, ok := i.(int); ok {
 		if v < 0 {
 			return diag.Diagnostics{diag.Diagnostic{

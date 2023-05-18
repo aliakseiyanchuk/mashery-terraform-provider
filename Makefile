@@ -3,8 +3,8 @@ HOSTNAME=github.com
 NAMESPACE=aliakseiyanchuk
 NAME=mashery
 BINARY=terraform-provider-${NAME}
-VERSION=0.3
-OS_ARCH=darwin_amd64
+VERSION=0.4
+OS_ARCH=darwin_arm64
 
 default: install
 

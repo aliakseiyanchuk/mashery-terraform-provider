@@ -34,8 +34,8 @@ func TestV3EndpointToResourceDataWithEmptyProcessor(t *testing.T) {
 		Processor: &masherytypes.Processor{
 			PreProcessEnabled:  false,
 			PostProcessEnabled: false,
-			PostInputs:         []string{},
-			PreInputs:          []string{},
+			PostInputs:         map[string]string{},
+			PreInputs:          map[string]string{},
 			Adapter:            "",
 		},
 	}
@@ -101,11 +101,11 @@ func TestV3EndpointToResourceData(t *testing.T) {
 		Processor: &masherytypes.Processor{
 			PreProcessEnabled:  true,
 			PostProcessEnabled: true,
-			PostInputs: []string{
-				"a", "b",
+			PostInputs: map[string]string{
+				"a": "b",
 			},
-			PreInputs: []string{
-				"c", "d",
+			PreInputs: map[string]string{
+				"c": "d",
 			},
 			Adapter: "adapter",
 		},

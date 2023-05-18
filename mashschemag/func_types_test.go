@@ -11,13 +11,13 @@ import (
 )
 
 func TestMaps(t *testing.T) {
-	obj := masherytypes.Plan{}
+	obj := masherytypes.MasheryOAuth{}
 
 	val := reflect.Indirect(reflect.ValueOf(&obj))
-	fld := val.FieldByName("Eav")
+	fld := val.FieldByName("ForwardedHeaders")
 
-	assert.Equal(t, reflect.Ptr, fld.Type().Kind())
-	assert.Equal(t, reflect.Map, fld.Type().Elem().Kind())
+	assert.Equal(t, reflect.Slice, fld.Type().Kind())
+	assert.Equal(t, reflect.String, fld.Type().Elem().Kind())
 }
 
 func autoTestIdentity[ParentIdent, Ident, MType any](t *testing.T, sb *tfmapper.SchemaBuilder[ParentIdent, Ident, MType], ref Ident) {
@@ -52,6 +52,7 @@ func autoTestMappings[ParentIdent, Ident, MType any](t *testing.T, sb *tfmapper.
 	autoTestIntMappings(t, sb, supplier, except...)
 	autoTestInt64PtrMappings(t, sb, supplier, except...)
 	autoTestEAVMappings(t, sb, supplier, except...)
+	autoTestStringArrayMappings(t, sb, supplier, except...)
 }
 
 func autoTestBoolMappings[ParentIdent, Ident, MType any](t *testing.T, sb *tfmapper.SchemaBuilder[ParentIdent, Ident, MType], supplier funcsupport.Supplier[MType], except ...string) {
@@ -119,6 +120,56 @@ func reflectSetString(i interface{}, fldName string, stringVal string) {
 func reflectGetString(i interface{}, fldName string) string {
 	val := reflect.Indirect(reflect.ValueOf(i))
 	return val.FieldByName(fldName).String()
+}
+
+func autoTestStringArrayMappings[ParentIdent, Ident, MType any](t *testing.T, sb *tfmapper.SchemaBuilder[ParentIdent, Ident, MType], supplier funcsupport.Supplier[MType], except ...string) {
+	ref := supplier()
+	stringFields := matchingFieldsOf(ref, func(in reflect.Type) bool {
+		return in.Kind() == reflect.Slice && in.Elem().Kind() == reflect.String
+	}, except...)
+
+	for _, fldName := range stringFields {
+		mapper := sb.Mapper()
+		testState := sb.TestResourceData()
+
+		in := supplier()
+
+		fldValue := []string{"string-array-under-test-0-" + fldName, "string-array-under-test-1-" + fldName, "string-array-under-test-2-" + fldName}
+		reflectSetStringArray(&in, fldName, fldValue)
+
+		mapper.RemoteToSchema(&in, testState)
+
+		readBack := supplier()
+		mapper.SchemaToRemote(testState, &readBack)
+
+		rbVal := reflectGetStringArray(readBack, fldName)
+
+		assertArrayIn(t, fldName, &fldValue, &rbVal)
+		assertArrayIn(t, fldName, &rbVal, &fldValue)
+	}
+}
+
+func assertArrayIn(t *testing.T, field string, in *[]string, dest *[]string) {
+outer:
+	for _, k := range *in {
+		for _, v := range *dest {
+			if k == v {
+				continue outer
+			}
+		}
+
+		assert.Failf(t, "mismatching read/write on string array field %s: string %s is not found in the target array", field, k)
+	}
+}
+
+func reflectSetStringArray(i interface{}, fldName string, stringVal []string) {
+	val := reflect.Indirect(reflect.ValueOf(i))
+	val.FieldByName(fldName).Set(reflect.ValueOf(stringVal))
+}
+
+func reflectGetStringArray(i interface{}, fldName string) []string {
+	val := reflect.Indirect(reflect.ValueOf(i))
+	return val.FieldByName(fldName).Interface().([]string)
 }
 
 func matchingFieldsOf(i interface{}, predicate funcsupport.Predicate[reflect.Type], except ...string) []string {

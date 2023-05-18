@@ -296,6 +296,14 @@ func ExtractInt(d *schema.ResourceData, key string, impliedValue int) int {
 	}
 }
 
+func ExtractInt64(d *schema.ResourceData, key string, impliedValue int64) int64 {
+	if v, exists := d.GetOk(key); exists {
+		return v.(int64)
+	} else {
+		return impliedValue
+	}
+}
+
 func ExtractIntPointer(d *schema.ResourceData, key string) *int {
 	if v, exists := d.GetOk(key); exists {
 		if rv, ok := v.(int); ok {

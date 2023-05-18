@@ -92,5 +92,5 @@ func TestPackagePlanServiceEndpointMethodMapperFilterIdent(t *testing.T) {
 	rv := PackagePlanServiceEndpointMethodParam{}
 	mapper.SchemaToRemote(testData, &rv)
 
-	assert.True(t, reflect.DeepEqual(filterIdent, rv.ServiceEndpointMethodFilter))
+	assert.True(t, reflect.DeepEqual(filterIdent, rv.ServiceEndpointMethodFilterDesired))
 }

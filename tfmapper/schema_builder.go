@@ -173,9 +173,15 @@ func (m *Mapper[ParentIdent, Ident, MType]) RemoteToSchema(remote *MType, state 
 
 func (m *Mapper[ParentIdent, Ident, MType]) SchemaToRemote(state *schema.ResourceData, remote *MType) {
 	for _, k := range m.fields {
-		// Fully computed fields do not need to be explicitly mapped
-		if k.GetSchema().Computed && !k.GetSchema().Optional {
-			continue
+		// If this mapper handles a single field, then casting schema to remove may be skipped
+		// for fully computed fields. The schema will be nil in case the mapper is using multiple
+		// fields to map to the output, which will never require this.
+
+		if k.GetSchema() != nil {
+			// Fully computed fields do not need to be explicitly mapped
+			if k.GetSchema().Computed && !k.GetSchema().Optional {
+				continue
+			}
 		}
 
 		// If the mapper is interested in receiving the modification of the field (e.g. to avoid making unnecessary)
