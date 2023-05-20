@@ -10,14 +10,23 @@ import (
 	"testing"
 )
 
-func TestMaps(t *testing.T) {
-	obj := masherytypes.MasheryOAuth{}
+func setEquals[MType any](left []MType, right []MType) bool {
+	if len(left) != len(right) {
+		return false
+	}
 
-	val := reflect.Indirect(reflect.ValueOf(&obj))
-	fld := val.FieldByName("ForwardedHeaders")
+outer:
+	for _, l := range left {
+		for _, r := range right {
+			if reflect.DeepEqual(l, r) {
+				continue outer
+			}
+		}
 
-	assert.Equal(t, reflect.Slice, fld.Type().Kind())
-	assert.Equal(t, reflect.String, fld.Type().Elem().Kind())
+		return false
+	}
+
+	return true
 }
 
 func autoTestIdentity[ParentIdent, Ident, MType any](t *testing.T, sb *tfmapper.SchemaBuilder[ParentIdent, Ident, MType], ref Ident) {

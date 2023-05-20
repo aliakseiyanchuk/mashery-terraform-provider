@@ -1,7 +1,10 @@
 package mashschemag
 
 import (
+	"fmt"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
+	"github.com/hashicorp/go-cty/cty"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"terraform-provider-mashery/mashschema"
 	"terraform-provider-mashery/tfmapper"
@@ -180,6 +183,72 @@ func init() {
 				Default:     "0.0.1/TF",
 				Description: "Deployed-defined version designator",
 			},
+		},
+	})
+}
+
+// Initialize Roles mapper
+func init() {
+	ServiceResourceSchemaBuilder.Add(&tfmapper.PluggableFiledMapperBase[masherytypes.Service]{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Service]{
+			Key: mashschema.MashSvcInteractiveDocsRoles,
+			Schema: &schema.Schema{
+				Optional: true,
+				Type:     schema.TypeSet,
+				Set:      mashschema.StringHashcode,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+		},
+		NilRemoteToSchemaFunc: func(key string, state *schema.ResourceData) *diag.Diagnostic {
+			emptyArray := []string{}
+			if err := state.Set(key, emptyArray); err != nil {
+				return &diag.Diagnostic{
+					Severity:      diag.Error,
+					Detail:        fmt.Sprintf("supplied null-value for field %s was not accepted: %s", key, err.Error()),
+					AttributePath: cty.GetAttrPath(key),
+				}
+			} else {
+				return nil
+			}
+		},
+		RemoteToSchemaFunc: func(remote *masherytypes.Service, key string, state *schema.ResourceData) *diag.Diagnostic {
+			var values []string
+
+			if remote.Roles != nil {
+				values = make([]string, len(*remote.Roles))
+
+				for i, v := range *remote.Roles {
+					values[i] = v.Id
+				}
+			}
+
+			if err := state.Set(key, values); err != nil {
+				return &diag.Diagnostic{
+					Severity:      diag.Error,
+					Detail:        fmt.Sprintf("supplied null-value for field %s was not accepted: %s", key, err.Error()),
+					AttributePath: cty.GetAttrPath(key),
+				}
+			} else {
+				return nil
+			}
+		},
+		SchemaToRemoteFunc: func(state *schema.ResourceData, key string, remote *masherytypes.Service) {
+			arr := mashschema.ExtractStringArray(state, key, &[]string{})
+
+			if len(arr) > 0 {
+				rolesArr := make([]masherytypes.RolePermission, len(arr))
+				for i, v := range arr {
+					perm := masherytypes.RolePermission{}
+					perm.Id = v
+					perm.Action = "read"
+
+					rolesArr[i] = perm
+				}
+
+				remote.Roles = &rolesArr
+			}
 		},
 	})
 }
