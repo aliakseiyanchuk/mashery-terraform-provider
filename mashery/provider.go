@@ -43,7 +43,7 @@ const (
 	providerV3Token             = "v3_token"
 )
 
-var providerConfigSchema = map[string]*schema.Schema{
+var ProviderConfigSchema = map[string]*schema.Schema{
 	"log_file": {
 		Type:        schema.TypeString,
 		Optional:    true,
@@ -214,7 +214,7 @@ func transportLogging(ctx context.Context, wrq *transport.WrappedRequest, wrs *t
 	}
 }
 
-func providerConfigure(_ context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
+func ProviderConfigure(_ context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
 
 	var diags diag.Diagnostics
 	logFile := d.Get("log_file").(string)
@@ -304,7 +304,7 @@ func providerConfigure(_ context.Context, d *schema.ResourceData) (interface{}, 
 // Provider Mashery Terraform Provider mashschema definition
 func Provider() *schema.Provider {
 	return &schema.Provider{
-		Schema: providerConfigSchema,
+		Schema: ProviderConfigSchema,
 		ResourcesMap: map[string]*schema.Resource{
 			"mashery_service":                      resourceMasheryService(),
 			"mashery_service_error_set":            resourceMasheryErrorSet(),
@@ -328,6 +328,6 @@ func Provider() *schema.Provider {
 			"mashery_email_template_set": emailTemplateSet.TFDataSourceSchema(),
 			"mashery_role":               roleDataSource.TFDataSourceSchema(),
 		},
-		ConfigureContextFunc: providerConfigure,
+		ConfigureContextFunc: ProviderConfigure,
 	}
 }

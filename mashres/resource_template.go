@@ -29,6 +29,18 @@ type ResourceTemplate[ParentIdent any, Ident any, MType any] struct {
 	DoCountOffending OffendersCounterFunc[Ident]
 }
 
+// ResourceSchema returns the Terraform data source schema
+func (rt *ResourceTemplate[ParentIdent, Ident, MType]) ResourceSchema() *schema.Resource {
+
+	return &schema.Resource{
+		ReadContext:   rt.Read,
+		CreateContext: rt.Create,
+		UpdateContext: rt.Update,
+		DeleteContext: rt.Delete,
+		Schema:        rt.Schema,
+	}
+}
+
 func (rt *ResourceTemplate[ParentIdent, Ident, MType]) Read(ctx context.Context, state *schema.ResourceData, m interface{}) diag.Diagnostics {
 	ident, err := rt.Mapper.Identity(state)
 	if err != nil {
