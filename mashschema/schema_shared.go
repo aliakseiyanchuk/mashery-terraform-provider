@@ -46,7 +46,7 @@ func DataSourceBaseSchema() map[string]*schema.Schema {
 			Type:        schema.TypeMap,
 			Optional:    true,
 			Description: "V3 search criteria",
-			Elem:        stringElem(),
+			Elem:        StringElem(),
 		},
 		MashDataSourceRequired: {
 			Type:        schema.TypeBool,
@@ -65,7 +65,7 @@ func DataSourceBaseSchema() map[string]*schema.Schema {
 			Optional:    true,
 			Description: "Regular expression for service name",
 			//ValidateDiagFunc: validateRegularExpressionSet,
-			Elem: stringElem(),
+			Elem: StringElem(),
 		},
 	}
 }
@@ -97,7 +97,7 @@ func isValidRegexp(str string) error {
 
 // Creates a type-string mashschema used in the Elem mappings to save repetitive lines of code.
 // TODO: Needs to be referenced from the code.
-func stringElem() *schema.Schema {
+func StringElem() *schema.Schema {
 	return &schema.Schema{
 		Type: schema.TypeString,
 	}

@@ -14,6 +14,19 @@ type StringArrayFieldMapper[MType any] struct {
 	Locator LocatorFunc[MType, []string]
 }
 
+func (sfm *StringArrayFieldMapper[MType]) NilRemote(state *schema.ResourceData) *diag.Diagnostic {
+	emptyArray := []string{}
+	if err := state.Set(sfm.Key, emptyArray); err != nil {
+		return &diag.Diagnostic{
+			Severity:      diag.Error,
+			Detail:        fmt.Sprintf("supplied null-value for field %s was not accepted: %s", sfm.Key, err.Error()),
+			AttributePath: cty.GetAttrPath(sfm.Key),
+		}
+	} else {
+		return nil
+	}
+}
+
 func (sfm *StringArrayFieldMapper[MType]) RemoteToSchema(remote *MType, state *schema.ResourceData) *diag.Diagnostic {
 	remoteVal := sfm.Locator(remote)
 

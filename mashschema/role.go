@@ -66,7 +66,7 @@ func init() {
 					Type:        schema.TypeMap,
 					Required:    true,
 					Description: "Search conditions for this role, typically name = value",
-					Elem:        stringElem(),
+					Elem:        StringElem(),
 				},
 				MashDataSourceRequired: {
 					Type:        schema.TypeBool,

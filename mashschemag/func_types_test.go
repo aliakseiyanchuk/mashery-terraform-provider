@@ -53,6 +53,14 @@ func autoTestMappings[ParentIdent, Ident, MType any](t *testing.T, sb *tfmapper.
 	autoTestInt64PtrMappings(t, sb, supplier, except...)
 	autoTestEAVMappings(t, sb, supplier, except...)
 	autoTestStringArrayMappings(t, sb, supplier, except...)
+
+	autoTestNilSetter(t, sb)
+}
+
+func autoTestNilSetter[ParentIdent, Ident, MType any](t *testing.T, sb *tfmapper.SchemaBuilder[ParentIdent, Ident, MType]) {
+	mapper, state := sb.MapperAndTestData()
+	dg := mapper.RemoteToSchema(nil, state)
+	assert.Equal(t, 0, len(dg))
 }
 
 func autoTestBoolMappings[ParentIdent, Ident, MType any](t *testing.T, sb *tfmapper.SchemaBuilder[ParentIdent, Ident, MType], supplier funcsupport.Supplier[MType], except ...string) {

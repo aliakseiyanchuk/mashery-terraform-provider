@@ -132,13 +132,13 @@ func init() {
 					Type:        schema.TypeList,
 					Optional:    true,
 					Description: "Fields to strip from the response body of an XML response.",
-					Elem:        stringElem(),
+					Elem:        StringElem(),
 				},
 				MashServiceEndpointMethodFilterJsonFields: {
 					Type:        schema.TypeList,
 					Optional:    true,
 					Description: "Fields to strip from the response body of a JSON response.",
-					Elem:        stringElem(),
+					Elem:        StringElem(),
 				},
 			},
 

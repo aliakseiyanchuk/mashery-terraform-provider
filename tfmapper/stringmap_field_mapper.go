@@ -16,6 +16,19 @@ type StringMapFieldMapper[MType any] struct {
 	Locator LocatorFunc[MType, *StringMap]
 }
 
+func (sfm *StringMapFieldMapper[MType]) NilRemote(state *schema.ResourceData) *diag.Diagnostic {
+	emptyMap := map[string]string{}
+	if err := state.Set(sfm.Key, emptyMap); err != nil {
+		return &diag.Diagnostic{
+			Severity:      diag.Error,
+			Detail:        fmt.Sprintf("supplied null-value for field %s was not accepted: %s", sfm.Key, err.Error()),
+			AttributePath: cty.GetAttrPath(sfm.Key),
+		}
+	} else {
+		return nil
+	}
+}
+
 func (sfm *StringMapFieldMapper[MType]) RemoteToSchema(remote *MType, state *schema.ResourceData) *diag.Diagnostic {
 	remoteVal := sfm.Locator(remote)
 

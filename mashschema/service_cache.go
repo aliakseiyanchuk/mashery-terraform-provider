@@ -22,6 +22,6 @@ var DataSourceServiceCacheScheme = map[string]*schema.Schema{
 
 // The data source would inherit cache ttl settings in a read-only mode.
 func init() {
-	computedTTL := cloneAsComputed(ServiceCacheSchema)
+	computedTTL := CloneAsComputed(ServiceCacheSchema)
 	inheritAll(&DataSourceServiceCacheScheme, &computedTTL)
 }

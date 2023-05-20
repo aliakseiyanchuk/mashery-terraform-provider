@@ -162,8 +162,24 @@ func (m *Mapper[ParentIdent, Ident, MType]) ResetIdentity(state *schema.Resource
 func (m *Mapper[ParentIdent, Ident, MType]) RemoteToSchema(remote *MType, state *schema.ResourceData) diag.Diagnostics {
 	rv := diag.Diagnostics{}
 
+	type consumer func(fld FieldMapper[MType], remote *MType, state *schema.ResourceData) *diag.Diagnostic
+	var c consumer
+
+	// Handle gracefully nil values by delegating the assignment of nil values to specific methods. This is needed
+	// to avoid null pointer exceptions in the individual mappers.
+
+	if remote != nil {
+		c = func(fld FieldMapper[MType], remote *MType, state *schema.ResourceData) *diag.Diagnostic {
+			return fld.RemoteToSchema(remote, state)
+		}
+	} else {
+		c = func(fld FieldMapper[MType], remote *MType, state *schema.ResourceData) *diag.Diagnostic {
+			return fld.NilRemote(state)
+		}
+	}
+
 	for _, k := range m.fields {
-		if dg := k.RemoteToSchema(remote, state); dg != nil {
+		if dg := c(k, remote, state); dg != nil {
 			rv = append(rv, *dg)
 		}
 	}
@@ -225,6 +241,8 @@ type FieldMapper[MType any] interface {
 
 	ConsumeModification(out *MType, mod bool)
 
+	// NilRemote set the value in case the remote is nil
+	NilRemote(state *schema.ResourceData) *diag.Diagnostic
 	RemoteToSchema(remote *MType, state *schema.ResourceData) *diag.Diagnostic
 	SchemaToRemote(state *schema.ResourceData, remote *MType)
 }
@@ -254,13 +272,22 @@ func (fmb *FieldMapperBase[MType]) ConsumeModification(out *MType, how bool) {
 type PluggableFiledMapperBase[MType any] struct {
 	FieldMapperBase[MType]
 
-	RemoteToSchemaFunc func(remote *MType, key string, state *schema.ResourceData) *diag.Diagnostic
-	SchemaToRemoteFunc func(state *schema.ResourceData, key string, remote *MType)
+	NilRemoteToSchemaFunc func(key string, state *schema.ResourceData) *diag.Diagnostic
+	RemoteToSchemaFunc    func(remote *MType, key string, state *schema.ResourceData) *diag.Diagnostic
+	SchemaToRemoteFunc    func(state *schema.ResourceData, key string, remote *MType)
 }
 
 func (pfmb *PluggableFiledMapperBase[MType]) RemoteToSchema(remote *MType, state *schema.ResourceData) *diag.Diagnostic {
 	if pfmb.RemoteToSchemaFunc != nil {
 		return pfmb.RemoteToSchemaFunc(remote, pfmb.Key, state)
+	} else {
+		return nil
+	}
+}
+
+func (pfmb *PluggableFiledMapperBase[MType]) NilRemote(state *schema.ResourceData) *diag.Diagnostic {
+	if pfmb.NilRemoteToSchemaFunc != nil {
+		return pfmb.NilRemoteToSchemaFunc(pfmb.Key, state)
 	} else {
 		return nil
 	}

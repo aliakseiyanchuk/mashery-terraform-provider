@@ -115,12 +115,12 @@ var EndpointProcessorSchema = map[string]*schema.Schema{
 	MashEndpointProcessorPreConfig: {
 		Type:     schema.TypeMap,
 		Optional: true,
-		Elem:     stringElem(),
+		Elem:     StringElem(),
 	},
 	MashEndpointProcessorPostConfig: {
 		Type:     schema.TypeMap,
 		Optional: true,
-		Elem:     stringElem(),
+		Elem:     StringElem(),
 	},
 }
 

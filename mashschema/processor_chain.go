@@ -103,6 +103,6 @@ func init() {
 		},
 	}
 
-	computedOutput := cloneAsComputed(EndpointProcessorSchema)
+	computedOutput := CloneAsComputed(EndpointProcessorSchema)
 	inheritAll(&computedOutput, &ProcessorChainMapper.schema)
 }

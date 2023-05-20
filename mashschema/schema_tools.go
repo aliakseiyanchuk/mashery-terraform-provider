@@ -19,7 +19,7 @@ func cloneAsComputedSchemaElem(inp *schema.Schema) interface{} {
 
 	if inpResource, ok := inp.Elem.(*schema.Resource); ok {
 		return &schema.Resource{
-			Schema: cloneAsComputed(inpResource.Schema),
+			Schema: CloneAsComputed(inpResource.Schema),
 		}
 	}
 
@@ -49,8 +49,8 @@ func cloneAsComputedSchema(inp *schema.Schema, isKey bool) *schema.Schema {
 	return &rv
 }
 
-// Clone mashschema as a computer mashschema
-func cloneAsComputed(inp map[string]*schema.Schema) map[string]*schema.Schema {
+// CloneAsComputed Clone mashschema as a computer mashschema
+func CloneAsComputed(inp map[string]*schema.Schema) map[string]*schema.Schema {
 	rv := make(map[string]*schema.Schema, len(inp))
 
 	for k, v := range inp {

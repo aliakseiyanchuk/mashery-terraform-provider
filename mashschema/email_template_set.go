@@ -45,7 +45,7 @@ func init() {
 					Type:        schema.TypeMap,
 					Required:    true,
 					Description: "Search conditions for this email set, typically name = value",
-					Elem:        stringElem(),
+					Elem:        StringElem(),
 				},
 				MashDataSourceRequired: {
 					Type:        schema.TypeBool,

@@ -212,7 +212,7 @@ var OAuthSecurityProfileSchema = map[string]*schema.Schema{
 	},
 }
 
-var OAuthSecurityProfileReadOnlySchema = cloneAsComputed(OAuthSecurityProfileSchema)
+var OAuthSecurityProfileReadOnlySchema = CloneAsComputed(OAuthSecurityProfileSchema)
 
 // ServiceSchema Mashery Service Definition mashschema.
 var ServiceSchema = map[string]*schema.Schema{
@@ -634,14 +634,14 @@ func inheritMasheryDataSourceSchema() {
 		Type:        schema.TypeSet,
 		Computed:    true,
 		Description: "If multiple services matched, the ids of the matched services",
-		Elem:        stringElem(),
+		Elem:        StringElem(),
 	}
 
 	DataSourceMashSvcSchema[MashSvcExplained] = &schema.Schema{
 		Type:        schema.TypeMap,
 		Computed:    true,
 		Description: "Service ID to service name mapping",
-		Elem:        stringElem(),
+		Elem:        StringElem(),
 	}
 }
 

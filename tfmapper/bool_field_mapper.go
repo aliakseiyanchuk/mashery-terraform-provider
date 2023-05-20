@@ -14,6 +14,18 @@ type BoolFieldMapper[MType any] struct {
 	Locator LocatorFunc[MType, bool]
 }
 
+func (sfm *BoolFieldMapper[MType]) NilRemote(state *schema.ResourceData) *diag.Diagnostic {
+	if err := state.Set(sfm.Key, false); err != nil {
+		return &diag.Diagnostic{
+			Severity:      diag.Error,
+			Detail:        fmt.Sprintf("supplied null-value for field %s was not accepted: %s", sfm.Key, err.Error()),
+			AttributePath: cty.GetAttrPath(sfm.Key),
+		}
+	} else {
+		return nil
+	}
+}
+
 func (sfm *BoolFieldMapper[MType]) RemoteToSchema(remote *MType, state *schema.ResourceData) *diag.Diagnostic {
 	remoteVal := sfm.Locator(remote)
 
