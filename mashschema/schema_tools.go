@@ -208,7 +208,7 @@ func UnwrapStructFromTerraformSet(inp interface{}) map[string]interface{} {
 }
 
 func ExtractBool(d *schema.ResourceData, key string, impliedValue bool) bool {
-	if v, exists := d.GetOk(key); exists {
+	if v := d.Get(key); v != nil {
 		return v.(bool)
 	} else {
 		return impliedValue

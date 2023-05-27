@@ -11,12 +11,12 @@ import (
 
 var RoleDataSource *SingularDatasourceTemplate[tfmapper.Orphan, string, masherytypes.Role] = CreateSingularDataSource(mashschemag.RoleResourceSchemaBuilder, queryRole)
 
-func queryRole(ctx context.Context, client v3client.Client, m map[string]string) (*masherytypes.Role, error) {
+func queryRole(ctx context.Context, client v3client.Client, m map[string]string) (string, *masherytypes.Role, error) {
 	if sets, err := client.ListRolesFiltered(ctx, m, mashschema.EmptyStringArray); err != nil {
-		return nil, err
+		return "", nil, err
 	} else if len(sets) == 1 {
-		return &sets[0], nil
+		return sets[0].Id, &sets[0], nil
 	} else {
-		return nil, nil
+		return "", nil, nil
 	}
 }

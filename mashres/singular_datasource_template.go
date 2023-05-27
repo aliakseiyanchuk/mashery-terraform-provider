@@ -10,13 +10,26 @@ import (
 	"terraform-provider-mashery/tfmapper"
 )
 
-type QueryFunc[MType any] func(context.Context, v3client.Client, map[string]string) (*MType, error)
+type QueryFunc[Ident any, MType any] func(context.Context, v3client.Client, map[string]string) (Ident, *MType, error)
+
+type DatasourceTemplate interface {
+	TestState() *schema.ResourceData
+	DataSourceSchema() *schema.Resource
+}
 
 type SingularDatasourceTemplate[ParentIdent any, Ident any, MType any] struct {
 	Schema map[string]*schema.Schema
 	Mapper *tfmapper.Mapper[ParentIdent, Ident, MType]
 
-	DoQuery QueryFunc[MType]
+	DoQuery QueryFunc[Ident, MType]
+}
+
+func (sdt *SingularDatasourceTemplate[ParentIdent, Ident, MType]) TestState() *schema.ResourceData {
+	res := schema.Resource{
+		Schema: sdt.Schema,
+	}
+
+	return res.TestResourceData()
 }
 
 func (sdt *SingularDatasourceTemplate[ParentIdent, Ident, MType]) DataSourceSchema() *schema.Resource {
@@ -34,7 +47,7 @@ func (sdt *SingularDatasourceTemplate[ParentIdent, Ident, MType]) Query(ctx cont
 	v3Cl := m.(v3client.Client)
 	query := mashschema.ExtractStringMap(d, mashschema.MashDataSourceSearch)
 
-	if obj, err := sdt.DoQuery(ctx, v3Cl, query); err != nil {
+	if ident, obj, err := sdt.DoQuery(ctx, v3Cl, query); err != nil {
 		return diag.Diagnostics{diag.Diagnostic{
 			Severity: diag.Error,
 			Summary:  fmt.Sprintf("query has returned an error: %s", err.Error()),
@@ -42,18 +55,22 @@ func (sdt *SingularDatasourceTemplate[ParentIdent, Ident, MType]) Query(ctx cont
 	} else if obj == nil && sdt.isMatchRequired(d) {
 		return diag.Diagnostics{diag.Diagnostic{
 			Severity: diag.Error,
-			Summary:  "no matching object were found, however the configuration requires a match",
+			Summary:  "no matching object was found, however the configuration requires a match",
 		}}
 	} else {
+		if obj != nil {
+			_ = sdt.Mapper.AssignIdentity(ident, d)
+		} else {
+			d.SetId("")
+		}
 		return sdt.Mapper.RemoteToSchema(obj, d)
 	}
 }
 
-func CreateSingularDataSource[ParentIdent any, Ident any, MType any](builder *tfmapper.SchemaBuilder[ParentIdent, Ident, MType], queryFunc QueryFunc[MType]) *SingularDatasourceTemplate[ParentIdent, Ident, MType] {
+func CreateSingularDataSource[ParentIdent any, Ident any, MType any](builder *tfmapper.SchemaBuilder[ParentIdent, Ident, MType], queryFunc QueryFunc[Ident, MType]) *SingularDatasourceTemplate[ParentIdent, Ident, MType] {
 	mapperSchema := mashschema.CloneAsComputed(builder.ResourceSchema())
 	mapperSchema[mashschema.MashDataSourceSearch] = &schema.Schema{
 		Type:        schema.TypeMap,
-		MinItems:    1,
 		Required:    true,
 		Description: "Search conditions for this email set, typically name = value",
 		Elem:        mashschema.StringElem(),

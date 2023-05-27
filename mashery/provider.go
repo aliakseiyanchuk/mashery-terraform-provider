@@ -177,6 +177,10 @@ func vaultProxyConfiguration(d *schema.ResourceData) VaultProxyModeConfiguration
 		token:    d.Get(vaultTokenField).(string),
 	}
 
+	if tknFromEnv := os.Getenv(envVaultToken); len(tknFromEnv) > 0 {
+		rv.token = tknFromEnv
+	}
+
 	return rv
 }
 
@@ -232,8 +236,6 @@ func ProviderConfigure(_ context.Context, d *schema.ResourceData) (interface{}, 
 
 	// Prefer to use Vault proxy mode, if sufficiently configured.
 	if vaultProxyMode := vaultProxyConfiguration(d); vaultProxyMode.isComplete() {
-		doLogf("Provider was initialized with the Vault proxy mode, proxy=%s", vaultProxyMode.fullAddress())
-
 		clParams := v3client.Params{
 			HTTPClientParams: transport.HTTPClientParams{
 				// Since the connection is made to Vault, the client will trust whatever the system
@@ -251,6 +253,8 @@ func ProviderConfigure(_ context.Context, d *schema.ResourceData) (interface{}, 
 		}
 
 		cl := v3client.NewHttpClient(clParams)
+
+		doLogf("Provider initialized with the Vault proxy mode, proxy=%s", vaultProxyMode.fullAddress())
 		return cl, diags
 	} else {
 		doLogf("Provider configuration does not meet Vault proxy mode requirements")
@@ -275,12 +279,20 @@ func ProviderConfigure(_ context.Context, d *schema.ResourceData) (interface{}, 
 		// developer passing invalid tokens
 		if len(tkn) > 20 {
 			tokenProvider = v3client.NewFixedTokenProvider(tkn)
+			doLogf("Provider is initialized with explicitly supplied token")
 		} else {
 			diags = append(diags, diag.Diagnostic{
 				Severity: diag.Error,
 				Summary:  fmt.Sprintf("insufficient V3 token for connecting directly (%d chars supplied)", len(tkn)),
 			})
 		}
+	}
+
+	if tokenProvider == nil {
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  fmt.Sprintf("no suitable methods provided to authenticate to Mashery API"),
+		})
 	}
 
 	var cl v3client.Client
@@ -293,11 +305,9 @@ func ProviderConfigure(_ context.Context, d *schema.ResourceData) (interface{}, 
 		}
 
 		cl = v3client.NewHttpClient(clParams)
-		doLogf("Provider is initialized with explicitly supplied token")
-	} else {
-		doLogf("WARN: no suitable provider authentication methods exist")
 	}
 
+	doLogf("Provider initialized with %d diagnostic messages", len(diags))
 	return cl, diags
 }
 
