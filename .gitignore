@@ -28,3 +28,12 @@ debug
 *.iml
 /example/**/terraform.tfvars
 /example/**/.out
+
+# Excludes from the test examples. The test examples are used to build actual infrastructure.
+# Such references should not be committed into the version control repository.
+/test-examples/**/.terraform
+/test-examples/**/.terraform.lock.hcl
+/test-examples/**/terraform.tfstate
+/test-examples/**/terraform.tfstate.backup
+/test-examples/**/terraform.tfvars
+/test-examples/**/log_*.log

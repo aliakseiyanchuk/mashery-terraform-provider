@@ -11,12 +11,12 @@ import (
 
 var EmailTemplateSetDataSource *SingularDatasourceTemplate[tfmapper.Orphan, string, masherytypes.EmailTemplateSet] = CreateSingularDataSource(mashschemag.EmailTemplateSetResourceSchemaBuilder, queryEmailTemplateSet)
 
-func queryEmailTemplateSet(ctx context.Context, client v3client.Client, m map[string]string) (*masherytypes.EmailTemplateSet, error) {
+func queryEmailTemplateSet(ctx context.Context, client v3client.Client, m map[string]string) (string, *masherytypes.EmailTemplateSet, error) {
 	if sets, err := client.ListEmailTemplateSetsFiltered(ctx, m, mashschema.EmptyStringArray); err != nil {
-		return nil, err
+		return "", nil, err
 	} else if len(sets) == 1 {
-		return &sets[0], nil
+		return sets[0].Id, &sets[0], nil
 	} else {
-		return nil, nil
+		return "", nil, nil
 	}
 }

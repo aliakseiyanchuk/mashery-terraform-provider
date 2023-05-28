@@ -15,6 +15,7 @@ type QueryFunc[Ident any, MType any] func(context.Context, v3client.Client, map[
 type DatasourceTemplate interface {
 	TestState() *schema.ResourceData
 	DataSourceSchema() *schema.Resource
+	Query(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics
 }
 
 type SingularDatasourceTemplate[ParentIdent any, Ident any, MType any] struct {
@@ -40,7 +41,8 @@ func (sdt *SingularDatasourceTemplate[ParentIdent, Ident, MType]) DataSourceSche
 }
 
 func (sdt *SingularDatasourceTemplate[ParentIdent, Ident, MType]) isMatchRequired(d *schema.ResourceData) bool {
-	return mashschema.ExtractBool(d, mashschema.MashDataSourceRequired, true)
+	rv := mashschema.ExtractBool(d, mashschema.MashDataSourceRequired, true)
+	return rv
 }
 
 func (sdt *SingularDatasourceTemplate[ParentIdent, Ident, MType]) Query(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -72,7 +74,7 @@ func CreateSingularDataSource[ParentIdent any, Ident any, MType any](builder *tf
 	mapperSchema[mashschema.MashDataSourceSearch] = &schema.Schema{
 		Type:        schema.TypeMap,
 		Required:    true,
-		Description: "Search conditions for this email set, typically name = value",
+		Description: "Search conditions for this resource, typically name = value",
 		Elem:        mashschema.StringElem(),
 	}
 
@@ -80,7 +82,7 @@ func CreateSingularDataSource[ParentIdent any, Ident any, MType any](builder *tf
 		Type:        schema.TypeBool,
 		Optional:    true,
 		Default:     true,
-		Description: "If true (default), then email template set must exist. If an element doesn't exist, the error is generated",
+		Description: "If true (default), then exactly a single object must be found. If an element doesn't exist, the error is generated",
 	}
 
 	rv := SingularDatasourceTemplate[ParentIdent, Ident, MType]{

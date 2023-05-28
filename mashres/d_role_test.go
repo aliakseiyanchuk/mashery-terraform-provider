@@ -25,6 +25,7 @@ func TestQueryingRoleWhereNoMatchReturnedWithRequiredWillGiveDiagnostics(t *test
 	h := CreateTestDatasource(RoleDataSource)
 
 	h.givenStateFieldSetTo(t, mashschema.MashDataSourceSearch, params)
+	h.givenStateFieldSetTo(t, mashschema.MashDataSourceRequired, true)
 	givenNoRoleMatchIsReturned(h, params)
 
 	h.thenExecutingDataSourceQueryWillYieldDiagnostic(t, "no matching object was found, however the configuration requires a match")

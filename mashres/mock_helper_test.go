@@ -30,14 +30,14 @@ func (dtmh *DatasourceTemplateMockHelper) mockClientWill() *MockClient {
 }
 
 func (dtmh *DatasourceTemplateMockHelper) thenExecutingDataSourceQuery(t *testing.T) {
-	dg := RoleDataSource.Query(context.TODO(), dtmh.data, &dtmh.mockCl)
+	dg := dtmh.template.Query(context.TODO(), dtmh.data, &dtmh.mockCl)
 	assert.True(t, len(dg) == 0)
 
 	dtmh.mockCl.AssertExpectations(t)
 }
 
 func (dtmh *DatasourceTemplateMockHelper) thenExecutingDataSourceQueryWillYieldDiagnostic(t *testing.T, dgText string) {
-	dg := RoleDataSource.Query(context.TODO(), dtmh.data, &dtmh.mockCl)
+	dg := dtmh.template.Query(context.TODO(), dtmh.data, &dtmh.mockCl)
 	assert.True(t, len(dg) == 1)
 	assert.Equal(t, diag.Error, dg[0].Severity)
 	assert.Equal(t, dgText, dg[0].Summary)
