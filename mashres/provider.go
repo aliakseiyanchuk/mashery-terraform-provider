@@ -24,7 +24,7 @@ func Provider() *schema.Provider {
 			//"mashery_member":                       MemberResource.TFDataSourceSchema(),
 			//"mashery_application":                  ApplicationResource.TFDataSourceSchema(),
 			//"mashery_package_key":                  PackageKeyResource.TFDataSourceSchema(),
-			//"mashery_unique_path":                  resourceMasheryUniquePath(),
+			"mashery_unique_path": mashery.ResourceMasheryUniquePath(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			//"mashery_system_domains":     systemDomainsDataSource.TFDataSourceSchema(),

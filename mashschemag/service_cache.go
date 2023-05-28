@@ -36,8 +36,8 @@ func init() {
 }
 
 func init() {
-	ServiceCacheResourceSchemaBuilder.Add(&tfmapper.DurationFieldMapper[masherytypes.ServiceCache]{
-		Locator: func(in *masherytypes.ServiceCache) *int64 {
+	ServiceCacheResourceSchemaBuilder.Add(&tfmapper.DurationFloat64FieldMapper[masherytypes.ServiceCache]{
+		Locator: func(in *masherytypes.ServiceCache) *float64 {
 			return &in.CacheTtl
 		},
 		Unit: time.Minute,

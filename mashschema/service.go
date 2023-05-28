@@ -514,7 +514,7 @@ func (smi *ServiceMapperImpl) CacheUpsertable(d *schema.ResourceData) *masheryty
 	cacheTTL := ExtractInt(d, MashSvcCacheTtl, 0)
 	if cacheTTL > 0 {
 		return &masherytypes.ServiceCache{
-			CacheTtl: int64(cacheTTL),
+			CacheTtl: float64(cacheTTL),
 		}
 	} else {
 		return nil
@@ -616,7 +616,7 @@ func (smi *ServiceMapperImpl) UpsertableTyped(d *schema.ResourceData) (masheryty
 
 	ttl := ExtractInt(d, MashSvcCacheTtl, 0)
 	if ttl > 0 {
-		mashServ.Cache = &masherytypes.ServiceCache{CacheTtl: int64(ttl)}
+		mashServ.Cache = &masherytypes.ServiceCache{CacheTtl: float64(ttl)}
 	}
 
 	mashServ.SecurityProfile = smi.UpsertableSecurityProfile(d)

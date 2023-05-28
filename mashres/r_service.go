@@ -14,6 +14,9 @@ func init() {
 	ServiceResource = &ResourceTemplate[tfmapper.Orphan, masherytypes.ServiceIdentifier, masherytypes.Service]{
 		Schema: mashschemag.ServiceResourceSchemaBuilder.ResourceSchema(),
 		Mapper: mashschemag.ServiceResourceSchemaBuilder.Mapper(),
+		UpsertableFunc: func() masherytypes.Service {
+			return masherytypes.Service{}
+		},
 
 		DoRead: func(ctx context.Context, client v3client.Client, identifier masherytypes.ServiceIdentifier) (*masherytypes.Service, error) {
 			if service, err := client.GetService(ctx, identifier); err != nil {
@@ -37,7 +40,11 @@ func init() {
 				var rvError error
 
 				if m.Roles != nil {
-					rvError = client.SetServiceRoles(ctx, rvIdent, *m.Roles)
+					if readBackRoles, roleReadErr := client.GetServiceRoles(ctx, rvIdent); roleReadErr != nil {
+						rvError = roleReadErr
+					} else {
+						cratedService.Roles = &readBackRoles
+					}
 				}
 
 				return cratedService, &rvIdent, rvError
@@ -45,22 +52,16 @@ func init() {
 		},
 
 		DoUpdate: func(ctx context.Context, client v3client.Client, identifier masherytypes.ServiceIdentifier, m masherytypes.Service) (*masherytypes.Service, error) {
-			if m.Roles == nil {
-				if err := client.DeleteServiceRoles(ctx, identifier); err != nil {
-					return &m, err
-				}
-			}
 			m.Id = identifier.ServiceId
 
 			if updatedService, err := client.UpdateService(ctx, m); err != nil {
 				return nil, err
 			} else {
-
 				if m.Roles != nil {
-					if roleSetErr := client.SetServiceRoles(ctx, identifier, *m.Roles); roleSetErr != nil {
+					if readBackRoles, roleSetErr := client.GetServiceRoles(ctx, identifier); roleSetErr != nil {
 						return updatedService, roleSetErr
 					} else {
-						updatedService.Roles = m.Roles
+						updatedService.Roles = &readBackRoles
 					}
 				}
 

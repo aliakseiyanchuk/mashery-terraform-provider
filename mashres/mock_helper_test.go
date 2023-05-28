@@ -5,28 +5,58 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
+	"reflect"
+	"terraform-provider-mashery/mashschema"
 	"testing"
 )
 
-type DatasourceTemplateMockHelper struct {
-	template DatasourceTemplate
-	schema   *schema.Resource
+type MockHelperBase struct {
+	schema *schema.Resource
 
 	data   *schema.ResourceData
 	mockCl MockClient
 }
 
-func (dtmh *DatasourceTemplateMockHelper) givenStateFieldSetTo(t *testing.T, field string, value interface{}) {
-	err := dtmh.data.Set(field, value)
+func (mhb *MockHelperBase) willHaveFieldSetTo(t *testing.T, name string, s interface{}) {
+	if v := mhb.data.Get(name); v != nil {
+		assert.Equal(t, s, v)
+	} else {
+		assert.Failf(t, "field is not found in state", "field %s is not found in state", name)
+	}
+}
+
+func (mhb *MockHelperBase) willHaveStringArrayFieldSetTo(t *testing.T, name string, s []string) {
+	if v := mhb.data.Get(name); v != nil {
+		arr := mashschema.ExtractStringArray(mhb.data, name, &mashschema.EmptyStringArray)
+		assert.True(t, reflect.DeepEqual(s, arr))
+	} else {
+		assert.Failf(t, "field is not found in state", "field %s is not found in state", name)
+	}
+}
+
+func (mhb *MockHelperBase) givenStateFieldSetTo(t *testing.T, field string, value interface{}) {
+	err := mhb.data.Set(field, value)
 	assert.Nil(t, err)
 }
 
-func (dtmh *DatasourceTemplateMockHelper) willHaveStateId(t *testing.T, v string) {
-	assert.Equal(t, dtmh.data.Id(), v)
+func (mhb *MockHelperBase) willHaveStateId(t *testing.T, v string) {
+	assert.Equal(t, v, mhb.data.Id())
 }
 
-func (dtmh *DatasourceTemplateMockHelper) mockClientWill() *MockClient {
-	return &dtmh.mockCl
+func (mhb *MockHelperBase) willHaveStateIdDefined(t *testing.T) {
+	assert.True(t, len(mhb.data.Id()) > 3)
+}
+
+func (mhb *MockHelperBase) mockClientWill() *MockClient {
+	return &mhb.mockCl
+}
+
+// --------------------------------------------------------------------------------------------------------------
+// DatasourceTemplateMockHelper
+
+type DatasourceTemplateMockHelper struct {
+	MockHelperBase
+	template DatasourceTemplate
 }
 
 func (dtmh *DatasourceTemplateMockHelper) thenExecutingDataSourceQuery(t *testing.T) {
@@ -45,20 +75,104 @@ func (dtmh *DatasourceTemplateMockHelper) thenExecutingDataSourceQueryWillYieldD
 	dtmh.mockCl.AssertExpectations(t)
 }
 
-func (dtmh *DatasourceTemplateMockHelper) willHaveFieldSetTo(t *testing.T, name string, s interface{}) {
-	if v := dtmh.data.Get(name); v != nil {
-		assert.Equal(t, s, v)
-	} else {
-		assert.Failf(t, "field is not found in state", "field %s is not found in state", name)
-	}
+// --------------------------------------------------------------------------------------------------------------
+// Static messages
+
+type ResourceTemplateMockHelper[Parent any, Ident any, MTYpe any] struct {
+	MockHelperBase
+	template *ResourceTemplate[Parent, Ident, MTYpe]
 }
+
+func (rthm *ResourceTemplateMockHelper[Parent, Ident, MTYpe]) givenIdentity(t *testing.T, ident Ident) {
+	err := rthm.template.Mapper.AssignIdentity(ident, rthm.data)
+	assert.Nil(t, err)
+}
+
+func (rthm *ResourceTemplateMockHelper[Parent, Ident, MTYpe]) thenExecutingCreate(t *testing.T) {
+	dg := rthm.template.Create(context.TODO(), rthm.data, &rthm.mockCl)
+	rthm.assertEmptyDiagnostic(t, dg)
+}
+
+func (rthm *ResourceTemplateMockHelper[Parent, Ident, MTYpe]) thenExecutingRead(t *testing.T) {
+	dg := rthm.template.Read(context.TODO(), rthm.data, &rthm.mockCl)
+	rthm.assertEmptyDiagnostic(t, dg)
+}
+
+func (rthm *ResourceTemplateMockHelper[Parent, Ident, MTYpe]) thenExecutingReadWillYieldDiagnostic(t *testing.T, text string) {
+	dg := rthm.template.Read(context.TODO(), rthm.data, &rthm.mockCl)
+	rthm.assertDiagnostic(t, dg, text)
+}
+
+func (rthm *ResourceTemplateMockHelper[Parent, Ident, MTYpe]) thenExecutingUpdate(t *testing.T) {
+	dg := rthm.template.Update(context.TODO(), rthm.data, &rthm.mockCl)
+	rthm.assertEmptyDiagnostic(t, dg)
+}
+
+func (rthm *ResourceTemplateMockHelper[Parent, Ident, MTYpe]) thenExecutingUpdateWillYieldDiagnostic(t *testing.T, text string) {
+	dg := rthm.template.Update(context.TODO(), rthm.data, &rthm.mockCl)
+	rthm.assertDiagnostic(t, dg, text)
+}
+
+func (rthm *ResourceTemplateMockHelper[Parent, Ident, MTYpe]) thenExecutingDelete(t *testing.T) {
+	dg := rthm.template.Delete(context.TODO(), rthm.data, &rthm.mockCl)
+	rthm.assertEmptyDiagnostic(t, dg)
+}
+
+func (rthm *ResourceTemplateMockHelper[Parent, Ident, MTYpe]) assertEmptyDiagnostic(t *testing.T, dg diag.Diagnostics) {
+	assert.True(t, len(dg) == 0)
+	rthm.mockCl.AssertExpectations(t)
+}
+
+func (rthm *ResourceTemplateMockHelper[Parent, Ident, MTYpe]) thenExecutingDeleteWillYieldDiagnostic(t *testing.T, text string) {
+	dg := rthm.template.Delete(context.TODO(), rthm.data, &rthm.mockCl)
+	rthm.assertDiagnostic(t, dg, text)
+}
+
+func (rthm *ResourceTemplateMockHelper[Parent, Ident, MTYpe]) assertDiagnostic(t *testing.T, dg diag.Diagnostics, text string) {
+	assert.True(t, len(dg) == 1)
+	assert.Equal(t, diag.Error, dg[0].Severity)
+	assert.Equal(t, text, dg[0].Summary)
+
+	rthm.mockCl.AssertExpectations(t)
+}
+
+func (rthm *ResourceTemplateMockHelper[Parent, Ident, MTYpe]) thenExecutingCreateWillYieldDiagnostic(t *testing.T, text string) {
+	dg := rthm.template.Create(context.TODO(), rthm.data, &rthm.mockCl)
+	rthm.assertDiagnostic(t, dg, text)
+}
+
+type IdentityValidator[Ident any] func(t *testing.T, id Ident)
+
+func (rthm *ResourceTemplateMockHelper[Parent, Ident, MTYpe]) thenAssignedIdIs(t *testing.T, f IdentityValidator[Ident]) {
+	ident, err := rthm.template.Mapper.Identity(rthm.data)
+	assert.Nil(t, err)
+	f(t, ident)
+}
+
+// --------------------------------------------------------------------------------------------------------------
+// Static messages.
 
 func CreateTestDatasource(tmpl DatasourceTemplate) *DatasourceTemplateMockHelper {
 	rv := DatasourceTemplateMockHelper{
 		template: tmpl,
-		schema:   tmpl.DataSourceSchema(),
-		data:     tmpl.TestState(),
-		mockCl:   MockClient{},
+		MockHelperBase: MockHelperBase{
+			schema: tmpl.DataSourceSchema(),
+			data:   tmpl.TestState(),
+			mockCl: MockClient{},
+		},
+	}
+
+	return &rv
+}
+
+func CreateTestResource[Parent any, Ident any, MType any](tmpl *ResourceTemplate[Parent, Ident, MType]) *ResourceTemplateMockHelper[Parent, Ident, MType] {
+	rv := ResourceTemplateMockHelper[Parent, Ident, MType]{
+		template: tmpl,
+		MockHelperBase: MockHelperBase{
+			schema: tmpl.ResourceSchema(),
+			data:   tmpl.TestState(),
+			mockCl: MockClient{},
+		},
 	}
 
 	return &rv

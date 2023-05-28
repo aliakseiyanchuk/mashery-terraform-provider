@@ -248,6 +248,8 @@ func init() {
 				}
 
 				remote.Roles = &rolesArr
+			} else {
+				remote.Roles = &[]masherytypes.RolePermission{}
 			}
 		},
 	})
