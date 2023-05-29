@@ -13,6 +13,8 @@ var OutboundTransportProtocolEnum = []string{"use-inbound", "http", "https"}
 var RequestProtocolEnum = []string{"rest", "soap", "xml-rpc", "json-rpc", "other"}
 var ConnectionTimeoutForSystemDomainRequestEnum = []int{2, 5, 10, 20, 30, 45, 60} // Mashery has recently changed this
 var ConnectionTimeoutForSystemDomainResponseEnum = []int{2, 5, 10, 20, 30, 45, 60, 120, 300, 600, 900, 1200}
+var RequestAuthenticationTypeEnum = []string{"apiKey", "apiKeyAndSecret_MD5", "apiKeyAndSecret_SHA256", "secureHash_SHA256", "oauth", "custom"}
+var KeyIdentifierLocationsEnum = []string{"request-header", "request-body", "request-parameters", "request-path"}
 
 const (
 	MashEndpointId                          = "endpoint_id"

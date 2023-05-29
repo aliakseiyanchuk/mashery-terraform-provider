@@ -115,6 +115,7 @@ func init() {
 			Schema: &schema.Schema{
 				Type:        schema.TypeSet,
 				Optional:    true,
+				MinItems:    1,
 				Description: "Locations where the developer should place key",
 				// Probably would be worth-while adding defaults in the description
 				Elem: &schema.Schema{
@@ -610,7 +611,9 @@ func init() {
 				Type:        schema.TypeString,
 				Required:    true,
 				Description: "Authentication type for the endpoint",
-				// TODO: add constriant on the authentication options
+				ValidateDiagFunc: func(i interface{}, path cty.Path) diag.Diagnostics {
+					return mashschema.ValidateStringValueInSet(i, path, &mashschema.RequestAuthenticationTypeEnum)
+				},
 			},
 		},
 	}).Add(&tfmapper.StringFieldMapper[masherytypes.Endpoint]{

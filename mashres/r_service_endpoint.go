@@ -14,6 +14,10 @@ func init() {
 		Schema: mashschemag.ServiceEndpointResourceSchemaBuilder.ResourceSchema(),
 		Mapper: mashschemag.ServiceEndpointResourceSchemaBuilder.Mapper(),
 
+		UpsertableFunc: func() masherytypes.Endpoint {
+			return masherytypes.Endpoint{}
+		},
+
 		DoRead: func(ctx context.Context, client v3client.Client, identifier masherytypes.ServiceEndpointIdentifier) (*masherytypes.Endpoint, error) {
 			return client.GetEndpoint(ctx, identifier)
 		},
@@ -40,10 +44,6 @@ func init() {
 
 		DoDelete: func(ctx context.Context, client v3client.Client, identifier masherytypes.ServiceEndpointIdentifier) error {
 			return client.DeleteEndpoint(ctx, identifier)
-		},
-
-		DoCountOffending: func(ctx context.Context, client v3client.Client, identifier masherytypes.ServiceEndpointIdentifier) (int64, error) {
-			return client.CountEndpointsMethodsOf(ctx, identifier)
 		},
 	}
 }

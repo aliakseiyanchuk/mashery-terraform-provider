@@ -98,3 +98,14 @@ func (mc *MockClient) CreateServiceCache(ctx context.Context, id masherytypes.Se
 	args := mc.Called(ctx, id, service)
 	return serviceCacheAndErrorFrom(args)
 }
+
+func (mc *MockClient) CreateEndpoint(ctx context.Context, serviceId masherytypes.ServiceIdentifier, endp masherytypes.Endpoint) (*masherytypes.Endpoint, error) {
+	args := mc.Called(ctx, serviceId, endp)
+
+	var rv *masherytypes.Endpoint = nil
+	if args.Get(0) != nil {
+		rv = args.Get(0).(*masherytypes.Endpoint)
+	}
+
+	return rv, args.Error(1)
+}

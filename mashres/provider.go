@@ -15,7 +15,7 @@ func Provider() *schema.Provider {
 			"mashery_service_oauth": ServiceOAuthResource.ResourceSchema(),
 			//"mashery_service_error_set":            resourceMasheryErrorSet(),
 			//"mashery_processor_chain":              resourceMasheryProcessorChain(),
-			//"mashery_endpoint":                     EndpointResource.TFDataSourceSchema(),
+			"mashery_service_endpoint": ServiceEndpointResource.ResourceSchema(),
 			//"mashery_endpoint_method":              EndpointMethodResource.TFDataSourceSchema(),
 			//"mashery_endpoint_method_filter":       EndpointMethodFilterResponse.TFDataSourceSchema(),
 			//"mashery_package":                      PackageResource.TFDataSourceSchema(),
