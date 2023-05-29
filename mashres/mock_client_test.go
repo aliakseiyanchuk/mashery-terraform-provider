@@ -109,3 +109,24 @@ func (mc *MockClient) CreateEndpoint(ctx context.Context, serviceId masherytypes
 
 	return rv, args.Error(1)
 }
+
+func (mc *MockClient) CreatePackage(ctx context.Context, pack masherytypes.Package) (*masherytypes.Package, error) {
+	args := mc.Called(ctx, pack)
+
+	var rv *masherytypes.Package = nil
+	if args.Get(0) != nil {
+		rv = args.Get(0).(*masherytypes.Package)
+	}
+
+	return rv, args.Error(1)
+}
+func (mc *MockClient) CreatePlan(ctx context.Context, packageId masherytypes.PackageIdentifier, plan masherytypes.Plan) (*masherytypes.Plan, error) {
+	args := mc.Called(ctx, packageId, plan)
+
+	var rv *masherytypes.Plan = nil
+	if args.Get(0) != nil {
+		rv = args.Get(0).(*masherytypes.Plan)
+	}
+
+	return rv, args.Error(1)
+}

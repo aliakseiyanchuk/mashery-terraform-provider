@@ -14,6 +14,10 @@ func init() {
 		Schema: mashschemag.PackagePlanResourceSchemaBuilder.ResourceSchema(),
 		Mapper: mashschemag.PackagePlanResourceSchemaBuilder.Mapper(),
 
+		UpsertableFunc: func() masherytypes.Plan {
+			return masherytypes.Plan{}
+		},
+
 		DoRead: func(ctx context.Context, client v3client.Client, identifier masherytypes.PackagePlanIdentifier) (*masherytypes.Plan, error) {
 			return client.GetPlan(ctx, identifier)
 		},
@@ -28,7 +32,7 @@ func init() {
 		},
 
 		DoUpdate: func(ctx context.Context, client v3client.Client, identifier masherytypes.PackagePlanIdentifier, m masherytypes.Plan) (*masherytypes.Plan, error) {
-			m.Id = identifier.PackageId
+			m.Id = identifier.PlanId
 			m.ParentPackageId = identifier.PackageIdentifier
 
 			if updatedPack, err := client.UpdatePlan(ctx, m); err != nil {

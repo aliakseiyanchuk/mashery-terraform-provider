@@ -15,6 +15,10 @@ func init() {
 		Schema: mashschemag.PackageResourceSchemaBuilder.ResourceSchema(),
 		Mapper: mashschemag.PackageResourceSchemaBuilder.Mapper(),
 
+		UpsertableFunc: func() masherytypes.Package {
+			return masherytypes.Package{}
+		},
+
 		DoRead: func(ctx context.Context, client v3client.Client, identifier masherytypes.PackageIdentifier) (*masherytypes.Package, error) {
 			return client.GetPackage(ctx, identifier)
 		},

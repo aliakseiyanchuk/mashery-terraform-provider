@@ -76,25 +76,25 @@ func init() {
 			},
 
 			FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Package]{
-				Key: mashschema.MashPackName,
+				Key: mashschema.MashObjName,
 			},
 		},
 
-		PrefixKey: mashschema.MashPackNamePrefix,
+		PrefixKey: mashschema.MashObjNamePrefix,
 		CompositeMapperBase: tfmapper.CompositeMapperBase{
 			CompositeSchema: map[string]*schema.Schema{
-				mashschema.MashPackName: {
+				mashschema.MashObjName: {
 					Type:          schema.TypeString,
 					Optional:      true,
 					Computed:      true,
 					Description:   "Package name",
-					ConflictsWith: []string{mashschema.MashPackNamePrefix},
+					ConflictsWith: []string{mashschema.MashObjNamePrefix},
 				},
-				mashschema.MashPackNamePrefix: {
+				mashschema.MashObjNamePrefix: {
 					Type:          schema.TypeString,
 					Optional:      true,
 					Description:   "Prefix for the package name",
-					ConflictsWith: []string{mashschema.MashPackName},
+					ConflictsWith: []string{mashschema.MashObjName},
 				},
 			},
 		},
@@ -109,11 +109,10 @@ func init() {
 		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Package]{
 			Key: mashschema.MashPackDescription,
 			Schema: &schema.Schema{
-				Type:          schema.TypeString,
-				Optional:      true,
-				Default:       "Managed by Terraform",
-				Description:   "Package description",
-				ConflictsWith: []string{mashschema.MashPackTags},
+				Type:        schema.TypeString,
+				Optional:    true,
+				Default:     "Managed by Terraform",
+				Description: "Package description",
 			},
 		},
 	})
