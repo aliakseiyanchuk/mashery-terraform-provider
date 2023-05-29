@@ -14,13 +14,17 @@ func init() {
 		Schema: mashschemag.ServiceCacheResourceSchemaBuilder.ResourceSchema(),
 		Mapper: mashschemag.ServiceCacheResourceSchemaBuilder.Mapper(),
 
+		UpsertableFunc: func() masherytypes.ServiceCache {
+			return masherytypes.ServiceCache{}
+		},
+
 		DoRead: func(ctx context.Context, client v3client.Client, identifier masherytypes.ServiceIdentifier) (*masherytypes.ServiceCache, error) {
-			return client.GetServiceCache(ctx, identifier.ServiceId)
+			return client.GetServiceCache(ctx, identifier)
 		},
 
 		DoCreate: func(ctx context.Context, client v3client.Client, ident masherytypes.ServiceIdentifier, m masherytypes.ServiceCache) (*masherytypes.ServiceCache, *masherytypes.ServiceIdentifier, error) {
 			// Align the API of the Mashery V3 client
-			if createdCache, err := client.CreateServiceCache(ctx, ident.ServiceId, m); err != nil {
+			if createdCache, err := client.CreateServiceCache(ctx, ident, m); err != nil {
 				return nil, nil, err
 			} else {
 				rvIdent := masherytypes.ServiceIdentifier{
@@ -31,7 +35,7 @@ func init() {
 		},
 
 		DoUpdate: func(ctx context.Context, client v3client.Client, identifier masherytypes.ServiceIdentifier, m masherytypes.ServiceCache) (*masherytypes.ServiceCache, error) {
-			if updatedCache, err := client.UpdateServiceCache(ctx, identifier.ServiceId, m); err != nil {
+			if updatedCache, err := client.UpdateServiceCache(ctx, identifier, m); err != nil {
 				return nil, err
 			} else {
 				return updatedCache, err
@@ -39,7 +43,7 @@ func init() {
 		},
 
 		DoDelete: func(ctx context.Context, client v3client.Client, identifier masherytypes.ServiceIdentifier) error {
-			return client.DeleteServiceCache(ctx, identifier.ServiceId)
+			return client.DeleteServiceCache(ctx, identifier)
 		},
 
 		// Offending count is not required for Service cache, as it can be deleted at any moment.

@@ -88,6 +88,11 @@ func (rthm *ResourceTemplateMockHelper[Parent, Ident, MTYpe]) givenIdentity(t *t
 	assert.Nil(t, err)
 }
 
+func (rthm *ResourceTemplateMockHelper[Parent, Ident, MTYpe]) givenParentIdentity(t *testing.T, ident Parent) {
+	err := rthm.template.Mapper.TestSetPrentIdentity(ident, rthm.data)
+	assert.Nil(t, err)
+}
+
 func (rthm *ResourceTemplateMockHelper[Parent, Ident, MTYpe]) thenExecutingCreate(t *testing.T) {
 	dg := rthm.template.Create(context.TODO(), rthm.data, &rthm.mockCl)
 	rthm.assertEmptyDiagnostic(t, dg)

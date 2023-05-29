@@ -10,7 +10,9 @@ func Provider() *schema.Provider {
 	return &schema.Provider{
 		Schema: mashery.ProviderConfigSchema,
 		ResourcesMap: map[string]*schema.Resource{
-			"mashery_service": ServiceResource.ResourceSchema(),
+			"mashery_service":       ServiceResource.ResourceSchema(),
+			"mashery_service_cache": ServiceCacheResource.ResourceSchema(),
+			"mashery_service_oauth": ServiceOAuthResource.ResourceSchema(),
 			//"mashery_service_error_set":            resourceMasheryErrorSet(),
 			//"mashery_processor_chain":              resourceMasheryProcessorChain(),
 			//"mashery_endpoint":                     EndpointResource.TFDataSourceSchema(),

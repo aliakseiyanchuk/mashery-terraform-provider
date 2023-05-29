@@ -185,8 +185,11 @@ func serviceUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) d
 
 	if mashschema.ServiceMapper.CacheTTLChanged(d) {
 		serviceCache := mashschema.ServiceMapper.CacheUpsertable(d)
+		serviceIdent := masherytypes.ServiceIdentifier{
+			ServiceId: d.Id(),
+		}
 		if serviceCache != nil {
-			if _, err := mashV3Cl.UpdateServiceCache(ctx, d.Id(), *serviceCache); err != nil {
+			if _, err := mashV3Cl.UpdateServiceCache(ctx, serviceIdent, *serviceCache); err != nil {
 				updateDiagnostic = append(updateDiagnostic, diag.Diagnostic{
 					Severity: diag.Error,
 					Summary:  "could not update cache ttl",
@@ -194,7 +197,7 @@ func serviceUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) d
 				})
 			}
 		} else {
-			if err := mashV3Cl.DeleteServiceCache(ctx, d.Id()); err != nil {
+			if err := mashV3Cl.DeleteServiceCache(ctx, serviceIdent); err != nil {
 				updateDiagnostic = append(updateDiagnostic, diag.Diagnostic{
 					Severity: diag.Error,
 					Summary:  "could not delete cache ttl",

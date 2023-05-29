@@ -67,3 +67,34 @@ func (mc *MockClient) DeleteServiceRoles(ctx context.Context, id masherytypes.Se
 func (mc *MockClient) UpdateService(ctx context.Context, service masherytypes.Service) (*masherytypes.Service, error) {
 	return servicePointerWithError(mc.Called(ctx, service))
 }
+
+func (mc *MockClient) CreateServiceOAuthSecurityProfile(ctx context.Context, service masherytypes.MasheryOAuth) (*masherytypes.MasheryOAuth, error) {
+	args := mc.Called(ctx, service)
+
+	var rv *masherytypes.MasheryOAuth
+	if rawRV := args.Get(0); rawRV != nil {
+		rv = rawRV.(*masherytypes.MasheryOAuth)
+	}
+
+	return rv, args.Error(1)
+}
+
+func (mc *MockClient) GetServiceCache(ctx context.Context, id masherytypes.ServiceIdentifier) (*masherytypes.ServiceCache, error) {
+	args := mc.Called(ctx, id)
+
+	return serviceCacheAndErrorFrom(args)
+}
+
+func serviceCacheAndErrorFrom(args mock.Arguments) (*masherytypes.ServiceCache, error) {
+	var rv *masherytypes.ServiceCache
+	if rawRV := args.Get(0); rawRV != nil {
+		rv = rawRV.(*masherytypes.ServiceCache)
+	}
+
+	return rv, args.Error(1)
+}
+
+func (mc *MockClient) CreateServiceCache(ctx context.Context, id masherytypes.ServiceIdentifier, service masherytypes.ServiceCache) (*masherytypes.ServiceCache, error) {
+	args := mc.Called(ctx, id, service)
+	return serviceCacheAndErrorFrom(args)
+}

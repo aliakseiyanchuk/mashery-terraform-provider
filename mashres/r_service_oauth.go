@@ -14,6 +14,10 @@ func init() {
 		Schema: mashschemag.ServiceOAuthResourceSchemaBuilder.ResourceSchema(),
 		Mapper: mashschemag.ServiceOAuthResourceSchemaBuilder.Mapper(),
 
+		UpsertableFunc: func() masherytypes.MasheryOAuth {
+			return masherytypes.MasheryOAuth{}
+		},
+
 		DoRead: func(ctx context.Context, client v3client.Client, identifier masherytypes.ServiceIdentifier) (*masherytypes.MasheryOAuth, error) {
 			return client.GetServiceOAuthSecurityProfile(ctx, identifier)
 		},
