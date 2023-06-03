@@ -39,7 +39,7 @@ func (sfm *JsonIdentityFieldMapper[Ident, MType]) PrepareMapper() *JsonIdentityF
 }
 
 func (sfm *JsonIdentityFieldMapper[Ident, MType]) ValueToSchema(i interface{}, state *schema.ResourceData) error {
-	str := wrapJSON(i)
+	str := WrapJSON(i)
 	return state.Set(sfm.Key, str)
 }
 
@@ -48,7 +48,7 @@ func (sfm *JsonIdentityFieldMapper[Ident, MType]) ValidateDiag(i interface{}, _ 
 
 	if str, ok := i.(string); ok {
 		ident := sfm.IdentityFunc()
-		if err := unwrapJSON(str, &ident); err != nil {
+		if err := UnwrapJSON(str, &ident); err != nil {
 			rv = append(rv, diag.Diagnostic{
 				Severity: diag.Error,
 				Summary:  fmt.Sprintf("supplied value is not a valid wrapped json"),
@@ -77,7 +77,7 @@ func (sfm *JsonIdentityFieldMapper[Ident, MType]) RemoteToSchema(v *MType, state
 		val := ""
 
 		if !sfm.NullFunction(v) {
-			val = wrapJSON(sfm.Locator(v))
+			val = WrapJSON(sfm.Locator(v))
 
 			if err := state.Set(sfm.Key, val); err != nil {
 				return &diag.Diagnostic{
@@ -101,7 +101,7 @@ func (sfm *JsonIdentityFieldMapper[Ident, MType]) schemaToRemoteCurrent(state *s
 
 	val := mashschema.ExtractString(state, sfm.Key, "")
 	if len(val) > 0 {
-		_ = unwrapJSON(val, &ident)
+		_ = UnwrapJSON(val, &ident)
 	}
 
 	*sfm.Locator(remote) = ident
@@ -114,7 +114,7 @@ func (sfm *JsonIdentityFieldMapper[Ident, MType]) schemaToRemotePrevious(state *
 		before := beforeRaw.(string)
 
 		if len(before) > 0 {
-			_ = unwrapJSON(before, &prevIdent)
+			_ = UnwrapJSON(before, &prevIdent)
 		}
 
 		*sfm.PreviousLocator(remote) = prevIdent

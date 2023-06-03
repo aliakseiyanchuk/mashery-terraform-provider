@@ -357,11 +357,11 @@ func (im *JsonIdentityMapper[Ident]) Identity(state *schema.ResourceData) (Ident
 	rv := im.IdentityFunc()
 	if len(im.Key) > 0 {
 		v := mashschema.ExtractString(state, im.Key, "")
-		err := unwrapJSON(v, &rv)
+		err := UnwrapJSON(v, &rv)
 		return rv, err
 	} else {
 
-		err := unwrapJSON(state.Id(), &rv)
+		err := UnwrapJSON(state.Id(), &rv)
 		return rv, err
 	}
 }
@@ -371,7 +371,7 @@ func (im *JsonIdentityMapper[Ident]) ValidateIdent(i interface{}, _ cty.Path) di
 
 	if str, ok := i.(string); ok {
 		ident := im.IdentityFunc()
-		if err := unwrapJSON(str, &ident); err != nil {
+		if err := UnwrapJSON(str, &ident); err != nil {
 			rv = append(rv, diag.Diagnostic{
 				Severity: diag.Error,
 				Summary:  fmt.Sprintf("supplied value is not a valid wrapped json"),
@@ -394,7 +394,7 @@ func (im *JsonIdentityMapper[Ident]) ValidateIdent(i interface{}, _ cty.Path) di
 }
 
 func (im *JsonIdentityMapper[Ident]) Assign(ident Ident, state *schema.ResourceData) error {
-	val := wrapJSON(ident)
+	val := WrapJSON(ident)
 	if len(im.Key) > 0 {
 		return state.Set(im.Key, val)
 	} else {
@@ -403,7 +403,7 @@ func (im *JsonIdentityMapper[Ident]) Assign(ident Ident, state *schema.ResourceD
 	}
 }
 
-func unwrapJSON(inp string, receiver interface{}) error {
+func UnwrapJSON(inp string, receiver interface{}) error {
 	if sEnc, err := base64.StdEncoding.DecodeString(inp); err != nil {
 		return err
 	} else {
@@ -411,7 +411,7 @@ func unwrapJSON(inp string, receiver interface{}) error {
 	}
 }
 
-func wrapJSON(origin interface{}) string {
+func WrapJSON(origin interface{}) string {
 	v, _ := json.Marshal(origin)
 	return base64.StdEncoding.EncodeToString(v)
 }

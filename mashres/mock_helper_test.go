@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"reflect"
 	"terraform-provider-mashery/mashschema"
+	"terraform-provider-mashery/tfmapper"
 	"testing"
 )
 
@@ -36,6 +37,11 @@ func (mhb *MockHelperBase) willHaveStringArrayFieldSetTo(t *testing.T, name stri
 
 func (mhb *MockHelperBase) givenStateFieldSetTo(t *testing.T, field string, value interface{}) {
 	err := mhb.data.Set(field, value)
+	assert.Nil(t, err)
+}
+
+func (mhb *MockHelperBase) givenStateFieldSetToWrappedJSON(t *testing.T, field string, i interface{}) {
+	err := mhb.data.Set(field, tfmapper.WrapJSON(i))
 	assert.Nil(t, err)
 }
 
@@ -86,6 +92,10 @@ type ResourceTemplateMockHelper[Parent any, Ident any, MTYpe any] struct {
 func (rthm *ResourceTemplateMockHelper[Parent, Ident, MTYpe]) givenIdentity(t *testing.T, ident Ident) {
 	err := rthm.template.Mapper.AssignIdentity(ident, rthm.data)
 	assert.Nil(t, err)
+}
+
+func (rthm *ResourceTemplateMockHelper[Parent, Ident, MTYpe]) givenIdentityString(str string) {
+	rthm.data.SetId(str)
 }
 
 func (rthm *ResourceTemplateMockHelper[Parent, Ident, MTYpe]) givenParentIdentity(t *testing.T, ident Parent) {
@@ -152,6 +162,10 @@ func (rthm *ResourceTemplateMockHelper[Parent, Ident, MTYpe]) thenAssignedIdIs(t
 	ident, err := rthm.template.Mapper.Identity(rthm.data)
 	assert.Nil(t, err)
 	f(t, ident)
+}
+
+func (rthm *ResourceTemplateMockHelper[Parent, Ident, MTYpe]) thenAssignedIdIsEmpty(t *testing.T) {
+	assert.Equal(t, "", rthm.data.Id())
 }
 
 // --------------------------------------------------------------------------------------------------------------

@@ -30,14 +30,19 @@ func (sfm *StringArrayFieldMapper[MType]) NilRemote(state *schema.ResourceData) 
 func (sfm *StringArrayFieldMapper[MType]) RemoteToSchema(remote *MType, state *schema.ResourceData) *diag.Diagnostic {
 	remoteVal := sfm.Locator(remote)
 
+	var settingVal []string
 	var setErr error
 
-	if remoteVal == nil {
-		var emptySet []string
-		setErr = state.Set(sfm.Key, emptySet)
-	} else {
-		setErr = state.Set(sfm.Key, *remoteVal)
+	if remoteVal != nil {
+		// The change to the state will be accepted if the remote value contains multiple elements
+		// or if it contains a single, non-empty string. Other situations are normalized as an
+		// empty array.
+		if len(*remoteVal) > 1 || (len(*remoteVal) == 1 && len((*remoteVal)[0]) > 0) {
+			settingVal = *remoteVal
+		}
 	}
+
+	setErr = state.Set(sfm.Key, settingVal)
 
 	// TOOO: repeating code that can be moved to the common method
 	// deferred for the code optimization later on.

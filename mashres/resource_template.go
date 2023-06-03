@@ -21,6 +21,9 @@ type ResourceTemplate[ParentIdent any, Ident any, MType any] struct {
 
 	UpsertableFunc func() MType
 
+	// Validate function: if defined, checks the consistency of the parameters with each other.
+	ValidateFunc func(parent ParentIdent, upsertable MType) string
+
 	DoRead   ReaderFunc[Ident, MType]
 	DoCreate CreatorFunc[ParentIdent, Ident, MType]
 	DoUpdate UpdaterFunc[Ident, MType]
@@ -32,13 +35,30 @@ type ResourceTemplate[ParentIdent any, Ident any, MType any] struct {
 // ResourceSchema returns the Terraform data source schema
 func (rt *ResourceTemplate[ParentIdent, Ident, MType]) ResourceSchema() *schema.Resource {
 
+	// Update function will be enabled only in case the schema contains non-computed elements as well as
+	//
+	updateCtx := rt.Update
+	if rt.IsUpdateSuperfluous() {
+		updateCtx = nil
+	}
+
 	return &schema.Resource{
 		ReadContext:   rt.Read,
 		CreateContext: rt.Create,
-		UpdateContext: rt.Update,
+		UpdateContext: updateCtx,
 		DeleteContext: rt.Delete,
 		Schema:        rt.Schema,
 	}
+}
+
+func (rt *ResourceTemplate[ParentIdent, Ident, MType]) IsUpdateSuperfluous() bool {
+	for _, v := range rt.Schema {
+		if !v.ForceNew && !v.Computed {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (rt *ResourceTemplate[ParentIdent, Ident, MType]) TestState() *schema.ResourceData {
@@ -96,6 +116,16 @@ func (rt *ResourceTemplate[ParentIdent, Ident, MType]) Create(ctx context.Contex
 
 	upsertable := rt.UpsertableFunc()
 	rt.Mapper.SchemaToRemote(state, &upsertable)
+
+	if rt.ValidateFunc != nil {
+		if msg := rt.ValidateFunc(parentIdent, upsertable); len(msg) > 0 {
+			return diag.Diagnostics{diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  "object cannot be created due to conflict in the parameters",
+				Detail:   msg,
+			}}
+		}
+	}
 
 	v3Client := m.(v3client.Client)
 	readBack, ident, err := rt.DoCreate(ctx, v3Client, parentIdent, upsertable)

@@ -144,7 +144,8 @@ func init() {
 			Schema: &schema.Schema{
 				Type:        schema.TypeSet,
 				Optional:    true,
-				Description: "Locations to derive method from",
+				Computed:    true,
+				Description: "Locations to derive api method from. Valid options are: request-header, request-body, request-parameters, and request-path",
 				// Probably would be worth-while adding defaults in the description
 				Elem: &schema.Schema{
 					Type: schema.TypeString,

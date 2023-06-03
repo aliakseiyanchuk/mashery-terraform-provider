@@ -14,10 +14,18 @@ func init() {
 		Schema: mashschemag.PackagePlanServiceResourceSchemaBuilder.ResourceSchema(),
 		Mapper: mashschemag.PackagePlanServiceResourceSchemaBuilder.Mapper(),
 
+		UpsertableFunc: func() mashschemag.PackagePlanServiceParam {
+			return mashschemag.PackagePlanServiceParam{}
+		},
+
 		DoRead: func(ctx context.Context, client v3client.Client, identifier masherytypes.PackagePlanServiceIdentifier) (*mashschemag.PackagePlanServiceParam, error) {
 			serviceExists, err := client.CheckPlanServiceExists(ctx, identifier)
 			if serviceExists {
-				return &mashschemag.PackagePlanServiceParam{}, err
+				// If the service exists, return the reference to the service. This will be ignored during the
+				// Remote-to-Schema working.
+				return &mashschemag.PackagePlanServiceParam{
+					ServiceIdentifier: identifier.ServiceIdentifier,
+				}, err
 			} else {
 				return nil, err
 			}

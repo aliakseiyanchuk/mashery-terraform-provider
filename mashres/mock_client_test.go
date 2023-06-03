@@ -130,3 +130,34 @@ func (mc *MockClient) CreatePlan(ctx context.Context, packageId masherytypes.Pac
 
 	return rv, args.Error(1)
 }
+
+func (mc *MockClient) CreatePlanService(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier) (*masherytypes.AddressableV3Object, error) {
+	args := mc.Called(ctx, planService)
+
+	var rv *masherytypes.AddressableV3Object = nil
+	if rawRW := args.Get(0); rawRW != nil {
+		rv = rawRW.(*masherytypes.AddressableV3Object)
+	}
+
+	return rv, args.Error(1)
+}
+
+func (mc *MockClient) CheckPlanServiceExists(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier) (bool, error) {
+	args := mc.Called(ctx, planService)
+	return args.Bool(0), args.Error(1)
+}
+func (mc *MockClient) CreatePlanEndpoint(ctx context.Context, planEndp masherytypes.PackagePlanServiceEndpointIdentifier) (*masherytypes.AddressableV3Object, error) {
+	args := mc.Called(ctx, planEndp)
+
+	var rv *masherytypes.AddressableV3Object = nil
+	if rawRW := args.Get(0); rawRW != nil {
+		rv = rawRW.(*masherytypes.AddressableV3Object)
+	}
+
+	return rv, args.Error(1)
+}
+
+func (mc *MockClient) CheckPlanEndpointExists(ctx context.Context, planEndp masherytypes.PackagePlanServiceEndpointIdentifier) (bool, error) {
+	args := mc.Called(ctx, planEndp)
+	return args.Bool(0), args.Error(1)
+}

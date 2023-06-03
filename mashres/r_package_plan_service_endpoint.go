@@ -2,6 +2,7 @@ package mashres
 
 import (
 	"context"
+	"fmt"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 	"terraform-provider-mashery/mashschemag"
@@ -14,10 +15,31 @@ func init() {
 		Schema: mashschemag.PackagePlanServiceEndpointResourceSchemaBuilder.ResourceSchema(),
 		Mapper: mashschemag.PackagePlanServiceEndpointResourceSchemaBuilder.Mapper(),
 
+		UpsertableFunc: func() mashschemag.PackagePlanServiceEndpointParam {
+			return mashschemag.PackagePlanServiceEndpointParam{}
+		},
+
+		ValidateFunc: func(parent masherytypes.PackagePlanServiceIdentifier, upsertable mashschemag.PackagePlanServiceEndpointParam) string {
+			// The endpoint should be included in the same service. Mixing parameters is not allowed
+			if parent.ServiceId != upsertable.ServiceEndpointIdentifier.ServiceId {
+				return fmt.Sprintf("parameter conflict: endpoint %s belongs to service %s while only endpoints of service %s are expected",
+					upsertable.ServiceEndpointIdentifier.EndpointId,
+					upsertable.ServiceEndpointIdentifier.ServiceId,
+					parent.ServiceId,
+				)
+			}
+
+			return ""
+		},
+
 		DoRead: func(ctx context.Context, client v3client.Client, identifier masherytypes.PackagePlanServiceEndpointIdentifier) (*mashschemag.PackagePlanServiceEndpointParam, error) {
-			serviceExists, err := client.CheckPlanEndpointExists(ctx, identifier)
-			if serviceExists {
-				return &mashschemag.PackagePlanServiceEndpointParam{}, err
+			ppsEndpointExists, err := client.CheckPlanEndpointExists(ctx, identifier)
+			if ppsEndpointExists {
+				// If endpoint exists; then the reference to the same identifier will be returned. The value
+				// in the state file will not change as this is an identity operation
+				return &mashschemag.PackagePlanServiceEndpointParam{
+					ServiceEndpointIdentifier: identifier.ServiceEndpointIdentifier,
+				}, err
 			} else {
 				return nil, err
 			}
