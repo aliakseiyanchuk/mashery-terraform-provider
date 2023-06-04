@@ -62,7 +62,8 @@ func init() {
 			return masherytypes.ServiceEndpointMethodIdentifier{}
 		},
 		ValidateIdentFunc: func(identifier masherytypes.ServiceEndpointMethodIdentifier) bool {
-			return len(identifier.ServiceId) > 0 && len(identifier.EndpointId) > 0 &&
+			return len(identifier.ServiceId) > 0 &&
+				len(identifier.EndpointId) > 0 &&
 				len(identifier.MethodId) > 0
 		},
 		Locator: func(in *PackagePlanServiceEndpointMethodParam) *masherytypes.ServiceEndpointMethodIdentifier {
@@ -102,7 +103,10 @@ func init() {
 			return masherytypes.ServiceEndpointMethodFilterIdentifier{}
 		},
 		ValidateIdentFunc: func(identifier masherytypes.ServiceEndpointMethodFilterIdentifier) bool {
-			return len(identifier.ServiceId) > 0 && len(identifier.EndpointId) > 0
+			return len(identifier.ServiceId) > 0 &&
+				len(identifier.EndpointId) > 0 &&
+				len(identifier.MethodId) > 0 &&
+				len(identifier.FilterId) > 0
 		},
 		Locator: func(in *PackagePlanServiceEndpointMethodParam) *masherytypes.ServiceEndpointMethodFilterIdentifier {
 			return &in.ServiceEndpointMethodFilterDesired

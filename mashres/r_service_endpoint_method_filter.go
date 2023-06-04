@@ -14,6 +14,10 @@ func init() {
 		Schema: mashschemag.ServiceEndpointMethodFilterResourceSchemaBuilder.ResourceSchema(),
 		Mapper: mashschemag.ServiceEndpointMethodFilterResourceSchemaBuilder.Mapper(),
 
+		UpsertableFunc: func() masherytypes.ServiceEndpointMethodFilter {
+			return masherytypes.ServiceEndpointMethodFilter{}
+		},
+
 		DoRead: func(ctx context.Context, client v3client.Client, identifier masherytypes.ServiceEndpointMethodFilterIdentifier) (*masherytypes.ServiceEndpointMethodFilter, error) {
 			return client.GetEndpointMethodFilter(ctx, identifier)
 		},

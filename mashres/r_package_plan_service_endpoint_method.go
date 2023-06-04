@@ -15,6 +15,10 @@ func init() {
 		Schema: mashschemag.PackagePlanServiceEndpointMethodResourceSchemaBuilder.ResourceSchema(),
 		Mapper: mashschemag.PackagePlanServiceEndpointMethodResourceSchemaBuilder.Mapper(),
 
+		UpsertableFunc: func() mashschemag.PackagePlanServiceEndpointMethodParam {
+			return mashschemag.PackagePlanServiceEndpointMethodParam{}
+		},
+
 		DoRead: func(ctx context.Context, client v3client.Client, identifier masherytypes.PackagePlanServiceEndpointMethodIdentifier) (*mashschemag.PackagePlanServiceEndpointMethodParam, error) {
 			if methState, err := client.GetPackagePlanMethod(ctx, identifier); err != nil {
 				return nil, err
@@ -31,18 +35,14 @@ func init() {
 					return nil, err
 				} else if filterState != nil {
 					filterIdent := filterState.Identifier()
-					rv.ServiceEndpointMethodFilterDesired = masherytypes.ServiceEndpointMethodFilterIdentifier{
-						ServiceEndpointMethodIdentifier: masherytypes.ServiceEndpointMethodIdentifier{
-							ServiceEndpointIdentifier: masherytypes.ServiceEndpointIdentifier{
-								ServiceIdentifier: masherytypes.ServiceIdentifier{
-									ServiceId: filterIdent.ServiceId,
-								},
-								EndpointId: filterIdent.EndpointId,
-							},
-							MethodId: filterIdent.MethodId,
-						},
-						FilterId: filterIdent.FilterId,
-					}
+
+					desiredFilterIdent := masherytypes.ServiceEndpointMethodFilterIdentifier{}
+					desiredFilterIdent.ServiceId = filterIdent.ServiceId
+					desiredFilterIdent.EndpointId = filterIdent.EndpointId
+					desiredFilterIdent.MethodId = filterIdent.MethodId
+					desiredFilterIdent.FilterId = filterIdent.FilterId
+
+					rv.ServiceEndpointMethodFilterDesired = desiredFilterIdent
 				}
 
 				return &rv, nil
@@ -62,10 +62,7 @@ func init() {
 				if len(m.ServiceEndpointMethodFilterDesired.FilterId) > 0 {
 					filterIdent := masherytypes.PackagePlanServiceEndpointMethodFilterIdentifier{
 						ServiceEndpointMethodFilterIdentifier: m.ServiceEndpointMethodFilterDesired,
-						PackagePlanServiceIdentifier: masherytypes.PackagePlanServiceIdentifier{
-							PackagePlanIdentifier: identifier.PackagePlanIdentifier,
-							ServiceIdentifier:     identifier.ServiceIdentifier,
-						},
+						PackagePlanIdentifier:                 identifier.PackagePlanIdentifier,
 					}
 
 					if obj, err := client.CreatePackagePlanMethodFilter(ctx, filterIdent); err != nil {
@@ -94,10 +91,7 @@ func init() {
 				if len(param.ServiceEndpointMethodFilterDesired.FilterId) > 0 {
 					ident := masherytypes.PackagePlanServiceEndpointMethodFilterIdentifier{
 						ServiceEndpointMethodFilterIdentifier: param.ServiceEndpointMethodFilterDesired,
-						PackagePlanServiceIdentifier: masherytypes.PackagePlanServiceIdentifier{
-							PackagePlanIdentifier: identifier.PackagePlanIdentifier,
-							ServiceIdentifier:     identifier.ServiceIdentifier,
-						},
+						PackagePlanIdentifier:                 identifier.PackagePlanIdentifier,
 					}
 
 					if obj, err := client.CreatePackagePlanMethodFilter(ctx, ident); err != nil {

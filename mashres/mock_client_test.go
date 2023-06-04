@@ -161,3 +161,47 @@ func (mc *MockClient) CheckPlanEndpointExists(ctx context.Context, planEndp mash
 	args := mc.Called(ctx, planEndp)
 	return args.Bool(0), args.Error(1)
 }
+
+func (mc *MockClient) CreateEndpointMethod(ctx context.Context, ident masherytypes.ServiceEndpointIdentifier, methodUpsert masherytypes.ServiceEndpointMethod) (*masherytypes.ServiceEndpointMethod, error) {
+	args := mc.Called(ctx, ident, methodUpsert)
+
+	var rv *masherytypes.ServiceEndpointMethod
+	if rawRW := args.Get(0); rawRW != nil {
+		rv = rawRW.(*masherytypes.ServiceEndpointMethod)
+	}
+
+	return rv, args.Error(1)
+}
+
+func (mc *MockClient) CreateEndpointMethodFilter(ctx context.Context, ident masherytypes.ServiceEndpointMethodIdentifier, filterUpsert masherytypes.ServiceEndpointMethodFilter) (*masherytypes.ServiceEndpointMethodFilter, error) {
+	args := mc.Called(ctx, ident, filterUpsert)
+
+	var rv *masherytypes.ServiceEndpointMethodFilter
+	if rawRW := args.Get(0); rawRW != nil {
+		rv = rawRW.(*masherytypes.ServiceEndpointMethodFilter)
+	}
+
+	return rv, args.Error(1)
+}
+
+func (mc *MockClient) CreatePackagePlanMethod(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodIdentifier) (*masherytypes.PackagePlanServiceEndpointMethod, error) {
+	args := mc.Called(ctx, id)
+
+	var rv *masherytypes.PackagePlanServiceEndpointMethod
+	if rawRW := args.Get(0); rawRW != nil {
+		rv = rawRW.(*masherytypes.PackagePlanServiceEndpointMethod)
+	}
+
+	return rv, args.Error(1)
+}
+
+func (mc *MockClient) CreatePackagePlanMethodFilter(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodFilterIdentifier) (*masherytypes.PackagePlanServiceEndpointMethodFilter, error) {
+	args := mc.Called(ctx, id)
+
+	var rv *masherytypes.PackagePlanServiceEndpointMethodFilter
+	if rawRW := args.Get(0); rawRW != nil {
+		rv = rawRW.(*masherytypes.PackagePlanServiceEndpointMethodFilter)
+	}
+
+	return rv, args.Error(1)
+}

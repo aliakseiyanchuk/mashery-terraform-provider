@@ -14,7 +14,7 @@ var ServiceEndpointMethodFilterResourceSchemaBuilder = tfmapper.NewSchemaBuilder
 		},
 	})
 
-// Parent package identity
+// Parent service endpoint method identity
 func init() {
 	mapper := tfmapper.JsonIdentityMapper[masherytypes.ServiceEndpointMethodIdentifier]{
 		Key: mashschema.ServiceEndpointMethodRef,
@@ -86,7 +86,6 @@ func init() {
 			Schema: &schema.Schema{
 				Type:        schema.TypeString,
 				Required:    true,
-				ForceNew:    true,
 				Description: "Filter name",
 			},
 		},
@@ -98,8 +97,7 @@ func init() {
 			Key: mashschema.MashServiceEndpointMethodFilterNotes,
 			Schema: &schema.Schema{
 				Type:        schema.TypeString,
-				Required:    true,
-				ForceNew:    true,
+				Optional:    true,
 				Description: "Notes",
 			},
 		},
@@ -111,9 +109,8 @@ func init() {
 			Key: mashschema.MashServiceEndpointMethodFilterXmlFields,
 			Schema: &schema.Schema{
 				Type:        schema.TypeString,
-				Required:    true,
-				ForceNew:    true,
-				Description: "Notes",
+				Optional:    true,
+				Description: "XML sample response",
 			},
 		},
 	}).Add(&tfmapper.StringFieldMapper[masherytypes.ServiceEndpointMethodFilter]{
@@ -124,9 +121,8 @@ func init() {
 			Key: mashschema.MashServiceEndpointMethodFilterJsonFields,
 			Schema: &schema.Schema{
 				Type:        schema.TypeString,
-				Required:    true,
-				ForceNew:    true,
-				Description: "Notes",
+				Optional:    true,
+				Description: "JSON sample response",
 			},
 		},
 	})

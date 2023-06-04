@@ -11,6 +11,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"terraform-provider-mashery/mashschema"
 	"time"
 )
 
@@ -80,10 +81,11 @@ var ProviderConfigSchema = map[string]*schema.Schema{
 		Description: "Queries per second to observe. Default to 2 queries per second",
 	},
 	providerNetworkLatencyField: {
-		Type:        schema.TypeString,
-		Optional:    true,
-		DefaultFunc: schema.EnvDefaultFunc(envV3Latency, "173ms"),
-		Description: "Mean travel time between machine where the Terraform is running and Mashery API. Defaults to 173 (milliseconds).",
+		Type:             schema.TypeString,
+		Optional:         true,
+		DefaultFunc:      schema.EnvDefaultFunc(envV3Latency, "173ms"),
+		ValidateDiagFunc: mashschema.ValidateDuration,
+		Description:      "Mean travel time between machine where the Terraform is running and Mashery API. Defaults to 173 (milliseconds).",
 	},
 	"token": {
 		Type:        schema.TypeString,
@@ -234,6 +236,22 @@ func ProviderConfigure(_ context.Context, d *schema.ResourceData) (interface{}, 
 	var tokenProvider v3client.V3AccessTokenProvider
 	qps := d.Get(providerQPSField).(int)
 
+	requestedLatencyCompensation := mashschema.ExtractString(d, providerNetworkLatencyField, "173ms")
+	netLatency, err := time.ParseDuration(requestedLatencyCompensation)
+
+	doLogf("Requested observed QPS: %d", qps)
+	doLogf("Requested network latency compensation: %s", netLatency)
+
+	if err != nil {
+		doLogf("Network latency compensation is not valid: %s", err.Error())
+
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "invalid network latency format",
+			Detail:   fmt.Sprintf("network compensation value must be a valid Go time format. Supplied value %s is not valid: %s", requestedLatencyCompensation, err.Error()),
+		})
+	}
+
 	// Prefer to use Vault proxy mode, if sufficiently configured.
 	if vaultProxyMode := vaultProxyConfiguration(d); vaultProxyMode.isComplete() {
 		clParams := v3client.Params{
@@ -248,8 +266,9 @@ func ProviderConfigure(_ context.Context, d *schema.ResourceData) (interface{}, 
 					"X-Vault-Token": vaultProxyMode.token,
 				},
 			},
-			QPS:          int64(qps),
-			MashEndpoint: vaultProxyMode.fullAddress(),
+			QPS:           int64(qps),
+			AvgNetLatency: netLatency,
+			MashEndpoint:  vaultProxyMode.fullAddress(),
 		}
 
 		cl := v3client.NewHttpClient(clParams)
@@ -258,19 +277,6 @@ func ProviderConfigure(_ context.Context, d *schema.ResourceData) (interface{}, 
 		return cl, diags
 	} else {
 		doLogf("Provider configuration does not meet Vault proxy mode requirements")
-	}
-
-	// If Vault proxy mode is not configured, then Mashery V3 token should be supplied
-
-	cfgNetLatency := d.Get(providerNetworkLatencyField).(string)
-
-	travelComp, latErr := time.ParseDuration(cfgNetLatency)
-
-	if latErr != nil {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  fmt.Sprintf("Not a valid network latency: %s (%s)", cfgNetLatency, latErr),
-		})
 	}
 
 	if tknRaw, ok := d.GetOk(providerV3Token); ok {
@@ -301,7 +307,7 @@ func ProviderConfigure(_ context.Context, d *schema.ResourceData) (interface{}, 
 		clParams := v3client.Params{
 			Authorizer:    tokenProvider,
 			QPS:           int64(qps),
-			AvgNetLatency: travelComp,
+			AvgNetLatency: netLatency,
 		}
 
 		cl = v3client.NewHttpClient(clParams)

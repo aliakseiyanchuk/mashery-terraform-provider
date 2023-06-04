@@ -8,6 +8,7 @@ import (
 )
 
 const PackagePlanEndpointRef = "package_plan_service_endpoint_id"
+const PackagePlanEndpointMethodRef = "package_plan_service_endpoint_method_id"
 const PlanEndpointMethodFilterId = "service_endpoint_method_id"
 const PlanEndpointMethodId = "service_endpoint_method_filter_id"
 
@@ -79,10 +80,7 @@ func (psem *PackagePlanServiceEndpointMethodMapperImpl) GetFilterIdentity(d *sch
 	}
 
 	main := masherytypes.PackagePlanServiceEndpointMethodFilterIdentifier{
-		PackagePlanServiceIdentifier: masherytypes.PackagePlanServiceIdentifier{
-			PackagePlanIdentifier: planEndpointIdent.PackagePlanIdentifier,
-			ServiceIdentifier:     filterIdent.ServiceIdentifier,
-		},
+		PackagePlanIdentifier:                 planEndpointIdent.PackagePlanIdentifier,
 		ServiceEndpointMethodFilterIdentifier: filterIdent,
 	}
 
