@@ -1,6 +1,7 @@
 package mashschemag
 
 import (
+	"fmt"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -86,8 +87,8 @@ func init() {
 				Description: "status of this plan",
 			},
 		},
-	}).Add(&tfmapper.StringFieldMapper[masherytypes.Plan]{
-		Locator: func(in *masherytypes.Plan) *string {
+	}).Add(&tfmapper.StringPtrFieldMapper[masherytypes.Plan]{
+		Locator: func(in *masherytypes.Plan) **string {
 			return &in.EmailTemplateSetId
 		},
 		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Plan]{
@@ -96,6 +97,18 @@ func init() {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Description: "email template set id to use",
+			},
+		},
+	}).Add(&tfmapper.StringPtrFieldMapper[masherytypes.Plan]{
+		Locator: func(in *masherytypes.Plan) **string {
+			return &in.AdminEmailTemplateSetId
+		},
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Plan]{
+			Key: mashschema.MashPlanAdminEmailTemplateSetId,
+			Schema: &schema.Schema{
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "admin email template set id to use",
 			},
 		},
 	})
@@ -298,6 +311,76 @@ func init() {
 				Optional: true,
 				Default:  5000,
 			},
+		},
+	})
+}
+
+// Init portal access roles
+func init() {
+	// TODO: This looks like a common implementation between services IO docs and plans access control
+	// to receive keys. This needs to be refactored into a separate mapper to follow the DRY principle
+	PackagePlanResourceSchemaBuilder.Add(&tfmapper.PluggableFiledMapperBase[masherytypes.Plan]{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Plan]{
+			Key: mashschema.MashPlanPortalAccessRoles,
+			Schema: &schema.Schema{
+				Optional: true,
+				Type:     schema.TypeSet,
+				Set:      mashschema.StringHashcode,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+		},
+		NilRemoteToSchemaFunc: func(key string, state *schema.ResourceData) *diag.Diagnostic {
+			emptyArray := []string{}
+			if err := state.Set(key, emptyArray); err != nil {
+				return &diag.Diagnostic{
+					Severity:      diag.Error,
+					Detail:        fmt.Sprintf("supplied null-value for field %s was not accepted: %s", key, err.Error()),
+					AttributePath: cty.GetAttrPath(key),
+				}
+			} else {
+				return nil
+			}
+		},
+		RemoteToSchemaFunc: func(remote *masherytypes.Plan, key string, state *schema.ResourceData) *diag.Diagnostic {
+			var values []string
+
+			if remote.Roles != nil {
+				values = make([]string, len(*remote.Roles))
+
+				for i, v := range *remote.Roles {
+					values[i] = v.Id
+				}
+			}
+
+			if err := state.Set(key, values); err != nil {
+				return &diag.Diagnostic{
+					Severity:      diag.Error,
+					Detail:        fmt.Sprintf("supplied null-value for field %s was not accepted: %s", key, err.Error()),
+					AttributePath: cty.GetAttrPath(key),
+				}
+			} else {
+				return nil
+			}
+		},
+		SchemaToRemoteFunc: func(state *schema.ResourceData, key string, remote *masherytypes.Plan) {
+			arr := mashschema.ExtractStringArray(state, key, &[]string{})
+
+			if len(arr) > 0 {
+				rolesArr := make([]masherytypes.RolePermission, len(arr))
+				for i, v := range arr {
+					perm := masherytypes.RolePermission{}
+					perm.Id = v
+					perm.Action = "register_keys"
+
+					rolesArr[i] = perm
+				}
+
+				remote.Roles = &rolesArr
+			} else {
+				remote.Roles = &[]masherytypes.RolePermission{}
+			}
 		},
 	})
 }

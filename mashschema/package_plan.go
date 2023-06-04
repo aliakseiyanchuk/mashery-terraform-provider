@@ -19,6 +19,7 @@ const (
 	MashPlanNotes                             = "notes"
 	MashPlanMaxNumKeysAllowed                 = "max_keys"
 	MashPlanNumKeysBeforeReview               = "keys_before_review"
+	MashPlanPortalAccessRoles                 = "portal_access_roles"
 
 	MashPlanQpsLimitCeiling            = "qps"
 	MashPlanQpsLimitExempt             = "unlimited_qps"
@@ -32,6 +33,7 @@ const (
 	MashPlanResponseFilterOverrideAllowed = "response_filter_override"
 	MashPlanStatus                        = "status"
 	MashPlanEmailTemplateSetId            = "email_template_set"
+	MashPlanAdminEmailTemplateSetId       = "admin_email_template_set"
 )
 
 var PlanMapper *PlanMapperImpl
@@ -218,7 +220,7 @@ func (pmi *PlanMapperImpl) UpsertableTyped(d *schema.ResourceData) (masherytypes
 		RateLimitKeyOverrideAllowed:       ExtractBool(d, MashPlanRateLimitKeyOverrideAllowed, false),
 		RateLimitPeriod:                   ExtractString(d, MashPlanRateLimitPeriod, ""),
 		ResponseFilterOverrideAllowed:     ExtractBool(d, MashPlanResponseFilterOverrideAllowed, false),
-		EmailTemplateSetId:                ExtractString(d, MashPlanEmailTemplateSetId, ""),
+		EmailTemplateSetId:                ExtractStringPointer(d, MashPlanEmailTemplateSetId),
 
 		ParentPackageId: parentSelector(),
 	}
@@ -253,7 +255,7 @@ func (pmi *PlanMapperImpl) PersistTyped(pln masherytypes.Plan, d *schema.Resourc
 
 		MashPlanResponseFilterOverrideAllowed: pln.ResponseFilterOverrideAllowed,
 		MashPlanStatus:                        pln.Status,
-		MashPlanEmailTemplateSetId:            NullForEmptyString(pln.EmailTemplateSetId),
+		//MashPlanEmailTemplateSetId:            NullForEmptyString(pln.EmailTemplateSetId),
 	}
 
 	return pmi.persistMap(pln.Identifier(), data, d)

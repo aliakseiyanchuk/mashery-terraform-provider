@@ -12,4 +12,5 @@ provider "mashery" {
   vault_addr = var.vault_url
   vault_mount = "mash-auth"
   vault_role = var.vault_role
+  qps = 1
 }
