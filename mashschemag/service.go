@@ -254,3 +254,55 @@ func init() {
 		},
 	})
 }
+
+// Initialize Roles mapper
+func init() {
+	ServiceResourceSchemaBuilder.Add(&tfmapper.PluggableFiledMapperBase[masherytypes.Service]{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Service]{
+			Key: mashschema.MashSvcOrganization,
+			Schema: &schema.Schema{
+				Optional: true,
+				Type:     schema.TypeString,
+			},
+		},
+		NilRemoteToSchemaFunc: func(key string, state *schema.ResourceData) *diag.Diagnostic {
+			if err := state.Set(key, ""); err != nil {
+				return &diag.Diagnostic{
+					Severity:      diag.Error,
+					Detail:        fmt.Sprintf("supplied null-value for field %s was not accepted: %s", key, err.Error()),
+					AttributePath: cty.GetAttrPath(key),
+				}
+			} else {
+				return nil
+			}
+		},
+		RemoteToSchemaFunc: func(remote *masherytypes.Service, key string, state *schema.ResourceData) *diag.Diagnostic {
+			value := ""
+
+			if remote.Organization != nil {
+				value = remote.Organization.Id
+			}
+
+			if err := state.Set(key, value); err != nil {
+				return &diag.Diagnostic{
+					Severity:      diag.Error,
+					Detail:        fmt.Sprintf("supplied value for field %s was not accepted: %s", key, err.Error()),
+					AttributePath: cty.GetAttrPath(key),
+				}
+			} else {
+				return nil
+			}
+		},
+		SchemaToRemoteFunc: func(state *schema.ResourceData, key string, remote *masherytypes.Service) {
+			orgId := mashschema.ExtractString(state, key, "")
+
+			if len(orgId) > 0 {
+				remote.Organization = &masherytypes.Organization{
+					AddressableV3Object: masherytypes.AddressableV3Object{
+						Id: orgId,
+					},
+				}
+			}
+		},
+	})
+}

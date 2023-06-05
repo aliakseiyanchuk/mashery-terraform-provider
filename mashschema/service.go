@@ -45,6 +45,7 @@ const (
 	// MashSvcOAuth Mashery OAuth Service Element
 	MashSvcOAuth                = "oauth"
 	MashSvcInteractiveDocsRoles = "iodocs_accessed_by"
+	MashSvcOrganization         = "organization"
 
 	// MashSvcId Mashery Service element keys
 	MashSvcId                   = "service_id"

@@ -31,6 +31,7 @@ func Provider() *schema.Provider {
 		DataSourcesMap: map[string]*schema.Resource{
 			//"mashery_system_domains":     systemDomainsDataSource.TFDataSourceSchema(),
 			//"mashery_public_domains":     publicDomainsDataSource.TFDataSourceSchema(),
+			"mashery_organization":       OrganizationDataSource.DataSourceSchema(),
 			"mashery_email_template_set": EmailTemplateSetDataSource.DataSourceSchema(),
 			"mashery_role":               RoleDataSource.DataSourceSchema(),
 		},

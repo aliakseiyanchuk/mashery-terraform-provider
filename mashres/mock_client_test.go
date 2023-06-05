@@ -205,3 +205,8 @@ func (mc *MockClient) CreatePackagePlanMethodFilter(ctx context.Context, id mash
 
 	return rv, args.Error(1)
 }
+
+func (mc *MockClient) ListOrganizationsFiltered(ctx context.Context, qs map[string]string) ([]masherytypes.Organization, error) {
+	args := mc.Called(ctx, qs)
+	return args.Get(0).([]masherytypes.Organization), args.Error(1)
+}
