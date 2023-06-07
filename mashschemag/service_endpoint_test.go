@@ -89,3 +89,20 @@ func TestServiceEndpointMappingSystemAuthReadWrite(t *testing.T) {
 	assert.NotNil(t, rv.SystemDomainAuthentication)
 	assert.True(t, reflect.DeepEqual(proc, *rv.SystemDomainAuthentication))
 }
+
+func TestServiceEndpointErrorSetIdMappingReadWrite(t *testing.T) {
+	mapper, state := ServiceEndpointResourceSchemaBuilder.MapperAndTestData()
+	remote := masherytypes.Endpoint{
+		ErrorSet: &masherytypes.AddressableV3Object{
+			Id: "ErrorSetId",
+		},
+	}
+
+	mapper.RemoteToSchema(&remote, state)
+
+	rv := masherytypes.Endpoint{}
+	mapper.SchemaToRemote(state, &rv)
+
+	assert.NotNil(t, rv.ErrorSet)
+	assert.Equal(t, "ErrorSetId", rv.ErrorSet.Id)
+}

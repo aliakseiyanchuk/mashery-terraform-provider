@@ -4,6 +4,20 @@ resource "mashery_service" "srv" {
   name_prefix="tf-demo-endpoint"
 }
 
+resource "mashery_service_error_set" "custom" {
+  service_id = mashery_service.srv.id
+  name = "Custom error set 1"
+  type = "application/ld+json"
+
+  error_message {
+    error = "ERR_401_INVALID_NONCE"
+    status = "Really not available"
+    detail_header = "our backend is basically awol"
+    response_body = "{message: backend is not available, please stop hammering it}"
+  }
+
+}
+
 resource "mashery_service_endpoint" "endp" {
   # An endpoint belongs to the service
   service_id = mashery_service.srv.id

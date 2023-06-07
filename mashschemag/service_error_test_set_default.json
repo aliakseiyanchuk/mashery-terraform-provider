@@ -1,0 +1,163 @@
+[
+  {
+    "code": 400,
+    "detailHeader": "",
+    "responseBody": "",
+    "status": "Bad Request",
+    "id": "ERR_400_BAD_REQUEST"
+  },
+  {
+    "code": 403,
+    "detailHeader": "Not Authorized",
+    "responseBody": "",
+    "status": "Forbidden",
+    "id": "ERR_403_NOT_AUTHORIZED"
+  },
+  {
+    "code": 403,
+    "detailHeader": "Account Inactive",
+    "responseBody": "",
+    "status": "Forbidden",
+    "id": "ERR_403_DEVELOPER_INACTIVE"
+  },
+  {
+    "code": 403,
+    "detailHeader": "Account Over Queries Per Second Limit",
+    "responseBody": "",
+    "status": "Forbidden",
+    "id": "ERR_403_DEVELOPER_OVER_QPS"
+  },
+  {
+    "code": 403,
+    "detailHeader": "Account Over Rate Limit",
+    "responseBody": "",
+    "status": "Forbidden",
+    "id": "ERR_403_DEVELOPER_OVER_RATE"
+  },
+  {
+    "code": 403,
+    "detailHeader": "Invalid Referer",
+    "responseBody": "",
+    "status": "Forbidden",
+    "id": "ERR_403_DEVELOPER_UNKNOWN_REFERER"
+  },
+  {
+    "code": 403,
+    "detailHeader": "Rate Limit Exceeded",
+    "responseBody": "",
+    "status": "Forbidden",
+    "id": "ERR_403_SERVICE_OVER_QPS"
+  },
+  {
+    "code": 403,
+    "detailHeader": "Service Requires SSL",
+    "responseBody": "",
+    "status": "Forbidden",
+    "id": "ERR_403_SERVICE_REQUIRES_SSL"
+  },
+  {
+    "code": 414,
+    "detailHeader": "",
+    "responseBody": "",
+    "status": "Request-URI Too Long",
+    "id": "ERR_414_REQUEST_URI_TOO_LONG"
+  },
+  {
+    "code": 502,
+    "detailHeader": "",
+    "responseBody": "",
+    "status": "Bad Gateway",
+    "id": "ERR_502_BAD_GATEWAY"
+  },
+  {
+    "code": 503,
+    "detailHeader": "Scheduled Maintenance",
+    "responseBody": "",
+    "status": "Service Unavailable",
+    "id": "ERR_503_SERVICE_UNAVAILABLE"
+  },
+  {
+    "code": 504,
+    "detailHeader": "",
+    "responseBody": "",
+    "status": "Gateway Timeout",
+    "id": "ERR_504_GATEWAY_TIMEOUT"
+  },
+  {
+    "code": 400,
+    "detailHeader": "Unsupported Parameter",
+    "responseBody": "",
+    "status": "Bad Request",
+    "id": "ERR_400_UNSUPPORTED_PARAMETER"
+  },
+  {
+    "code": 400,
+    "detailHeader": "Unsupported Signature Method",
+    "responseBody": "",
+    "status": "Bad Request",
+    "id": "ERR_400_UNSUPPORTED_SIGNATURE_METHOD"
+  },
+  {
+    "code": 400,
+    "detailHeader": "Missing Required Consumer Key",
+    "responseBody": "",
+    "status": "Bad Request",
+    "id": "ERR_400_MISSING_REQUIRED_CONSUMER_KEY"
+  },
+  {
+    "code": 400,
+    "detailHeader": "Missing Required Request Token",
+    "responseBody": "",
+    "status": "Bad Request",
+    "id": "ERR_400_MISSING_REQUIRED_REQUEST_TOKEN"
+  },
+  {
+    "code": 400,
+    "detailHeader": "Missing Required Access Token",
+    "responseBody": "",
+    "status": "Bad Request",
+    "id": "ERR_400_MISSING_REQUIRED_ACCESS_TOKEN"
+  },
+  {
+    "code": 504,
+    "detailHeader": "Duplicated OAuth Protocol Parameter",
+    "responseBody": "",
+    "status": "Bad Request",
+    "id": "ERR_400_DUPLICATED_OAUTH_PROTOCOL_PARAMETER"
+  },
+  {
+    "code": 401,
+    "detailHeader": "Timestamp Is Invalid",
+    "responseBody": "",
+    "status": "Unauthorized",
+    "id": "ERR_401_TIMESTAMP_IS_INVALID"
+  },
+  {
+    "code": 401,
+    "detailHeader": "Invalid Signature",
+    "responseBody": "",
+    "status": "Unauthorized",
+    "id": "ERR_401_INVALID_SIGNATURE"
+  },
+  {
+    "code": 401,
+    "detailHeader": "Invalid Or Expired Token",
+    "responseBody": "",
+    "status": "Unauthorized",
+    "id": "ERR_401_INVALID_OR_EXPIRED_TOKEN"
+  },
+  {
+    "code": 401,
+    "detailHeader": "Invalid Consumer Key",
+    "responseBody": "",
+    "status": "Unauthorized",
+    "id": "ERR_401_INVALID_CONSUMER_KEY"
+  },
+  {
+    "code": 401,
+    "detailHeader": "Invalid NONCE",
+    "responseBody": "",
+    "status": "Unauthorized",
+    "id": "ERR_401_INVALID_NONCE"
+  }
+]

@@ -187,6 +187,22 @@ func (m *Mapper[ParentIdent, Ident, MType]) RemoteToSchema(remote *MType, state 
 	return rv
 }
 
+func (m *Mapper[ParentIdent, Ident, MType]) IsStateValid(state *schema.ResourceData) diag.Diagnostics {
+	var rv diag.Diagnostics
+
+	for _, k := range m.fields {
+		if valid, msg := k.IsStateValid(state); !valid {
+			rv = append(rv, diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  fmt.Sprintf("invalid input for field %s", k.GetKey()),
+				Detail:   fmt.Sprintf("field validation has returned the following error: %s", msg),
+			})
+		}
+	}
+
+	return rv
+}
+
 func (m *Mapper[ParentIdent, Ident, MType]) SchemaToRemote(state *schema.ResourceData, remote *MType) {
 	for _, k := range m.fields {
 		// If this mapper handles a single field, then casting schema to remove may be skipped
@@ -240,6 +256,7 @@ type FieldMapper[MType any] interface {
 	GetSchema() *schema.Schema
 
 	ConsumeModification(out *MType, mod bool)
+	IsStateValid(state *schema.ResourceData) (bool, string)
 
 	// NilRemote set the value in case the remote is nil
 	NilRemote(state *schema.ResourceData) *diag.Diagnostic
@@ -261,12 +278,23 @@ type FieldMapperBase[MType any] struct {
 
 	ParentIdentityKey    string
 	ModificationConsumer funcsupport.BiConsumer[*MType, bool]
+
+	// ValidateFunc raw data validation function. If defined, verifies if the value
+	// supplied by this mapper is re
+	ValidateFunc funcsupport.BiFunctionDual[*schema.ResourceData, string, bool, string]
 }
 
 func (fmb *FieldMapperBase[MType]) ConsumeModification(out *MType, how bool) {
 	if fmb.ModificationConsumer != nil {
 		fmb.ModificationConsumer(out, how)
 	}
+}
+func (fmb *FieldMapperBase[MType]) IsStateValid(state *schema.ResourceData) (bool, string) {
+	if fmb.ValidateFunc != nil {
+		return fmb.ValidateFunc(state, fmb.Key)
+	}
+
+	return true, ""
 }
 
 type PluggableFiledMapperBase[MType any] struct {

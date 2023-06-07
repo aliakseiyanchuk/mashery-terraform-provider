@@ -15,6 +15,7 @@ var ConnectionTimeoutForSystemDomainRequestEnum = []int{2, 5, 10, 20, 30, 45, 60
 var ConnectionTimeoutForSystemDomainResponseEnum = []int{2, 5, 10, 20, 30, 45, 60, 120, 300, 600, 900, 1200}
 var RequestAuthenticationTypeEnum = []string{"apiKey", "apiKeyAndSecret_MD5", "apiKeyAndSecret_SHA256", "secureHash_SHA256", "oauth", "custom"}
 var KeyIdentifierLocationsEnum = []string{"request-header", "request-body", "request-parameters", "request-path"}
+var UserControlledErrorFormatEnum = []string{"request-header", "request-body", "request-parameters", "resource"}
 
 const (
 	MashEndpointId                          = "endpoint_id"
@@ -82,6 +83,10 @@ const (
 	MashEndpointUseSystemDomainCredentials   = "use_system_domain_credentials"
 	MashEndpointSystemDomainCredentialKey    = "system_domain_credential_key"
 	MashEndpointSystemDomainCredentialSecret = "system_domain_credential_secret"
+
+	MashEndpointErrorSetRef                    = "error_set_ref"
+	MashEndpointUserControlledErrorLocation    = "user_controlled_error_format_location"
+	MashEndpointUserControlledErrorLocationKey = "user_controlled_error_format_location_key"
 
 	MashEndpointMultiRef                = "endpoint_ids"
 	MashEndpointsExplained              = "endpoints_explained"

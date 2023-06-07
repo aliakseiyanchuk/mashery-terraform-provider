@@ -112,6 +112,10 @@ func (rt *ResourceTemplate[ParentIdent, Ident, MType]) Create(ctx context.Contex
 		}}
 	}
 
+	if validationDiags := rt.Mapper.IsStateValid(state); len(validationDiags) > 0 {
+		return validationDiags
+	}
+
 	rv := diag.Diagnostics{}
 
 	upsertable := rt.UpsertableFunc()
@@ -175,6 +179,10 @@ func (rt *ResourceTemplate[ParentIdent, Ident, MType]) Update(ctx context.Contex
 			Summary:  "invalid identity object",
 			Detail:   fmt.Sprintf("attempt to parse identity has returned the following error: %s", err.Error()),
 		}}
+	}
+
+	if validationDiags := rt.Mapper.IsStateValid(state); len(validationDiags) > 0 {
+		return validationDiags
 	}
 
 	upsertable := rt.UpsertableFunc()

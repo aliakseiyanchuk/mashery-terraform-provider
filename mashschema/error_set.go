@@ -10,7 +10,7 @@ import (
 	"strconv"
 )
 
-var validErrorSetMessageId = []string{
+var ValidErrorSetMessageId = []string{
 	"ERR_400_BAD_REQUEST", "ERR_403_NOT_AUTHORIZED", "ERR_403_DEVELOPER_INACTIVE", "ERR_403_DEVELOPER_OVER_QPS",
 	"ERR_403_DEVELOPER_OVER_RATE", "ERR_403_DEVELOPER_UNKNOWN_REFERER", "ERR_403_SERVICE_OVER_QPS", "ERR_403_SERVICE_REQUIRES_SSL",
 	"ERR_414_REQUEST_URI_TOO_LONG", "ERR_502_BAD_GATEWAY", "ERR_503_SERVICE_UNAVAILABLE", "ERR_504_GATEWAY_TIMEOUT",
@@ -21,14 +21,16 @@ var validErrorSetMessageId = []string{
 }
 
 const (
+	MashSvcErrorSetId        = "error_set_id"
 	MashSvcErrorSetType      = "type"
 	MashSvcErrorSetJsonp     = "jsonp"
 	MashSvcErrorSetJsonpType = "jsonp_type"
 	MashSvcErrorSetMessage   = "error_message"
 
-	MashSvrErrorSetMessageStatus       = "status"
-	MashSvrErrorSetMessageDetailHeader = "detail_header"
-	MashSvrErrorSetMessageResponseBody = "response_body"
+	MashSvcErrorSetMessageErrorId      = "error"
+	MashSvcErrorSetMessageStatus       = "status"
+	MashSvcErrorSetMessageDetailHeader = "detail_header"
+	MashSvcErrorSetMessageResponseBody = "response_body"
 )
 
 var ErrorSetMapper *ErrorSetMapperImpl
@@ -137,7 +139,7 @@ func (esm *ErrorSetMapperImpl) UpsertableTyped(d *schema.ResourceData) (masheryt
 	return rv, svcIdent, rvd
 }
 
-func extractKeyFromMap(inp map[string]interface{}, key string, receiver *string) {
+func ExtractKeyFromMap(inp map[string]interface{}, key string, receiver *string) {
 	if valRaw := inp[key]; valRaw != nil {
 		if str, ok := valRaw.(string); ok {
 			*receiver = str
@@ -153,22 +155,22 @@ func extractIntKeyFromMap(inp map[string]interface{}, key string, receiver *int)
 	}
 }
 
-var errorParsePattern = regexp.MustCompile("ERR_(\\d{3})_.*")
+var ErrorParsePattern = regexp.MustCompile("ERR_(\\d{3})_.*")
 
 func (esm *ErrorSetMapperImpl) UpsertableErrorMessage(d interface{}) masherytypes.MasheryErrorMessage {
 	rv := masherytypes.MasheryErrorMessage{}
 
 	if mp, ok := d.(map[string]interface{}); ok {
-		extractKeyFromMap(mp, MashObjId, &rv.Id)
-		if errorParsePattern.MatchString(rv.Id) {
-			match := errorParsePattern.FindStringSubmatch(rv.Id)
+		ExtractKeyFromMap(mp, MashObjId, &rv.Id)
+		if ErrorParsePattern.MatchString(rv.Id) {
+			match := ErrorParsePattern.FindStringSubmatch(rv.Id)
 			i, _ := strconv.ParseInt(match[1], 10, 32)
 			rv.Code = int(i)
 		}
 
-		extractKeyFromMap(mp, MashSvrErrorSetMessageStatus, &rv.Status)
-		extractKeyFromMap(mp, MashSvrErrorSetMessageDetailHeader, &rv.DetailHeader)
-		extractKeyFromMap(mp, MashSvrErrorSetMessageResponseBody, &rv.ResponseBody)
+		ExtractKeyFromMap(mp, MashSvcErrorSetMessageStatus, &rv.Status)
+		ExtractKeyFromMap(mp, MashSvcErrorSetMessageDetailHeader, &rv.DetailHeader)
+		ExtractKeyFromMap(mp, MashSvcErrorSetMessageResponseBody, &rv.ResponseBody)
 	}
 
 	return rv
@@ -177,9 +179,9 @@ func (esm *ErrorSetMapperImpl) UpsertableErrorMessage(d interface{}) masherytype
 func (esm *ErrorSetMapperImpl) PersistErrorMessage(inp masherytypes.MasheryErrorMessage) map[string]interface{} {
 	return map[string]interface{}{
 		MashObjId:                          inp.Id,
-		MashSvrErrorSetMessageStatus:       inp.Status,
-		MashSvrErrorSetMessageDetailHeader: inp.DetailHeader,
-		MashSvrErrorSetMessageResponseBody: inp.ResponseBody,
+		MashSvcErrorSetMessageStatus:       inp.Status,
+		MashSvcErrorSetMessageDetailHeader: inp.DetailHeader,
+		MashSvcErrorSetMessageResponseBody: inp.ResponseBody,
 
 		// Code is inferred from Id.
 	}
@@ -243,22 +245,22 @@ func init() {
 								Required:    true,
 								Description: "Id of this message",
 								ValidateDiagFunc: func(i interface{}, path cty.Path) diag.Diagnostics {
-									return ValidateStringValueInSet(i, path, &validErrorSetMessageId)
+									return ValidateStringValueInSet(i, path, &ValidErrorSetMessageId)
 								},
 							},
-							MashSvrErrorSetMessageStatus: {
+							MashSvcErrorSetMessageStatus: {
 								Type:        schema.TypeString,
 								Optional:    true,
 								Computed:    true,
 								Description: "String passed in the status field",
 							},
-							MashSvrErrorSetMessageDetailHeader: {
+							MashSvcErrorSetMessageDetailHeader: {
 								Type:        schema.TypeString,
 								Optional:    true,
 								Computed:    true,
 								Description: "Detailed header contents",
 							},
-							MashSvrErrorSetMessageResponseBody: {
+							MashSvcErrorSetMessageResponseBody: {
 								Type:        schema.TypeString,
 								Optional:    true,
 								Computed:    true,

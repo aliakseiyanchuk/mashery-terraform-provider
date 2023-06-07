@@ -210,3 +210,25 @@ func (mc *MockClient) ListOrganizationsFiltered(ctx context.Context, qs map[stri
 	args := mc.Called(ctx, qs)
 	return args.Get(0).([]masherytypes.Organization), args.Error(1)
 }
+
+func (mc *MockClient) CreateErrorSet(ctx context.Context, serviceId masherytypes.ServiceIdentifier, set masherytypes.ErrorSet) (*masherytypes.ErrorSet, error) {
+	args := mc.Called(ctx, serviceId, set)
+
+	var rv *masherytypes.ErrorSet = nil
+	if rawRV := args.Get(0); rawRV != nil {
+		rv = rawRV.(*masherytypes.ErrorSet)
+	}
+
+	return rv, args.Error(1)
+}
+
+func (mc *MockClient) GetErrorSet(ctx context.Context, ident masherytypes.ErrorSetIdentifier) (*masherytypes.ErrorSet, error) {
+	args := mc.Called(ctx, ident)
+
+	var rv *masherytypes.ErrorSet = nil
+	if rawRV := args.Get(0); rawRV != nil {
+		rv = rawRV.(*masherytypes.ErrorSet)
+	}
+
+	return rv, args.Error(1)
+}

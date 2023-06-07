@@ -843,6 +843,117 @@ func remoteProcessorToSchema(remote *masherytypes.Endpoint, key string, state *s
 	}
 }
 
+// Error set initialization
+func init() {
+	ServiceEndpointResourceSchemaBuilder.Add(&tfmapper.PluggableFiledMapperBase[masherytypes.Endpoint]{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Endpoint]{
+			Key: mashschema.MashEndpointErrorSetRef,
+			Schema: &schema.Schema{
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "Error set applied to this endpoint",
+			},
+
+			ValidateFunc: func(in *schema.ResourceData, key string) (bool, string) {
+				errIdentStr := mashschema.ExtractString(in, key, "")
+				if len(errIdentStr) == 0 {
+					return true, ""
+				}
+
+				var endpIdent masherytypes.ServiceEndpointIdentifier
+				var errSetIdent masherytypes.ErrorSetIdentifier
+
+				// Parse and control the identifiers. We need to check that the error set identifier
+				// belongs to the same service as this endpoint.
+				_ = tfmapper.UnwrapJSON(in.Id(), &endpIdent)
+				if err := tfmapper.UnwrapJSON(errIdentStr, &errSetIdent); err != nil {
+					return false, fmt.Sprintf("error set identifier is malformed: %s", err.Error())
+				}
+
+				if endpIdent.ServiceId != errSetIdent.ServiceId {
+					return false, fmt.Sprintf("error set identifier is from service %s, this endpoint is from %s", errSetIdent.ServiceId, endpIdent.ServiceId)
+				}
+
+				return true, ""
+			},
+		},
+		RemoteToSchemaFunc: func(remote *masherytypes.Endpoint, key string, state *schema.ResourceData) *diag.Diagnostic {
+			val := ""
+			if remote.ErrorSet != nil {
+
+				var endpIdent masherytypes.ServiceEndpointIdentifier
+				_ = tfmapper.UnwrapJSON(state.Id(), &endpIdent)
+
+				errorSetId := masherytypes.ErrorSetIdentifier{
+					ErrorSetId:        remote.ErrorSet.Id,
+					ServiceIdentifier: endpIdent.ServiceIdentifier,
+				}
+				val = tfmapper.WrapJSON(errorSetId)
+			}
+
+			// TODO This could be done using a central function.
+			if err := state.Set(key, val); err != nil {
+				return &diag.Diagnostic{
+					Severity: diag.Error,
+					Summary:  fmt.Sprintf("unable to set machery endpoint schema: %s", err.Error()),
+				}
+			} else {
+				return nil
+			}
+		},
+		SchemaToRemoteFunc: func(state *schema.ResourceData, key string, remote *masherytypes.Endpoint) {
+			errIdentStr := mashschema.ExtractString(state, key, "")
+			if len(errIdentStr) > 0 {
+				var errSetIdent masherytypes.ErrorSetIdentifier
+				_ = tfmapper.UnwrapJSON(errIdentStr, &errSetIdent)
+
+				remote.ErrorSet = &masherytypes.AddressableV3Object{
+					Id: errSetIdent.ErrorSetId,
+				}
+			}
+		},
+		NilRemoteToSchemaFunc: func(key string, state *schema.ResourceData) *diag.Diagnostic {
+			if err := state.Set(key, ""); err != nil {
+				return &diag.Diagnostic{
+					Severity: diag.Error,
+					Summary:  fmt.Sprintf("unable to set machery endpoint schema: %s", err.Error()),
+				}
+			} else {
+				return nil
+			}
+		},
+	})
+
+	ServiceEndpointResourceSchemaBuilder.Add(&tfmapper.StringFieldMapper[masherytypes.Endpoint]{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Endpoint]{
+			Key: mashschema.MashEndpointUserControlledErrorLocation,
+			Schema: &schema.Schema{
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "User controlled error format location",
+				ValidateDiagFunc: func(i interface{}, path cty.Path) diag.Diagnostics {
+					return mashschema.ValidateStringValueInSet(i, path, &mashschema.UserControlledErrorFormatEnum)
+				},
+			},
+		},
+		Locator: func(in *masherytypes.Endpoint) *string {
+			return &in.UserControlledErrorLocation
+		},
+	}).Add(&tfmapper.StringFieldMapper[masherytypes.Endpoint]{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Endpoint]{
+			Key: mashschema.MashEndpointUserControlledErrorLocationKey,
+			Schema: &schema.Schema{
+				Type:        schema.TypeString,
+				Description: "User controlled error format location key",
+				Optional:    true,
+			},
+		},
+		Locator: func(in *masherytypes.Endpoint) *string {
+			return &in.UserControlledErrorLocationKey
+		},
+	})
+}
+
 func schemaProcessorToRemote(state *schema.ResourceData, key string, remote *masherytypes.Endpoint) {
 	if set, ok := state.GetOk(key); ok {
 		// TODO It would be necessary to extract the length of the set as well.

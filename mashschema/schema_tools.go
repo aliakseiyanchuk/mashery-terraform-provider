@@ -187,7 +187,7 @@ func getSetLength(inp interface{}) int {
 	}
 }
 
-// Unwraps a struct -- or, effectively, map[string]interface{} from terraform-encoded
+// UnwrapStructFromTerraformSet Unwraps a struct -- or, effectively, map[string]interface{} from terraform-encoded
 // set input.
 func UnwrapStructFromTerraformSet(inp interface{}) map[string]interface{} {
 	if inpAsSet, ok := inp.(*schema.Set); ok {
@@ -205,6 +205,30 @@ func UnwrapStructFromTerraformSet(inp interface{}) map[string]interface{} {
 	}
 
 	return make(map[string]interface{}, 0)
+}
+
+func UnwrapStructArrayFromTerraformSet(inp interface{}) []map[string]interface{} {
+	if inpAsSet, ok := inp.(*schema.Set); ok {
+		rv := make([]map[string]interface{}, inpAsSet.Len())
+		for idx, v := range inpAsSet.List() {
+			if setVal, ok := v.(map[string]interface{}); ok {
+				rv[idx] = setVal
+			}
+		}
+
+		return rv
+	} else if inpAsArr, ok := inp.([]interface{}); ok {
+		rv := make([]map[string]interface{}, len(inpAsArr))
+		for idx, v := range inpAsArr {
+			if setVal, ok := v.(map[string]interface{}); ok {
+				rv[idx] = setVal
+			}
+		}
+
+		return rv
+	}
+
+	return make([]map[string]interface{}, 0)
 }
 
 func ExtractBool(d *schema.ResourceData, key string, impliedValue bool) bool {
