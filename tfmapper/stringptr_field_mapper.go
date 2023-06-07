@@ -1,8 +1,6 @@
 package tfmapper
 
 import (
-	"fmt"
-	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"terraform-provider-mashery/mashschema"
@@ -15,35 +13,20 @@ type StringPtrFieldMapper[MType any] struct {
 }
 
 func (sfm *StringPtrFieldMapper[MType]) NilRemote(state *schema.ResourceData) *diag.Diagnostic {
-	if err := state.Set(sfm.Key, ""); err != nil {
-		return &diag.Diagnostic{
-			Severity:      diag.Error,
-			Detail:        fmt.Sprintf("supplied null-value for field %s was not accepted: %s", sfm.Key, err.Error()),
-			AttributePath: cty.GetAttrPath(sfm.Key),
-		}
-	} else {
-		return nil
-	}
+	return SetKeyWithDiag(state, sfm.Key, "")
 }
 
 func (sfm *StringPtrFieldMapper[MType]) RemoteToSchema(remote *MType, state *schema.ResourceData) *diag.Diagnostic {
-	remoteVal := sfm.Locator(remote)
-
 	val := ""
 
+	remoteVal := sfm.Locator(remote)
 	if remoteVal != nil && *remoteVal != nil {
-		val = **remoteVal
+		if ptr := *remoteVal; ptr != nil {
+			val = *ptr
+		}
 	}
 
-	if err := state.Set(sfm.Key, val); err != nil {
-		return &diag.Diagnostic{
-			Severity:      diag.Error,
-			Detail:        fmt.Sprintf("supplied value for field %s was not accepted: %s", sfm.Key, err.Error()),
-			AttributePath: cty.GetAttrPath(sfm.Key),
-		}
-	} else {
-		return nil
-	}
+	return SetKeyWithDiag(state, sfm.Key, val)
 }
 
 func (sfm *StringPtrFieldMapper[MType]) SchemaToRemote(state *schema.ResourceData, remote *MType) {
@@ -56,5 +39,4 @@ func (sfm *StringPtrFieldMapper[MType]) SchemaToRemote(state *schema.ResourceDat
 	if len(val) > 0 {
 		*sfm.Locator(remote) = &val
 	}
-
 }

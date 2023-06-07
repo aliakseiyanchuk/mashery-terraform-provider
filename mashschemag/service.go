@@ -1,9 +1,7 @@
 package mashschemag
 
 import (
-	"fmt"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
-	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"terraform-provider-mashery/mashschema"
@@ -202,16 +200,7 @@ func init() {
 			},
 		},
 		NilRemoteToSchemaFunc: func(key string, state *schema.ResourceData) *diag.Diagnostic {
-			emptyArray := []string{}
-			if err := state.Set(key, emptyArray); err != nil {
-				return &diag.Diagnostic{
-					Severity:      diag.Error,
-					Detail:        fmt.Sprintf("supplied null-value for field %s was not accepted: %s", key, err.Error()),
-					AttributePath: cty.GetAttrPath(key),
-				}
-			} else {
-				return nil
-			}
+			return tfmapper.SetKeyWithDiag(state, key, []string{})
 		},
 		RemoteToSchemaFunc: func(remote *masherytypes.Service, key string, state *schema.ResourceData) *diag.Diagnostic {
 			var values []string
@@ -224,15 +213,7 @@ func init() {
 				}
 			}
 
-			if err := state.Set(key, values); err != nil {
-				return &diag.Diagnostic{
-					Severity:      diag.Error,
-					Detail:        fmt.Sprintf("supplied null-value for field %s was not accepted: %s", key, err.Error()),
-					AttributePath: cty.GetAttrPath(key),
-				}
-			} else {
-				return nil
-			}
+			return tfmapper.SetKeyWithDiag(state, key, values)
 		},
 		SchemaToRemoteFunc: func(state *schema.ResourceData, key string, remote *masherytypes.Service) {
 			arr := mashschema.ExtractStringArray(state, key, &[]string{})
@@ -266,15 +247,7 @@ func init() {
 			},
 		},
 		NilRemoteToSchemaFunc: func(key string, state *schema.ResourceData) *diag.Diagnostic {
-			if err := state.Set(key, ""); err != nil {
-				return &diag.Diagnostic{
-					Severity:      diag.Error,
-					Detail:        fmt.Sprintf("supplied null-value for field %s was not accepted: %s", key, err.Error()),
-					AttributePath: cty.GetAttrPath(key),
-				}
-			} else {
-				return nil
-			}
+			return tfmapper.SetKeyWithDiag(state, key, "")
 		},
 		RemoteToSchemaFunc: func(remote *masherytypes.Service, key string, state *schema.ResourceData) *diag.Diagnostic {
 			value := ""
@@ -283,15 +256,7 @@ func init() {
 				value = remote.Organization.Id
 			}
 
-			if err := state.Set(key, value); err != nil {
-				return &diag.Diagnostic{
-					Severity:      diag.Error,
-					Detail:        fmt.Sprintf("supplied value for field %s was not accepted: %s", key, err.Error()),
-					AttributePath: cty.GetAttrPath(key),
-				}
-			} else {
-				return nil
-			}
+			return tfmapper.SetKeyWithDiag(state, key, value)
 		},
 		SchemaToRemoteFunc: func(state *schema.ResourceData, key string, remote *masherytypes.Service) {
 			orgId := mashschema.ExtractString(state, key, "")

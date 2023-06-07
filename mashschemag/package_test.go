@@ -59,10 +59,10 @@ func TestPackageMapperUpsertion(t *testing.T) {
 		NotifyAdminOverThrottle:     false,
 		NotifyAdminEmails:           "a@b.com,c@d.com",
 		NearQuotaThreshold:          &threshold,
-		Eav: map[string]string{
-			"A": "B",
-			"C": "B",
-		},
+		//Eav: map[string]string{
+		//	"A": "B",
+		//	"C": "B",
+		//},
 		KeyAdapter:         "adapter",
 		KeyLength:          &keyLength,
 		SharedSecretLength: &secretLength,
@@ -97,4 +97,10 @@ func TestPackageMapperUpsertion(t *testing.T) {
 	assert.Equal(t, *testPack.KeyLength, *upserted.KeyLength)
 	assert.Equal(t, *testPack.SharedSecretLength, *upserted.SharedSecretLength)
 
+}
+
+func TestPackageMapper(t *testing.T) {
+	autoTestMappings(t, PackageResourceSchemaBuilder, func() masherytypes.Package {
+		return masherytypes.Package{}
+	})
 }

@@ -189,14 +189,7 @@ func init() {
 				v = append(v, mp)
 			}
 
-			if err := state.Set(key, v); err != nil {
-				return &diag.Diagnostic{
-					Severity: diag.Error,
-					Summary:  fmt.Sprintf("unable to set machery endpoint schema: %s", err.Error()),
-				}
-			} else {
-				return nil
-			}
+			return tfmapper.SetKeyWithDiag(state, key, v)
 		},
 		SchemaToRemoteFunc: func(state *schema.ResourceData, key string, remote *masherytypes.Endpoint) {
 			if cacheSet, exists := state.GetOk(key); exists {
@@ -290,14 +283,7 @@ func init() {
 				v = append(v, mp)
 			}
 
-			if err := state.Set(key, v); err != nil {
-				return &diag.Diagnostic{
-					Severity: diag.Error,
-					Summary:  fmt.Sprintf("unable to set machery endpoint schema: %s", err.Error()),
-				}
-			} else {
-				return nil
-			}
+			return tfmapper.SetKeyWithDiag(state, key, v)
 		},
 		SchemaToRemoteFunc: func(state *schema.ResourceData, key string, remote *masherytypes.Endpoint) {
 			if cacheSet, exists := state.GetOk(key); exists {
@@ -582,15 +568,7 @@ func init() {
 				v[i] = d.Address
 			}
 
-			// A candidate for the optimized code for error wrapping. Refactoring deferred until all mapping is complete
-			if err := state.Set(key, v); err != nil {
-				return &diag.Diagnostic{
-					Severity: diag.Error,
-					Summary:  fmt.Sprintf("failed to set key %s due to error: %s", key, err.Error()),
-				}
-			} else {
-				return nil
-			}
+			return tfmapper.SetKeyWithDiag(state, key, v)
 		},
 		SchemaToRemoteFunc: func(state *schema.ResourceData, key string, remote *masherytypes.Endpoint) {
 			tfDomans := mashschema.ExtractStringArray(state, key, &[]string{})
@@ -744,15 +722,7 @@ func init() {
 				v[i] = d.Address
 			}
 
-			// A candidate for the optimized code for error wrapping. Refactoring deferred until all mapping is complete
-			if err := state.Set(key, v); err != nil {
-				return &diag.Diagnostic{
-					Severity: diag.Error,
-					Summary:  fmt.Sprintf("failed to set key %s due to error: %s", key, err.Error()),
-				}
-			} else {
-				return nil
-			}
+			return tfmapper.SetKeyWithDiag(state, key, v)
 		},
 		SchemaToRemoteFunc: func(state *schema.ResourceData, key string, remote *masherytypes.Endpoint) {
 			tfDomans := mashschema.ExtractStringArray(state, key, &[]string{})
@@ -832,15 +802,7 @@ func remoteProcessorToSchema(remote *masherytypes.Endpoint, key string, state *s
 		v = append(v, processorSchema)
 	}
 
-	if err := state.Set(key, v); err != nil {
-		return &diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  fmt.Sprintf("failed to save endpoint processor: %s", err.Error()),
-			Detail:   "this is internal plugin execution error",
-		}
-	} else {
-		return nil
-	}
+	return tfmapper.SetKeyWithDiag(state, key, v)
 }
 
 // Error set initialization
@@ -891,15 +853,7 @@ func init() {
 				val = tfmapper.WrapJSON(errorSetId)
 			}
 
-			// TODO This could be done using a central function.
-			if err := state.Set(key, val); err != nil {
-				return &diag.Diagnostic{
-					Severity: diag.Error,
-					Summary:  fmt.Sprintf("unable to set machery endpoint schema: %s", err.Error()),
-				}
-			} else {
-				return nil
-			}
+			return tfmapper.SetKeyWithDiag(state, key, val)
 		},
 		SchemaToRemoteFunc: func(state *schema.ResourceData, key string, remote *masherytypes.Endpoint) {
 			errIdentStr := mashschema.ExtractString(state, key, "")
@@ -913,14 +867,7 @@ func init() {
 			}
 		},
 		NilRemoteToSchemaFunc: func(key string, state *schema.ResourceData) *diag.Diagnostic {
-			if err := state.Set(key, ""); err != nil {
-				return &diag.Diagnostic{
-					Severity: diag.Error,
-					Summary:  fmt.Sprintf("unable to set machery endpoint schema: %s", err.Error()),
-				}
-			} else {
-				return nil
-			}
+			return tfmapper.SetKeyWithDiag(state, key, "")
 		},
 	})
 
@@ -987,15 +934,7 @@ func remoteEndpointSystemAuthenticationToSchema(remote *masherytypes.Endpoint, k
 		v = append(v, systemDomainAuthSchema)
 	}
 
-	if err := state.Set(key, v); err != nil {
-		return &diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  fmt.Sprintf("failed to save endpoint system authentication: %s", err.Error()),
-			Detail:   "this is internal plugin execution error",
-		}
-	} else {
-		return nil
-	}
+	return tfmapper.SetKeyWithDiag(state, key, v)
 }
 
 func schemaEndpointSystemAuthenticationToRemote(state *schema.ResourceData, key string, remote *masherytypes.Endpoint) {

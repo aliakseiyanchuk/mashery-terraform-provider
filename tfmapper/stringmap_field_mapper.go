@@ -1,8 +1,6 @@
 package tfmapper
 
 import (
-	"fmt"
-	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"terraform-provider-mashery/mashschema"
@@ -18,39 +16,15 @@ type StringMapFieldMapper[MType any] struct {
 
 func (sfm *StringMapFieldMapper[MType]) NilRemote(state *schema.ResourceData) *diag.Diagnostic {
 	emptyMap := map[string]string{}
-	if err := state.Set(sfm.Key, emptyMap); err != nil {
-		return &diag.Diagnostic{
-			Severity:      diag.Error,
-			Detail:        fmt.Sprintf("supplied null-value for field %s was not accepted: %s", sfm.Key, err.Error()),
-			AttributePath: cty.GetAttrPath(sfm.Key),
-		}
-	} else {
-		return nil
-	}
+	return SetKeyWithDiag(state, sfm.Key, emptyMap)
 }
 
 func (sfm *StringMapFieldMapper[MType]) RemoteToSchema(remote *MType, state *schema.ResourceData) *diag.Diagnostic {
-	remoteVal := sfm.Locator(remote)
-
-	var setErr error
-
-	if remoteVal == nil {
+	if remoteVal := sfm.Locator(remote); remoteVal == nil {
 		emptyMap := map[string]string{}
-		setErr = state.Set(sfm.Key, emptyMap)
+		return SetKeyWithDiag(state, sfm.Key, emptyMap)
 	} else {
-		setErr = state.Set(sfm.Key, *remoteVal)
-	}
-
-	// TOOO: repeating code that can be moved to the common method
-	// deferred for the code optimization later on.
-	if setErr != nil {
-		return &diag.Diagnostic{
-			Severity:      diag.Error,
-			Detail:        fmt.Sprintf("supplied value for field %s was not accepted: %s", sfm.Key, setErr.Error()),
-			AttributePath: cty.GetAttrPath(sfm.Key),
-		}
-	} else {
-		return nil
+		return SetKeyWithDiag(state, sfm.Key, *remoteVal)
 	}
 }
 

@@ -1,7 +1,6 @@
 package mashschemag
 
 import (
-	"fmt"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -278,15 +277,7 @@ func init() {
 				rv[i] = v
 			}
 
-			if err := state.Set(key, rv); err != nil {
-				return &diag.Diagnostic{
-					Severity: diag.Error,
-					Summary:  fmt.Sprintf("failed to set field %s", key),
-					Detail:   fmt.Sprintf("settings field %s encoutnered an error: %s", key, err.Error()),
-				}
-			} else {
-				return nil
-			}
+			return tfmapper.SetKeyWithDiag(state, key, rv)
 		},
 	})
 }
@@ -309,23 +300,23 @@ func init() {
 }
 
 func init() {
-	//PackageResourceSchemaBuilder.Add(&tfmapper.StringMapFieldMapper[masherytypes.Package]{
-	//	Locator: func(in *masherytypes.Package) **tfmapper.StringMap {
-	//		return &in.Eav
-	//	},
-	//	FieldMapperBase: tfmapper.FieldMapperBase{
-	//		Key: mashschema.MashPackEAVs,
-	//		Schema: &schema.Schema{
-	//			Type:        schema.TypeMap,
-	//			Optional:    true,
-	//			Computed:    true,
-	//			Description: "Extended attribute values",
-	//			Elem: &schema.Schema{
-	//				Type: schema.TypeString,
-	//			},
-	//		},
-	//	},
-	//})
+	PackageResourceSchemaBuilder.Add(&tfmapper.EAVFieldMapper[masherytypes.Package]{
+		Locator: func(in *masherytypes.Package) **masherytypes.EAV {
+			return &in.Eav
+		},
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Package]{
+			Key: mashschema.MashPackEAVs,
+			Schema: &schema.Schema{
+				Type:        schema.TypeMap,
+				Optional:    true,
+				Computed:    true,
+				Description: "Extended attribute values",
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+		},
+	})
 }
 
 func init() {

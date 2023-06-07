@@ -1,8 +1,6 @@
 package tfmapper
 
 import (
-	"fmt"
-	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"terraform-provider-mashery/mashschema"
@@ -15,33 +13,17 @@ type Int64FieldMapper[MType any] struct {
 }
 
 func (sfm *Int64FieldMapper[MType]) NilRemote(state *schema.ResourceData) *diag.Diagnostic {
-	if err := state.Set(sfm.Key, 0); err != nil {
-		return &diag.Diagnostic{
-			Severity:      diag.Error,
-			Detail:        fmt.Sprintf("supplied null-value for field %s was not accepted: %s", sfm.Key, err.Error()),
-			AttributePath: cty.GetAttrPath(sfm.Key),
-		}
-	} else {
-		return nil
-	}
+	return SetKeyWithDiag(state, sfm.Key, 0)
 }
 
 func (sfm *Int64FieldMapper[MType]) RemoteToSchema(remote *MType, state *schema.ResourceData) *diag.Diagnostic {
-	remoteVal := sfm.Locator(remote)
+	setVal := int64(0)
 
-	if remoteVal != nil {
-		if err := state.Set(sfm.Key, *remoteVal); err != nil {
-			return &diag.Diagnostic{
-				Severity:      diag.Error,
-				Detail:        fmt.Sprintf("supplied value for field %s was not accepted: %s", sfm.Key, err.Error()),
-				AttributePath: cty.GetAttrPath(sfm.Key),
-			}
-		}
-	} else {
-		_ = state.Set(sfm.Key, 0)
+	if remoteVal := sfm.Locator(remote); remoteVal != nil {
+		setVal = *remoteVal
 	}
 
-	return nil
+	return SetKeyWithDiag(state, sfm.Key, setVal)
 }
 
 func (sfm *Int64FieldMapper[MType]) SchemaToRemote(state *schema.ResourceData, remote *MType) {

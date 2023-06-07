@@ -2,7 +2,6 @@ package tfmapper
 
 import (
 	"fmt"
-	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"terraform-provider-mashery/mashschema"
@@ -17,15 +16,7 @@ type DurationFieldMapper[MType any] struct {
 }
 
 func (sfm *DurationFieldMapper[MType]) NilRemote(state *schema.ResourceData) *diag.Diagnostic {
-	if err := state.Set(sfm.Key, ""); err != nil {
-		return &diag.Diagnostic{
-			Severity:      diag.Error,
-			Detail:        fmt.Sprintf("supplied null-value for field %s was not accepted: %s", sfm.Key, err.Error()),
-			AttributePath: cty.GetAttrPath(sfm.Key),
-		}
-	} else {
-		return nil
-	}
+	return SetKeyWithDiag(state, sfm.Key, "")
 }
 
 func (sfm *DurationFieldMapper[MType]) RemoteToSchema(remote *MType, state *schema.ResourceData) *diag.Diagnostic {
@@ -34,16 +25,8 @@ func (sfm *DurationFieldMapper[MType]) RemoteToSchema(remote *MType, state *sche
 
 	if thisVal != *remoteVal {
 		// Convert to value only if the numbers disagree.
-		duration := time.Duration(*remoteVal) * sfm.conversionUnit()
-		setErr := state.Set(sfm.Key, fmt.Sprintf("%s", duration))
-
-		if setErr != nil {
-			return &diag.Diagnostic{
-				Severity:      diag.Error,
-				Detail:        fmt.Sprintf("supplied value for field %s was not accepted: %s", sfm.Key, setErr.Error()),
-				AttributePath: cty.GetAttrPath(sfm.Key),
-			}
-		}
+		settingVal := fmt.Sprintf("%s", time.Duration(*remoteVal)*sfm.conversionUnit())
+		return SetKeyWithDiag(state, sfm.Key, settingVal)
 	}
 
 	return nil

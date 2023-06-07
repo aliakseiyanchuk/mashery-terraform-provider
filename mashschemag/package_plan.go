@@ -1,7 +1,6 @@
 package mashschemag
 
 import (
-	"fmt"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -332,16 +331,8 @@ func init() {
 			},
 		},
 		NilRemoteToSchemaFunc: func(key string, state *schema.ResourceData) *diag.Diagnostic {
-			emptyArray := []string{}
-			if err := state.Set(key, emptyArray); err != nil {
-				return &diag.Diagnostic{
-					Severity:      diag.Error,
-					Detail:        fmt.Sprintf("supplied null-value for field %s was not accepted: %s", key, err.Error()),
-					AttributePath: cty.GetAttrPath(key),
-				}
-			} else {
-				return nil
-			}
+			var emptyArray []string
+			return tfmapper.SetKeyWithDiag(state, key, emptyArray)
 		},
 		RemoteToSchemaFunc: func(remote *masherytypes.Plan, key string, state *schema.ResourceData) *diag.Diagnostic {
 			var values []string
@@ -354,15 +345,7 @@ func init() {
 				}
 			}
 
-			if err := state.Set(key, values); err != nil {
-				return &diag.Diagnostic{
-					Severity:      diag.Error,
-					Detail:        fmt.Sprintf("supplied null-value for field %s was not accepted: %s", key, err.Error()),
-					AttributePath: cty.GetAttrPath(key),
-				}
-			} else {
-				return nil
-			}
+			return tfmapper.SetKeyWithDiag(state, key, values)
 		},
 		SchemaToRemoteFunc: func(state *schema.ResourceData, key string, remote *masherytypes.Plan) {
 			arr := mashschema.ExtractStringArray(state, key, &[]string{})

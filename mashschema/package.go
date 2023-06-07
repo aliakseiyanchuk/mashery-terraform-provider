@@ -218,11 +218,11 @@ func (pmi *PackageMapperImpl) UpsertableTyped(d *schema.ResourceData) (masheryty
 		NotifyAdminOverThrottle:     ExtractBool(d, MashPackNotifyDeveloperOverThrottle, false),
 		NotifyAdminEmails:           strings.Join(ExtractStringArray(d, MashPackNotifyAdminEmails, &EmptyStringArray), ","),
 		NearQuotaThreshold:          ExtractIntPointer(d, MashPackNearQuotaThreshold),
-		Eav:                         ExtractStringMap(d, MashPackEAVs),
-		KeyAdapter:                  ExtractString(d, MashPackKeyAdapter, ""),
-		KeyLength:                   ExtractIntPointer(d, MashPackKeyLength),
-		SharedSecretLength:          ExtractIntPointer(d, MashPackSharedSecretLength),
-		Plans:                       nil,
+		//Eav:                         ExtractStringMap(d, MashPackEAVs),
+		KeyAdapter:         ExtractString(d, MashPackKeyAdapter, ""),
+		KeyLength:          ExtractIntPointer(d, MashPackKeyLength),
+		SharedSecretLength: ExtractIntPointer(d, MashPackSharedSecretLength),
+		Plans:              nil,
 	}
 
 	return rv, nil, nil

@@ -1,9 +1,7 @@
 package tfmapper
 
 import (
-	"fmt"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
-	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"terraform-provider-mashery/mashschema"
@@ -18,43 +16,20 @@ type EAVFieldMapper[MType any] struct {
 func (sfm *EAVFieldMapper[MType]) NilRemote(state *schema.ResourceData) *diag.Diagnostic {
 	emptyMap := map[string]interface{}{}
 
-	if err := state.Set(sfm.Key, emptyMap); err != nil {
-		return &diag.Diagnostic{
-			Severity:      diag.Error,
-			Detail:        fmt.Sprintf("supplied null-value for field %s was not accepted: %s", sfm.Key, err.Error()),
-			AttributePath: cty.GetAttrPath(sfm.Key),
-		}
-	} else {
-		return nil
-	}
+	return SetKeyWithDiag(state, sfm.Key, emptyMap)
 }
 
 func (sfm *EAVFieldMapper[MType]) RemoteToSchema(remote *MType, state *schema.ResourceData) *diag.Diagnostic {
 	remoteVal := sfm.Locator(remote)
 
-	var setErr error
-
 	if *remoteVal == nil {
-		emptyMap := map[string]string{}
-		setErr = state.Set(sfm.Key, emptyMap)
+		return SetKeyWithDiag(state, sfm.Key, map[string]string{})
 	} else {
 		passMap := map[string]string{}
 		for k, v := range **remoteVal {
 			passMap[k] = v
 		}
-		setErr = state.Set(sfm.Key, passMap)
-	}
-
-	// TOOO: repeating code that can be moved to the common method
-	// deferred for the code optimization later on.
-	if setErr != nil {
-		return &diag.Diagnostic{
-			Severity:      diag.Error,
-			Detail:        fmt.Sprintf("supplied value for field %s was not accepted: %s", sfm.Key, setErr.Error()),
-			AttributePath: cty.GetAttrPath(sfm.Key),
-		}
-	} else {
-		return nil
+		return SetKeyWithDiag(state, sfm.Key, passMap)
 	}
 }
 

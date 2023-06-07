@@ -228,14 +228,7 @@ func init() {
 			},
 		},
 		NilRemoteToSchemaFunc: func(key string, state *schema.ResourceData) *diag.Diagnostic {
-			if err := state.Set(key, []map[string]interface{}{}); err != nil {
-				return &diag.Diagnostic{
-					Severity: diag.Error,
-					Summary:  fmt.Sprintf("unable to set machery error messages: %s", err.Error()),
-				}
-			} else {
-				return nil
-			}
+			return tfmapper.SetKeyWithDiag(state, key, []map[string]interface{}{})
 		},
 		RemoteToSchemaFunc: func(remote *masherytypes.ErrorSet, key string, state *schema.ResourceData) *diag.Diagnostic {
 			var val []interface{}
@@ -248,14 +241,7 @@ func init() {
 				}
 			}
 
-			if err := state.Set(key, val); err != nil {
-				return &diag.Diagnostic{
-					Severity: diag.Error,
-					Summary:  fmt.Sprintf("failed to set key %s due to error: %s", key, err.Error()),
-				}
-			} else {
-				return nil
-			}
+			return tfmapper.SetKeyWithDiag(state, key, val)
 		},
 		SchemaToRemoteFunc: func(state *schema.ResourceData, key string, remote *masherytypes.ErrorSet) {
 			output := make(map[string]masherytypes.MasheryErrorMessage, len(defaultErrorMessages))
