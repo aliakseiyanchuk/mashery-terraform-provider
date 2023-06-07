@@ -8,7 +8,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"reflect"
-	"regexp"
 	"strings"
 )
 
@@ -81,23 +80,6 @@ func FindInArray(v string, lst *[]string) int {
 	return -1
 }
 
-func toStringArray(inp interface{}) []string {
-	if elem, ok := inp.([]interface{}); ok {
-		rv := make([]string, len(elem))
-		for idx, v := range elem {
-			if str, ok := v.(string); ok {
-				rv[idx] = str
-			} else {
-				rv[idx] = fmt.Sprintf("%s", v)
-			}
-		}
-
-		return rv
-	} else {
-		return []string{}
-	}
-}
-
 func ValidateStringValueInSet(inp interface{}, pth cty.Path, lst *[]string) diag.Diagnostics {
 	rv := diag.Diagnostics{}
 
@@ -137,37 +119,6 @@ func ValidateIntValueInSet(inp interface{}, pth cty.Path, lst *[]int) diag.Diagn
 			Detail:        fmt.Sprintf("value %d is not a valid option", v),
 			AttributePath: pth,
 		},
-	}
-}
-
-func validateListValues(inp interface{}, pth cty.Path, lst *[]string) diag.Diagnostics {
-	if elem, ok := inp.([]interface{}); ok {
-		rv := diag.Diagnostics{}
-
-		for idx, inpElem := range elem {
-			if str, ok := inpElem.(string); ok {
-				if FindInArray(str, lst) < 0 {
-					rv = append(rv, diag.Diagnostic{
-						Severity:      diag.Error,
-						AttributePath: pth,
-						Summary:       "value outside of supported options",
-						Detail:        fmt.Sprintf("The value should be string from these options: %s", strings.Join(*lst, ",")),
-					})
-				}
-			} else {
-				rv = append(rv, diag.Diagnostic{
-					Severity:      diag.Error,
-					AttributePath: pth,
-					Summary:       fmt.Sprintf("Value at index %d not a string but %s", idx, reflect.TypeOf(inpElem)),
-				})
-			}
-
-			return rv
-		}
-
-		return diag.Diagnostics{}
-	} else {
-		return diag.Errorf("Expected string array type at path %s", pth)
 	}
 }
 
@@ -247,14 +198,6 @@ func ExtractString(d *schema.ResourceData, key string, impliedValue string) stri
 	}
 }
 
-func ToSet(inp []interface{}) *schema.Set {
-	rv := schema.Set{}
-	for k := range inp {
-		rv.Add(k)
-	}
-	return &rv
-}
-
 func convertSetToStringArray(inp interface{}) []string {
 	if set, ok := inp.(*schema.Set); ok {
 		rv := make([]string, set.Len())
@@ -294,19 +237,6 @@ func ExtractStringPointer(d *schema.ResourceData, key string) *string {
 	if v, exists := d.GetOk(key); exists {
 		rv := v.(string)
 		return &rv
-	} else {
-		return nil
-	}
-}
-
-func ExtractIfModifiedStringPointer(d *schema.ResourceData, key string) *string {
-	if d.HasChange(key) {
-		if v, exists := d.GetOk(key); exists {
-			rv := v.(string)
-			return &rv
-		} else {
-			return nil
-		}
 	} else {
 		return nil
 	}
@@ -434,25 +364,6 @@ func extractEAVPointer(d *schema.ResourceData, key string) *masherytypes.EAV {
 	return nil
 }
 
-func extractStringFieldOfStruct(d *schema.ResourceData, key string, structKey string) string {
-	if v, exists := d.GetOk(key); exists {
-		if mp, ok := v.(*schema.Set); ok {
-			if len(mp.List()) == 1 {
-				if strMap, ok := mp.List()[0].(map[string]interface{}); ok {
-					rv := strMap[structKey]
-					if str, ok := rv.(string); ok {
-						return str
-					} else {
-						return fmt.Sprintf("%s", str)
-					}
-				}
-			}
-		}
-	}
-
-	return ""
-}
-
 // Utility method allowing using Set or List interchangeably when it comes to the extraction
 // of data from the Terraform resource state.
 func SchemaSetToStringArray(v interface{}) []string {
@@ -485,19 +396,6 @@ func SchemaSetToStringArray(v interface{}) []string {
 	}
 }
 
-func ConvertInterfaceArrayToStringArray(inp []interface{}) []string {
-	rv := make([]string, len(inp))
-	for idx, vraw := range inp {
-		if str, ok := vraw.(string); ok {
-			rv[idx] = str
-		} else {
-			rv[idx] = fmt.Sprintf("%s", vraw)
-		}
-	}
-
-	return rv
-}
-
 // ExtractStringArray Extract a string array from the Terraform's internal data structure, otherwise supplying
 // implied value
 func ExtractStringArray(d *schema.ResourceData, key string, implied *[]string) []string {
@@ -527,14 +425,6 @@ func SafeLookupStringPointer(src *map[string]interface{}, key string) *string {
 	}
 }
 
-func afterApplyKnown(source string) string {
-	if len(source) > 0 {
-		return source
-	} else {
-		return ("known after apply")
-	}
-}
-
 func NullForEmptyString(inp string) interface{} {
 	if len(inp) > 0 {
 		return inp
@@ -549,13 +439,4 @@ func nilArrayForEmptyString(inp, sep string) interface{} {
 	} else {
 		return strings.Split(inp, sep)
 	}
-}
-
-func toRegexpArray(exp []string) []*regexp.Regexp {
-	rgxArr := make([]*regexp.Regexp, len(exp))
-	for idx, v := range exp {
-		rgxArr[idx] = regexp.MustCompile(v)
-	}
-
-	return rgxArr
 }

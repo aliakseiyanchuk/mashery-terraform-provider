@@ -15,7 +15,7 @@ type SerOrPrefixedFieldMapper[MType any] struct {
 }
 
 func (sfm *SerOrPrefixedFieldMapper[MType]) NilRemote(state *schema.ResourceData) *diag.Diagnostic {
-	for fld, _ := range sfm.CompositeSchema {
+	for fld := range sfm.CompositeSchema {
 		return SetKeyWithDiag(state, fld, "")
 	}
 

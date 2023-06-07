@@ -9,8 +9,8 @@ import (
 )
 
 func TestServiceErrorSetBuilderWillProduceSchema(t *testing.T) {
-	schema := ServiceErrorSetResourceSchemaBuilder.ResourceSchema()
-	assert.True(t, len(schema) > 0)
+	sch := ServiceErrorSetResourceSchemaBuilder.ResourceSchema()
+	assert.True(t, len(sch) > 0)
 }
 
 func TestServiceErrorSetIdentityMapping(t *testing.T) {
