@@ -4,9 +4,7 @@ go 1.18
 
 require (
 	github.com/aliakseiyanchuk/mashery-v3-go-client v0.0.0-20210110193017-ba218ef21d7e
-	github.com/hashicorp/errwrap v1.0.0
 	github.com/hashicorp/go-cty v1.4.1-0.20200414143053-d3edf31b6320
-	github.com/hashicorp/hcl/v2 v2.14.1
 	github.com/hashicorp/terraform v0.14.11
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.4.0
 	github.com/stretchr/testify v1.7.0
@@ -25,6 +23,7 @@ require (
 	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/googleapis/gax-go/v2 v2.0.5 // indirect
+	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/hashicorp/go-checkpoint v0.5.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-getter v1.5.1 // indirect
@@ -34,6 +33,7 @@ require (
 	github.com/hashicorp/go-safetemp v1.0.0 // indirect
 	github.com/hashicorp/go-uuid v1.0.1 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
+	github.com/hashicorp/hcl/v2 v2.14.1 // indirect
 	github.com/hashicorp/logutils v1.0.0 // indirect
 	github.com/hashicorp/terraform-exec v0.12.0 // indirect
 	github.com/hashicorp/terraform-json v0.14.0 // indirect

@@ -19,11 +19,11 @@ var PackagePlanResourceSchemaBuilder = tfmapper.NewSchemaBuilder[masherytypes.Pa
 // Parent package identity
 func init() {
 	mapper := tfmapper.JsonIdentityMapper[masherytypes.PackageIdentifier]{
-		Key: mashschema.MashPackageId,
+		Key: mashschema.MashPackageRef,
 		Schema: schema.Schema{
 			Type:        schema.TypeString,
 			Required:    true,
-			Description: "Package Id, to which this plan belongs",
+			Description: "Package reference, to which this plan belongs",
 		},
 		IdentityFunc: func() masherytypes.PackageIdentifier {
 			return masherytypes.PackageIdentifier{}

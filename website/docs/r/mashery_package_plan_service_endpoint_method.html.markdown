@@ -1,9 +1,9 @@
 ---
 subcategory: "mashery"
 layout: "mashery"
-page_title: "Mashery: mashery_service"
+page_title: "Mashery: mashery_endpoint_method"
 description: |-
-Defines Mashery service
+Defines Mashery endpoint methos
 ---
 
 # Resource: `mashery_package_plan_service_endpoint_method`
@@ -15,7 +15,7 @@ V3 API resource that creates endpoint method
 
 ```hcl
 resource "mashery_endpoint_method" "my_method" {
-  endpoint_id = mashery_endpoint.lspwd2-enp-a.id
+  endpoint_ref = mashery_endpoint.lspwd2-enp-a.id
   name = "lspwd2 method"
   sample_json = file("./my_method_sample.json")
 }

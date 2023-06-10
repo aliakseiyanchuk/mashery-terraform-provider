@@ -21,7 +21,7 @@ func init() {
 		Schema: schema.Schema{
 			Type:        schema.TypeString,
 			Required:    true,
-			Description: "Method Id, to which this filter belongs",
+			Description: "Method reference, to which this filter belongs",
 		},
 		IdentityFunc: func() masherytypes.ServiceEndpointMethodIdentifier {
 			return masherytypes.ServiceEndpointMethodIdentifier{}

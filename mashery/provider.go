@@ -29,14 +29,18 @@ import (
 // retrieving all package key/secret combination.
 
 const (
+	envVaultAddress = "VAULT_ADDR" // Re-use vault integration
+
 	envVaultToken = "TF_MASHERY_VAULT_TOKEN"
+	envVaultMount = "TF_MASHERY_VAULT_MOUNT"
+	envVaultRole  = "TF_MASHERY_VAULT_ROLE"
 	envV3Token    = "TF_MASHERY_V3_ACCESS_TOKEN"
-	envV3QPS      = "TF_MASHERY_V3_QPS"
-	envV3Latency  = "TF_MASHERY_V3_NETWORK_LATENCY"
+	envV3QPS      = "TF_MASHERY_QPS"
+	envV3Latency  = "TF_MASHERY_NETWORK_LATENCY"
 
 	vaultAddrField      = "vault_addr"
 	vaultMountPathField = "vault_mount"
-	vaultRoleField      = "vault_role"
+	engineRoleField     = "role"
 	vaultTokenField     = "vault_token"
 
 	providerQPSField            = "qps"
@@ -54,19 +58,19 @@ var ProviderConfigSchema = map[string]*schema.Schema{
 		Type:        schema.TypeString,
 		Optional:    true,
 		Description: "Vault server address that will function as a V3 proxy",
-		Default:     "",
+		DefaultFunc: schema.EnvDefaultFunc(envVaultAddress, ""),
 	},
 	vaultMountPathField: {
 		Type:        schema.TypeString,
 		Optional:    true,
 		Description: "Vault server mount path",
-		Default:     "mash-creds",
+		DefaultFunc: schema.EnvDefaultFunc(envVaultMount, "mash-auth"),
 	},
-	vaultRoleField: {
+	engineRoleField: {
 		Type:        schema.TypeString,
 		Optional:    true,
 		Description: "Role name to use with this provider",
-		Default:     "",
+		Default:     schema.EnvDefaultFunc(envVaultRole, "mash-auth"),
 	},
 	vaultTokenField: {
 		Type:        schema.TypeString,
@@ -77,8 +81,8 @@ var ProviderConfigSchema = map[string]*schema.Schema{
 	providerQPSField: {
 		Type:        schema.TypeInt,
 		Optional:    true,
-		DefaultFunc: intValueFromVariable(envV3QPS, 2),
-		Description: "Queries per second to observe. Default to 2 queries per second",
+		DefaultFunc: intValueFromVariable(envV3QPS, 1),
+		Description: "Queries per second to observe. Default to 1 queries per second",
 	},
 	providerNetworkLatencyField: {
 		Type:             schema.TypeString,
@@ -87,7 +91,7 @@ var ProviderConfigSchema = map[string]*schema.Schema{
 		ValidateDiagFunc: mashschema.ValidateDuration,
 		Description:      "Mean travel time between machine where the Terraform is running and Mashery API. Defaults to 173 (milliseconds).",
 	},
-	"token": {
+	providerV3Token: {
 		Type:        schema.TypeString,
 		Optional:    true,
 		DefaultFunc: schema.EnvDefaultFunc(envV3Token, ""),
@@ -175,7 +179,7 @@ func vaultProxyConfiguration(d *schema.ResourceData) VaultProxyModeConfiguration
 	rv := VaultProxyModeConfiguration{
 		addr:     d.Get(vaultAddrField).(string),
 		mount:    d.Get(vaultMountPathField).(string),
-		roleName: d.Get(vaultRoleField).(string),
+		roleName: d.Get(engineRoleField).(string),
 		token:    d.Get(vaultTokenField).(string),
 	}
 
@@ -229,7 +233,7 @@ func ProviderConfigure(_ context.Context, d *schema.ResourceData) (interface{}, 
 		encoder.SetIndent("", "  ")
 
 		now := time.Now()
-		f, _ := os.Create(fmt.Sprintf("%s_%d%d%d_%d%d%d.log", logFile, now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second()))
+		f, _ := os.Create(fmt.Sprintf("%s_%d%02d%02d_%02d%02d%02d.log", logFile, now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second()))
 		logger = log.New(f, "TF_MASHERY :", log.LstdFlags)
 	}
 
@@ -315,35 +319,4 @@ func ProviderConfigure(_ context.Context, d *schema.ResourceData) (interface{}, 
 
 	doLogf("Provider initialized with %d diagnostic messages", len(diags))
 	return cl, diags
-}
-
-// Provider Mashery Terraform Provider mashschema definition
-func Provider() *schema.Provider {
-	return &schema.Provider{
-		Schema: ProviderConfigSchema,
-		ResourcesMap: map[string]*schema.Resource{
-			"mashery_service":                      resourceMasheryService(),
-			"mashery_service_error_set":            resourceMasheryErrorSet(),
-			"mashery_processor_chain":              resourceMasheryProcessorChain(),
-			"mashery_endpoint":                     EndpointResource.TFDataSourceSchema(),
-			"mashery_endpoint_method":              EndpointMethodResource.TFDataSourceSchema(),
-			"mashery_endpoint_method_filter":       EndpointMethodFilterResponse.TFDataSourceSchema(),
-			"mashery_package":                      PackageResource.TFDataSourceSchema(),
-			"mashery_package_plan":                 PackagePlanResource.TFDataSourceSchema(),
-			"mashery_package_plan_service":         PackagePlanServiceResource.TFDataSourceSchema(),
-			"mashery_package_plan_endpoint":        PackagePlanServiceEndpointResource.TFDataSourceSchema(),
-			"mashery_package_plan_endpoint_method": resourceMasheryPlanMethod(),
-			"mashery_member":                       MemberResource.TFDataSourceSchema(),
-			"mashery_application":                  ApplicationResource.TFDataSourceSchema(),
-			"mashery_package_key":                  PackageKeyResource.TFDataSourceSchema(),
-			"mashery_unique_path":                  ResourceMasheryUniquePath(),
-		},
-		DataSourcesMap: map[string]*schema.Resource{
-			"mashery_system_domains":     systemDomainsDataSource.TFDataSourceSchema(),
-			"mashery_public_domains":     publicDomainsDataSource.TFDataSourceSchema(),
-			"mashery_email_template_set": emailTemplateSet.TFDataSourceSchema(),
-			"mashery_role":               roleDataSource.TFDataSourceSchema(),
-		},
-		ConfigureContextFunc: ProviderConfigure,
-	}
 }

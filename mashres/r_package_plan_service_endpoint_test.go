@@ -45,7 +45,7 @@ func TestCreatingPackagePlanServiceEndpointSucceeds(t *testing.T) {
 	}
 
 	h.givenParentIdentity(t, parentIdent)
-	h.givenStateFieldSetToWrappedJSON(t, mashschema.MashEndpointId, expectedIdent.ServiceEndpointIdentifier)
+	h.givenStateFieldSetToWrappedJSON(t, mashschema.MashEndpointRef, expectedIdent.ServiceEndpointIdentifier)
 	givenCreatingPackagePlanServiceEndpointSucceeds(h, ident)
 
 	h.thenExecutingCreate(t)
@@ -80,7 +80,7 @@ func TestCreatingPackagePlanServiceEndpointWithConflictingParamsWillErr(t *testi
 	}
 
 	h.givenParentIdentity(t, parentIdent)
-	h.givenStateFieldSetToWrappedJSON(t, mashschema.MashEndpointId, ident)
+	h.givenStateFieldSetToWrappedJSON(t, mashschema.MashEndpointRef, ident)
 
 	h.thenExecutingCreateWillYieldDiagnostic(t, "object cannot be created due to conflict in the parameters")
 

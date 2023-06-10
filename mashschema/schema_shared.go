@@ -38,38 +38,6 @@ const (
 
 var EmptyStringArray []string
 
-func DataSourceBaseSchema() map[string]*schema.Schema {
-	return map[string]*schema.Schema{
-		// --------------------------------------------------
-		// Inputs
-		MashDataSourceSearch: {
-			Type:        schema.TypeMap,
-			Optional:    true,
-			Description: "V3 search criteria",
-			Elem:        StringElem(),
-		},
-		MashDataSourceRequired: {
-			Type:        schema.TypeBool,
-			Optional:    true,
-			Default:     true,
-			Description: "If true (default), then a service satisfying the search condition must exist. If such service doesn't exist, the error is generated",
-		},
-		MashDataSourceUnique: {
-			Type:        schema.TypeBool,
-			Optional:    true,
-			Default:     false,
-			Description: "By default, where multiple matches would exist, any object will returned. When set to true, requires at most one matching object",
-		},
-		MashDataSourceNameFilterRegexp: {
-			Type:        schema.TypeSet,
-			Optional:    true,
-			Description: "Regular expression for service name",
-			//ValidateDiagFunc: validateRegularExpressionSet,
-			Elem: StringElem(),
-		},
-	}
-}
-
 // Validate that the set of strings contains valid regular expressions.
 func validateRegularExpressionSet(i interface{}, path cty.Path) diag.Diagnostics {
 	opts := SchemaSetToStringArray(i)

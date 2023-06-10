@@ -251,6 +251,7 @@ func (m *Mapper[ParentIdent, Ident, MType]) TestAssign(key string, state *schema
 	return errors.New("could not find mapper for this field")
 }
 
+// FieldMapper performs mapping of a single fields between Mashery API and Terraform state
 type FieldMapper[MType any] interface {
 	GetKey() string
 	GetSchema() *schema.Schema

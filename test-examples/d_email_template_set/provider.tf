@@ -12,5 +12,6 @@ provider "mashery" {
   vault_addr = var.vault_url
   # For the test examples, the Mashery secret engine needs to be mounted on mash-auth path
   vault_mount = "mash-auth"
-  vault_role = var.vault_role
+  role = var.vault_role
+  qps = 1
 }

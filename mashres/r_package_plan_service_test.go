@@ -26,7 +26,7 @@ func TestCreatingPackagePlanServiceSucceeds(t *testing.T) {
 	}
 
 	h.givenParentIdentity(t, expectedIdent.PackagePlanIdentifier)
-	h.givenStateFieldSetToWrappedJSON(t, mashschema.MashSvcId, expectedIdent.ServiceIdentifier)
+	h.givenStateFieldSetToWrappedJSON(t, mashschema.MashSvcRef, expectedIdent.ServiceIdentifier)
 	givenCreatingPackagePlanServiceSucceeds(h, expectedIdent)
 
 	h.thenExecutingCreate(t)
@@ -53,7 +53,7 @@ func TestCreatingPackagePlanServiceWillReturnDiagnosticsIfErrs(t *testing.T) {
 	}
 
 	h.givenParentIdentity(t, expectedIdent.PackagePlanIdentifier)
-	h.givenStateFieldSetToWrappedJSON(t, mashschema.MashSvcId, expectedIdent.ServiceIdentifier)
+	h.givenStateFieldSetToWrappedJSON(t, mashschema.MashSvcRef, expectedIdent.ServiceIdentifier)
 	givenCreatingPackagePlanServiceFails(h, expectedIdent)
 
 	h.thenExecutingCreateWillYieldDiagnostic(t, "unexpected error returned from Mashery V3 api during creating object")
@@ -74,8 +74,9 @@ func TestReadingPackagePlanServiceSucceeds(t *testing.T) {
 		},
 	}
 
+	h.givenIdentity(t, expectedIdent)
 	h.givenParentIdentity(t, expectedIdent.PackagePlanIdentifier)
-	h.givenStateFieldSetToWrappedJSON(t, mashschema.MashSvcId, expectedIdent.ServiceIdentifier)
+	h.givenStateFieldSetToWrappedJSON(t, mashschema.MashSvcRef, expectedIdent.ServiceIdentifier)
 	givenCheckingIfPackagePlanServiceSucceeds(h, expectedIdent, true)
 
 	h.thenExecutingRead(t)
@@ -102,8 +103,9 @@ func TestReadingPackagePlanServiceMissResetsIdentifier(t *testing.T) {
 		},
 	}
 
+	h.givenIdentity(t, expectedIdent)
 	h.givenParentIdentity(t, expectedIdent.PackagePlanIdentifier)
-	h.givenStateFieldSetToWrappedJSON(t, mashschema.MashSvcId, expectedIdent.ServiceIdentifier)
+	h.givenStateFieldSetToWrappedJSON(t, mashschema.MashSvcRef, expectedIdent.ServiceIdentifier)
 	givenCheckingIfPackagePlanServiceSucceeds(h, expectedIdent, false)
 
 	h.thenExecutingRead(t)
@@ -128,7 +130,7 @@ func TestReadingPackagePlanServiceWillReturnDiagnosticsIfErrs(t *testing.T) {
 
 	h.givenIdentity(t, expectedIdent)
 	h.givenParentIdentity(t, expectedIdent.PackagePlanIdentifier)
-	h.givenStateFieldSetToWrappedJSON(t, mashschema.MashSvcId, expectedIdent.ServiceIdentifier)
+	h.givenStateFieldSetToWrappedJSON(t, mashschema.MashSvcRef, expectedIdent.ServiceIdentifier)
 	givenCheckingIfPackagePlanServiceFails(h, expectedIdent)
 
 	h.thenExecutingReadWillYieldDiagnostic(t, "unexpected error returned from Mashery V3 api")
@@ -143,21 +145,24 @@ func givenCreatingPackagePlanServiceSucceeds(h *ResourceTemplateMockHelper[mashe
 
 	h.mockClientWill().
 		On("CreatePlanService", mock.Anything, expectedIdent).
-		Return(&rv, nil)
+		Return(&rv, nil).
+		Once()
 }
 
 func givenCheckingIfPackagePlanServiceSucceeds(h *ResourceTemplateMockHelper[masherytypes.PackagePlanIdentifier, masherytypes.PackagePlanServiceIdentifier, mashschemag.PackagePlanServiceParam],
 	expectedIdent masherytypes.PackagePlanServiceIdentifier, expResult bool) {
 	h.mockClientWill().
 		On("CheckPlanServiceExists", mock.Anything, expectedIdent).
-		Return(expResult, nil)
+		Return(expResult, nil).
+		Once()
 }
 
 func givenCheckingIfPackagePlanServiceFails(h *ResourceTemplateMockHelper[masherytypes.PackagePlanIdentifier, masherytypes.PackagePlanServiceIdentifier, mashschemag.PackagePlanServiceParam],
 	expectedIdent masherytypes.PackagePlanServiceIdentifier) {
 	h.mockClientWill().
 		On("CheckPlanServiceExists", mock.Anything, expectedIdent).
-		Return(false, errors.New("unit test error in CheckPlanServiceExists method"))
+		Return(false, errors.New("unit test error in CheckPlanServiceExists method")).
+		Once()
 }
 
 func givenCreatingPackagePlanServiceFails(h *ResourceTemplateMockHelper[masherytypes.PackagePlanIdentifier, masherytypes.PackagePlanServiceIdentifier, mashschemag.PackagePlanServiceParam],
@@ -165,5 +170,6 @@ func givenCreatingPackagePlanServiceFails(h *ResourceTemplateMockHelper[masheryt
 
 	h.mockClientWill().
 		On("CreatePlanService", mock.Anything, expectedIdent).
-		Return(nil, errors.New("unit test failure during creating package plan service"))
+		Return(nil, errors.New("unit test failure during creating package plan service")).
+		Once()
 }

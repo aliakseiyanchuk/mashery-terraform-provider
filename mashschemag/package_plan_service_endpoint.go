@@ -23,12 +23,12 @@ var PackagePlanServiceEndpointResourceSchemaBuilder = tfmapper.NewSchemaBuilder[
 // Parent package service identity
 func init() {
 	mapper := tfmapper.JsonIdentityMapper[masherytypes.PackagePlanServiceIdentifier]{
-		Key: mashschema.MashPlanServiceId,
+		Key: mashschema.MashPlanServiceRef,
 		Schema: schema.Schema{
 			Type:        schema.TypeString,
 			Required:    true,
 			ForceNew:    true,
-			Description: "Package plan service Id, to which this endpoint belongs",
+			Description: "Package plan service reference, to which this endpoint belongs",
 		},
 		IdentityFunc: func() masherytypes.PackagePlanServiceIdentifier {
 			return masherytypes.PackagePlanServiceIdentifier{}
@@ -44,7 +44,7 @@ func init() {
 func init() {
 	mapper := tfmapper.JsonIdentityFieldMapper[masherytypes.ServiceEndpointIdentifier, PackagePlanServiceEndpointParam]{
 		FieldMapperBase: tfmapper.FieldMapperBase[PackagePlanServiceEndpointParam]{
-			Key: mashschema.MashEndpointId,
+			Key: mashschema.MashEndpointRef,
 			Schema: &schema.Schema{
 				Type:        schema.TypeString,
 				Required:    true,

@@ -2,13 +2,10 @@ package mashschema
 
 import (
 	"fmt"
-	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"reflect"
-	"strings"
 )
 
 func cloneAsComputedSchemaElem(inp *schema.Schema) interface{} {
@@ -62,13 +59,6 @@ func CloneAsComputed(inp map[string]*schema.Schema) map[string]*schema.Schema {
 // Append the source mashschema as computed mashschema in the target map.
 // source: source mashschema
 // dest: destination mashschema
-func appendAsComputedInto(source *map[string]*schema.Schema, dest *map[string]*schema.Schema) {
-	rv := *dest
-
-	for k, v := range *source {
-		rv[k] = cloneAsComputedSchema(v, true)
-	}
-}
 
 func FindInArray(v string, lst *[]string) int {
 	for idx, lv := range *lst {
@@ -119,22 +109,6 @@ func ValidateIntValueInSet(inp interface{}, pth cty.Path, lst *[]int) diag.Diagn
 			Detail:        fmt.Sprintf("value %d is not a valid option", v),
 			AttributePath: pth,
 		},
-	}
-}
-
-func inheritAll(source *map[string]*schema.Schema, dest *map[string]*schema.Schema) {
-	for k, v := range *source {
-		(*dest)[k] = v
-	}
-}
-
-func getSetLength(inp interface{}) int {
-	if inpAsSet, ok := inp.(*schema.Set); ok {
-		return inpAsSet.Len()
-	} else if inpAsArr, ok := inp.([]interface{}); ok {
-		return len(inpAsArr)
-	} else {
-		return -1
 	}
 }
 
@@ -198,50 +172,6 @@ func ExtractString(d *schema.ResourceData, key string, impliedValue string) stri
 	}
 }
 
-func convertSetToStringArray(inp interface{}) []string {
-	if set, ok := inp.(*schema.Set); ok {
-		rv := make([]string, set.Len())
-		for idx, v := range set.List() {
-			if str, ok := v.(string); ok {
-				rv[idx] = str
-			} else {
-				rv[idx] = fmt.Sprintf("%s", v)
-			}
-		}
-
-		return rv
-	} else {
-		return []string{}
-	}
-}
-
-func extractSetOrPrefixedString(d *schema.ResourceData, key, prefix string) string {
-	if v, exists := d.GetOk(key); exists {
-		return v.(string)
-	} else {
-		var rv string
-
-		if prefix, exists := d.GetOk(prefix); exists {
-			rv = resource.PrefixedUniqueId(prefix.(string))
-		} else {
-			rv = resource.UniqueId()
-		}
-
-		_ = d.Set(key, rv)
-
-		return rv
-	}
-}
-
-func ExtractStringPointer(d *schema.ResourceData, key string) *string {
-	if v, exists := d.GetOk(key); exists {
-		rv := v.(string)
-		return &rv
-	} else {
-		return nil
-	}
-}
-
 func ExtractInt(d *schema.ResourceData, key string, impliedValue int) int {
 	if v, exists := d.GetOk(key); exists {
 		return v.(int)
@@ -268,14 +198,6 @@ func ExtractIntPointer(d *schema.ResourceData, key string) *int {
 	// If the key does not exist, or if the conversion to int was not possible,
 	// then nil will be returned.
 	return nil
-}
-
-func intPointerToInt(inp *int64) int {
-	if inp != nil {
-		return int(*inp)
-	} else {
-		return -1
-	}
 }
 
 func ExtractInt64Pointer(d *schema.ResourceData, key string, threshold int64) *int64 {
@@ -344,26 +266,6 @@ func ExtractStringMap(d *schema.ResourceData, key string) map[string]string {
 	return map[string]string{}
 }
 
-func extractEAVPointer(d *schema.ResourceData, key string) *masherytypes.EAV {
-	if v, exists := d.GetOk(key); exists {
-		if mp, ok := v.(map[string]interface{}); ok {
-			rv := masherytypes.EAV{}
-
-			for k, v := range mp {
-				if str, ok := v.(string); ok {
-					rv[k] = str
-				} else {
-					rv[k] = fmt.Sprintf("%s", v)
-				}
-			}
-
-			return &rv
-		}
-	}
-
-	return nil
-}
-
 // Utility method allowing using Set or List interchangeably when it comes to the extraction
 // of data from the Terraform resource state.
 func SchemaSetToStringArray(v interface{}) []string {
@@ -422,21 +324,5 @@ func SafeLookupStringPointer(src *map[string]interface{}, key string) *string {
 		}
 	} else {
 		return nil
-	}
-}
-
-func NullForEmptyString(inp string) interface{} {
-	if len(inp) > 0 {
-		return inp
-	} else {
-		return nil
-	}
-}
-
-func nilArrayForEmptyString(inp, sep string) interface{} {
-	if len(inp) == 0 {
-		return nil
-	} else {
-		return strings.Split(inp, sep)
 	}
 }

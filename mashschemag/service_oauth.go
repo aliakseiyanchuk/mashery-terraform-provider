@@ -20,12 +20,12 @@ var ServiceOAuthResourceSchemaBuilder = tfmapper.NewSchemaBuilder[masherytypes.S
 // Parent service identity
 func init() {
 	mapper := tfmapper.JsonIdentityMapper[masherytypes.ServiceIdentifier]{
-		Key: mashschema.MashSvcId,
+		Key: mashschema.MashSvcRef,
 		Schema: schema.Schema{
 			Type:        schema.TypeString,
 			Required:    true,
 			ForceNew:    true,
-			Description: "Service Id, to which this OAuth security profile belongs",
+			Description: "Service reference, to which this OAuth security profile belongs",
 		},
 		IdentityFunc: func() masherytypes.ServiceIdentifier {
 			return masherytypes.ServiceIdentifier{}

@@ -30,7 +30,7 @@ func TestPackagePlanServiceMapperServiceIdRef(t *testing.T) {
 	mapper := PackagePlanServiceResourceSchemaBuilder.Mapper()
 	testState := PackagePlanServiceResourceSchemaBuilder.TestResourceData()
 
-	err := mapper.TestAssign(mashschema.MashSvcId, testState, masherytypes.ServiceIdentifier{
+	err := mapper.TestAssign(mashschema.MashSvcRef, testState, masherytypes.ServiceIdentifier{
 		ServiceId: "abc",
 	})
 	assert.Nil(t, err)

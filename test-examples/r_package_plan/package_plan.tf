@@ -26,7 +26,7 @@ resource "mashery_package" "oauth" {
 }
 
 resource "mashery_package_plan" "default" {
-  package_id = mashery_package.oauth.id
+  package_ref = mashery_package.oauth.id
   name = "Default"
   admin_provisioning = true
   portal_access_roles = toset([data.mashery_role.content_manager.id])

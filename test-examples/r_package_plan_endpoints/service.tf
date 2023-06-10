@@ -9,7 +9,7 @@ resource "mashery_service" "svc" {
 
 resource "mashery_service_endpoint" "svc-endpoint" {
   # An endpoint belongs to the service
-  service_id = mashery_service.svc.id
+  service_ref = mashery_service.svc.id
   name = "service-endpoint-1"
   request_authentication_type = "apiKey"
   api_key_value_locations = ["request-header"]

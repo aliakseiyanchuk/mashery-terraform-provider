@@ -4,7 +4,7 @@ resource "mashery_service" "srv" {
 }
 
 resource "mashery_service_oauth" "srv" {
-  service_id = mashery_service.srv.id
+  service_ref = mashery_service.srv.id
 }
 
 resource "mashery_unique_path" "endpointPrefix" {
@@ -13,7 +13,7 @@ resource "mashery_unique_path" "endpointPrefix" {
 
 resource "mashery_service_endpoint" "endp" {
   # An endpoint belongs to the service
-  service_id = mashery_service.srv.id
+  service_ref = mashery_service.srv.id
   name = "service-endpoint-1"
   request_authentication_type = "apiKey"
   api_key_value_locations = ["request-header"]
@@ -33,13 +33,13 @@ resource "mashery_service_endpoint" "endp" {
 }
 
 resource "mashery_endpoint_method" "meth_abc" {
-  endpoint_id = mashery_service_endpoint.endp.id
+  endpoint_ref = mashery_service_endpoint.endp.id
   name = "do something good"
   sample_json = file("${path.module}/meth_abc.json")
 }
 
 resource "mashery_endpoint_method_filter" "abc_filter" {
-  method_id = mashery_endpoint_method.meth_abc.id
+  method_ref = mashery_endpoint_method.meth_abc.id
   name = "abc filter"
   json_fields = "/a"
 }

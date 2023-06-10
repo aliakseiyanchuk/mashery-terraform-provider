@@ -1,1 +1,0 @@
-package mashery_test

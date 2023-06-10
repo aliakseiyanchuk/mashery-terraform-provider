@@ -18,7 +18,7 @@ var ServiceCacheResourceSchemaBuilder = tfmapper.NewSchemaBuilder[masherytypes.S
 // Parent service identity
 func init() {
 	mapper := tfmapper.JsonIdentityMapper[masherytypes.ServiceIdentifier]{
-		Key: mashschema.MashSvcId,
+		Key: mashschema.MashSvcRef,
 		Schema: schema.Schema{
 			Type:        schema.TypeString,
 			Required:    true,

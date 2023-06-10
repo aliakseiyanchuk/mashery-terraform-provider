@@ -3,7 +3,7 @@ subcategory: "mashery"
 layout: "mashery"
 page_title: "Mashery: mashery_service"
 description: |-
-Defines Mashery service
+Defines Mashery package
 ---
 
 # Resource: `mashery_package`

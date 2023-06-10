@@ -134,7 +134,7 @@ func (rthm *ResourceTemplateMockHelper[Parent, Ident, MTYpe]) thenExecutingDelet
 }
 
 func (rthm *ResourceTemplateMockHelper[Parent, Ident, MTYpe]) assertEmptyDiagnostic(t *testing.T, dg diag.Diagnostics) {
-	assert.True(t, len(dg) == 0)
+	assert.True(t, len(dg) == 0, "Received diagnostics: %s", dg)
 	rthm.mockCl.AssertExpectations(t)
 }
 

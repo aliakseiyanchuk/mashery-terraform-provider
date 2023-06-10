@@ -3,5 +3,5 @@ resource "mashery_service" "srv" {
 }
 
 resource "mashery_service_oauth" "svc_oauth" {
-  service_id = mashery_service.srv.id
+  service_ref = mashery_service.srv.id
 }

@@ -5,7 +5,7 @@ resource "mashery_service" "srv" {
 }
 
 resource "mashery_service_error_set" "custom" {
-  service_id = mashery_service.srv.id
+  service_ref = mashery_service.srv.id
   name = "Custom error set 1"
   type = "application/ld+json"
 
@@ -20,7 +20,7 @@ resource "mashery_service_error_set" "custom" {
 
 resource "mashery_service_endpoint" "endp" {
   # An endpoint belongs to the service
-  service_id = mashery_service.srv.id
+  service_ref = mashery_service.srv.id
   name = "service-endpoint-1"
   request_authentication_type = "apiKey"
   api_key_value_locations = ["request-header"]
