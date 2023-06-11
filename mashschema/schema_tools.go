@@ -266,7 +266,7 @@ func ExtractStringMap(d *schema.ResourceData, key string) map[string]string {
 	return map[string]string{}
 }
 
-// Utility method allowing using Set or List interchangeably when it comes to the extraction
+// SchemaSetToStringArray Utility method allowing using Set or List interchangeably when it comes to the extraction
 // of data from the Terraform resource state.
 func SchemaSetToStringArray(v interface{}) []string {
 	if schSet, ok := v.(*schema.Set); ok {
@@ -274,8 +274,6 @@ func SchemaSetToStringArray(v interface{}) []string {
 		for i, iStr := range schSet.List() {
 			if str, ok := iStr.(string); ok {
 				rv[i] = str
-			} else {
-				rv[i] = fmt.Sprintf("%s", iStr)
 			}
 		}
 
@@ -285,8 +283,6 @@ func SchemaSetToStringArray(v interface{}) []string {
 		for idx, v := range arr {
 			if str, ok := v.(string); ok {
 				rv[idx] = str
-			} else {
-				rv[idx] = fmt.Sprintf("%s", v)
 			}
 		}
 
@@ -295,6 +291,32 @@ func SchemaSetToStringArray(v interface{}) []string {
 		return arr
 	} else {
 		return []string{}
+	}
+}
+
+func SchemaSetToArray[T any](v interface{}) []T {
+	if schSet, ok := v.(*schema.Set); ok {
+		rv := make([]T, schSet.Len())
+		for i, iStr := range schSet.List() {
+			if str, ok := iStr.(T); ok {
+				rv[i] = str
+			}
+		}
+
+		return rv
+	} else if arr, ok := v.([]interface{}); ok {
+		rv := make([]T, len(arr))
+		for idx, v := range arr {
+			if str, ok := v.(T); ok {
+				rv[idx] = str
+			}
+		}
+
+		return rv
+	} else if arr, ok := v.([]T); ok {
+		return arr
+	} else {
+		return []T{}
 	}
 }
 
@@ -324,5 +346,19 @@ func SafeLookupStringPointer(src *map[string]interface{}, key string) *string {
 		}
 	} else {
 		return nil
+	}
+}
+
+func ExtractKeyFromMap[T any](inp map[string]interface{}, key string, receiver *T) {
+	if valRaw := inp[key]; valRaw != nil {
+		if str, ok := valRaw.(T); ok {
+			*receiver = str
+		}
+	}
+}
+
+func ExtractSchemaSetKeyFromMap[T any](inp map[string]interface{}, key string, receiver *[]T) {
+	if valRaw := inp[key]; valRaw != nil {
+		*receiver = SchemaSetToArray[T](valRaw)
 	}
 }

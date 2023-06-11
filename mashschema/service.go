@@ -50,7 +50,3 @@ const (
 
 	MashSvcCacheTtl = "cache_ttl"
 )
-
-var serviceDirectUpsertable = []string{
-	MashSvcName, MashSvcDescription, MashSvcQpsLimitOverall, MashSvcServiceRFC3986Encode, MashSvcVersion,
-}

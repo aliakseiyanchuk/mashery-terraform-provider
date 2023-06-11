@@ -27,20 +27,4 @@ const (
 	MashSvcErrorSetMessageResponseBody = "response_body"
 )
 
-func ExtractKeyFromMap(inp map[string]interface{}, key string, receiver *string) {
-	if valRaw := inp[key]; valRaw != nil {
-		if str, ok := valRaw.(string); ok {
-			*receiver = str
-		}
-	}
-}
-
-func extractIntKeyFromMap(inp map[string]interface{}, key string, receiver *int) {
-	if valRaw := inp[key]; valRaw != nil {
-		if intVal, ok := valRaw.(int); ok {
-			*receiver = intVal
-		}
-	}
-}
-
 var ErrorParsePattern = regexp.MustCompile("ERR_(\\d{3})_.*")

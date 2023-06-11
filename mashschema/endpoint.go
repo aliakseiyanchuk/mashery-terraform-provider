@@ -31,9 +31,14 @@ const (
 	MashEndpointConnectionTimeoutForSystemDomainResponse = "connection_timeout_for_system_domain_response"
 	MashEndpointCookiesDuringHttpRedirectsEnabled        = "cookies_during_http_redirects_enabled"
 
-	MashEndpointCors                  = "cors"
-	MashEndpointCorsAllDomainsEnabled = "all_domains_enabled"
-	MashEndpointCorsMaxAge            = "max_age"
+	MashEndpointCors                         = "cors"
+	MashEndpointCorsAllDomainsEnabled        = "all_domains_enabled"
+	MashEndpointCorsMaxAge                   = "max_age"
+	MashEndpointCorsCookiesAllowed           = "cookies_allowed"
+	MashEndpointCorsAllowedDomains           = "allowed_domains"
+	MashEndpointCorsAllowedHeaders           = "allowed_headers"
+	MashEndpointCorsExposedHeaders           = "exposed_headers"
+	MashEndpointCorsSubDomainMatchingAllowed = "sub_domain_matching_allowed"
 
 	MashEndpointCustomRequestAuthenticationAdapter         = "custom_request_authentication_adapter"
 	MashEndpointDropApiKeyFromIncomingCall                 = "drop_api_key_from_incoming_call"

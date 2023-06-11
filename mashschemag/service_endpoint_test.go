@@ -106,3 +106,12 @@ func TestServiceEndpointErrorSetIdMappingReadWrite(t *testing.T) {
 	assert.NotNil(t, rv.ErrorSet)
 	assert.Equal(t, "ErrorSetId", rv.ErrorSet.Id)
 }
+
+func TestServiceEndpointCorsMapping(t *testing.T) {
+	autoTestNestedObjectMappings(t, ServiceEndpointResourceSchemaBuilder, func() (masherytypes.Endpoint, *masherytypes.Cors) {
+		rv := masherytypes.Endpoint{
+			Cors: &masherytypes.Cors{},
+		}
+		return rv, rv.Cors
+	})
+}

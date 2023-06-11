@@ -24,12 +24,18 @@ func (sfm *StringArrayFieldMapper[MType]) RemoteToSchema(remote *MType, state *s
 		// The change to the state will be accepted if the remote value contains multiple elements
 		// or if it contains a single, non-empty string. Other situations are normalized as an
 		// empty array.
-		if len(*remoteVal) > 1 || (len(*remoteVal) == 1 && len((*remoteVal)[0]) > 0) {
+		if IsNonEmptyStringArray(remoteVal) {
 			settingVal = *remoteVal
 		}
 	}
 
 	return SetKeyWithDiag(state, sfm.Key, settingVal)
+}
+
+// IsNonEmptyStringArray checks if the array returned in the Mashery responses is non-empty. The condition
+// of an empty array are that either it has zero elements, or it contains a single empty string.
+func IsNonEmptyStringArray(remoteVal *[]string) bool {
+	return len(*remoteVal) > 1 || (len(*remoteVal) == 1 && len((*remoteVal)[0]) > 0)
 }
 
 func (sfm *StringArrayFieldMapper[MType]) SchemaToRemote(state *schema.ResourceData, remote *MType) {

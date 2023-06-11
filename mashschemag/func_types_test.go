@@ -55,6 +55,13 @@ func autoTestParentIdentity[ParentIdent, Ident, MType any](t *testing.T, sb *tfm
 	assert.True(t, reflect.DeepEqual(ref, readBack))
 }
 
+func autoTestNestedObjectMappings[ParentIdent, Ident, MType, NestedPtr any](t *testing.T, sb *tfmapper.SchemaBuilder[ParentIdent, Ident, MType], supplier funcsupport.BiSupplier[MType, NestedPtr], except ...string) {
+	autoTestNestedBoolMappings(t, sb, supplier, except...)
+	autoTestNestedStringMappings(t, sb, supplier, except...)
+	autoTestNestedIntMappings(t, sb, supplier, except...)
+	autoTestNestedStringArrayMappings(t, sb, supplier, except...)
+}
+
 func autoTestMappings[ParentIdent, Ident, MType any](t *testing.T, sb *tfmapper.SchemaBuilder[ParentIdent, Ident, MType], supplier funcsupport.Supplier[MType], except ...string) {
 	autoTestBoolMappings(t, sb, supplier, except...)
 	autoTestStringMappings(t, sb, supplier, except...)
@@ -94,6 +101,28 @@ func autoTestBoolMappings[ParentIdent, Ident, MType any](t *testing.T, sb *tfmap
 	}
 }
 
+func autoTestNestedBoolMappings[ParentIdent, Ident, MType, NestedPtr any](t *testing.T, sb *tfmapper.SchemaBuilder[ParentIdent, Ident, MType], supplier funcsupport.BiSupplier[MType, NestedPtr], except ...string) {
+	_, ref := supplier()
+	boolFields := matchingFieldsOf(ref, func(in reflect.Type) bool {
+		return in.Kind() == reflect.Bool
+	}, except...)
+
+	for _, fldName := range boolFields {
+		mapper := sb.Mapper()
+		testState := sb.TestResourceData()
+
+		in, trgt := supplier()
+		reflectSetBool(trgt, fldName, true)
+
+		mapper.RemoteToSchema(&in, testState)
+
+		readBack, readbackRef := supplier()
+		mapper.SchemaToRemote(testState, &readBack)
+
+		assert.True(t, reflectGetBool(readbackRef, fldName), "mismatching nested read/write on field %s", fldName)
+	}
+}
+
 func reflectSetBool(i interface{}, fldName string, boolVal bool) {
 	val := reflect.Indirect(reflect.ValueOf(i))
 	val.FieldByName(fldName).SetBool(boolVal)
@@ -129,6 +158,31 @@ func autoTestStringMappings[ParentIdent, Ident, MType any](t *testing.T, sb *tfm
 	}
 }
 
+func autoTestNestedStringMappings[ParentIdent, Ident, MType, NestedPtr any](t *testing.T, sb *tfmapper.SchemaBuilder[ParentIdent, Ident, MType], supplier funcsupport.BiSupplier[MType, NestedPtr], except ...string) {
+	_, nestedPtr := supplier()
+	stringFields := matchingFieldsOf(nestedPtr, func(in reflect.Type) bool {
+		return in.Kind() == reflect.String
+	}, except...)
+
+	for _, fldName := range stringFields {
+		fmt.Println("Testing field " + fldName)
+		mapper := sb.Mapper()
+		testState := sb.TestResourceData()
+
+		in, trgt := supplier()
+
+		fldValue := "string-under-test-" + fldName
+		reflectSetString(trgt, fldName, fldValue)
+
+		mapper.RemoteToSchema(&in, testState)
+
+		readBack, readBackRef := supplier()
+		mapper.SchemaToRemote(testState, &readBack)
+
+		assert.Equal(t, fldValue, reflectGetString(readBackRef, fldName), "mismatching read/write on string field %s", fldName)
+	}
+}
+
 func reflectSetString(i interface{}, fldName string, stringVal string) {
 	val := reflect.Indirect(reflect.ValueOf(i))
 	val.FieldByName(fldName).SetString(stringVal)
@@ -160,6 +214,33 @@ func autoTestStringArrayMappings[ParentIdent, Ident, MType any](t *testing.T, sb
 		mapper.SchemaToRemote(testState, &readBack)
 
 		rbVal := reflectGetStringArray(readBack, fldName)
+
+		assertArrayIn(t, fldName, &fldValue, &rbVal)
+		assertArrayIn(t, fldName, &rbVal, &fldValue)
+	}
+}
+
+func autoTestNestedStringArrayMappings[ParentIdent, Ident, MType, NestedPtr any](t *testing.T, sb *tfmapper.SchemaBuilder[ParentIdent, Ident, MType], supplier funcsupport.BiSupplier[MType, NestedPtr], except ...string) {
+	_, nestedPtr := supplier()
+	stringFields := matchingFieldsOf(nestedPtr, func(in reflect.Type) bool {
+		return in.Kind() == reflect.Slice && in.Elem().Kind() == reflect.String
+	}, except...)
+
+	for _, fldName := range stringFields {
+		mapper := sb.Mapper()
+		testState := sb.TestResourceData()
+
+		in, target := supplier()
+
+		fldValue := []string{"string-array-under-test-0-" + fldName, "string-array-under-test-1-" + fldName, "string-array-under-test-2-" + fldName}
+		reflectSetStringArray(target, fldName, fldValue)
+
+		mapper.RemoteToSchema(&in, testState)
+
+		readBack, readBackTarget := supplier()
+		mapper.SchemaToRemote(testState, &readBack)
+
+		rbVal := reflectGetStringArray(readBackTarget, fldName)
 
 		assertArrayIn(t, fldName, &fldValue, &rbVal)
 		assertArrayIn(t, fldName, &rbVal, &fldValue)
@@ -231,6 +312,31 @@ func autoTestIntMappings[ParentIdent, Ident, MType any](t *testing.T, sb *tfmapp
 		mapper.SchemaToRemote(testState, &readBack)
 
 		assert.Equal(t, fldValue, reflectGetInt(readBack, fldName), "mismatching read/write on int field %s", fldName)
+	}
+}
+
+func autoTestNestedIntMappings[ParentIdent, Ident, MType, NestedPtr any](t *testing.T, sb *tfmapper.SchemaBuilder[ParentIdent, Ident, MType], supplier funcsupport.BiSupplier[MType, NestedPtr], expectFields ...string) {
+	_, nestedPtr := supplier()
+
+	intFields := matchingFieldsOf(nestedPtr, func(in reflect.Type) bool {
+		return in.Kind() == reflect.Int
+	}, expectFields...)
+
+	for idx, fldName := range intFields {
+		mapper := sb.Mapper()
+		testState := sb.TestResourceData()
+
+		in, target := supplier()
+
+		fldValue := 100 + idx
+		reflectSetInt(target, fldName, fldValue)
+
+		mapper.RemoteToSchema(&in, testState)
+
+		readBack, readBackTarget := supplier()
+		mapper.SchemaToRemote(testState, &readBack)
+
+		assert.Equal(t, fldValue, reflectGetInt(readBackTarget, fldName), "mismatching read/write on int field %s", fldName)
 	}
 }
 

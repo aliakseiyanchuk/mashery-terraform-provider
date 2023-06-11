@@ -2,6 +2,7 @@ package funcsupport
 
 // Supplier supplier function
 type Supplier[MType any] func() MType
+type BiSupplier[MType any, OType any] func() (MType, OType)
 
 // Predicate predicate function
 type Predicate[MType any] func(in MType) bool

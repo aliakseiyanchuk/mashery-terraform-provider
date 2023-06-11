@@ -38,7 +38,7 @@ resource "mashery_endpoint" "terraform-endpoint" {
 
 ## Argument Reference
 
-* `service_id` service identifier, to which this endpoint belongs
+* `service_ref` service identifier, to which this endpoint belongs
 * `allow_missing_api_key`
 * `api_key_value_location_key`
 * `api_key_value_locations`
@@ -50,7 +50,15 @@ resource "mashery_endpoint" "terraform-endpoint" {
 * `connection_timeout_for_system_domain_request`
 * `connection_timeout_for_system_domain_response`
 * `cookies_during_http_redirects_enabled`
-* `cors`
+* `cors` cross-origin resource sharing settings specification block, if Mashery is to include these in the response.
+  The block has the following parameters:
+  * `all_domains_enabled` whether all domains are enabled
+  * `sub_domain_matching_allowed` whether subdomain matching is allowed
+  * `cookies_allowed` whether cookies are allowed in processing CORS requests
+  * `allowed_domains` a set of domains where CORS is allowed
+  * `allowed_headers` a set of headers that are allowed in CORS requests
+  * `exposed_headers` a set of headers that are exposed (returned) back to the calling browser
+  * `max_age` CORS max age to be set
 * `all_domains_enabled`
 * `max_age`
 * `custom_request_authentication_adapter`
@@ -89,12 +97,31 @@ resource "mashery_endpoint" "terraform-endpoint" {
 * `traffic_manager_domain`
 * `use_system_domain_credentials`
 * `system_domain_credential_key`
-  * `system_domain_credential_secret`
+ * `system_domain_credential_secret`
+
+## CORS Configuration Example
+
+### Minimal enablement
+
+A minimal configuration enables CORS responses for all domains allowing the browser to cache the pre-flight
+responses for the given number of minutes. 
+
+```terraform
+resource "mashery_service_endpoint" "cors_endpoint" {
+  # Configuration as desired
+
+  cors {
+    all_domains_enabled = true
+    max_age = 30
+  }
+}
+```
+
 
 ## Attribute Reference
 
 In addition to all arguments above, the following attributes are exposed:
 
-* `endpoint_id` endpoint Id
+* `endpoint_id` Mashery endpoint endpoint Id
 * `created` date endpoint was created
 * `updated` date endpoint was updated

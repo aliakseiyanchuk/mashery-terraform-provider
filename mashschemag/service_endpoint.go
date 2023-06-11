@@ -256,6 +256,7 @@ func init() {
 				Type:     schema.TypeSet,
 				Optional: true,
 				MaxItems: 1,
+				Set:      corsHashCode,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						mashschema.MashEndpointCorsAllDomainsEnabled: {
@@ -263,23 +264,65 @@ func init() {
 							Optional: true,
 							Default:  true,
 						},
+						mashschema.MashEndpointCorsSubDomainMatchingAllowed: {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  false,
+						},
+						mashschema.MashEndpointCorsCookiesAllowed: {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  false,
+						},
 						mashschema.MashEndpointCorsMaxAge: {
 							Type:     schema.TypeInt,
 							Optional: true,
 							Default:  300,
+						},
+						mashschema.MashEndpointCorsAllowedDomains: {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Set:      mashschema.StringHashcode,
+							Elem:     mashschema.StringElem(),
+						},
+						mashschema.MashEndpointCorsAllowedHeaders: {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Set:      mashschema.StringHashcode,
+							Elem:     mashschema.StringElem(),
+						},
+						mashschema.MashEndpointCorsExposedHeaders: {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Set:      mashschema.StringHashcode,
+							Elem:     mashschema.StringElem(),
 						},
 					},
 				},
 			},
 		},
 		RemoteToSchemaFunc: func(remote *masherytypes.Endpoint, key string, state *schema.ResourceData) *diag.Diagnostic {
-			v := []interface{}{}
+			var v []interface{}
 
 			if remote.Cors != nil {
 				mp := map[string]interface{}{
-					mashschema.MashEndpointCacheClientSurrogateControlEnabled: remote.Cache.ClientSurrogateControlEnabled,
-					mashschema.MashEndpointCacheContentCacheKeyHeaders:        remote.Cache.ContentCacheKeyHeaders,
+					mashschema.MashEndpointCorsAllDomainsEnabled:        remote.Cors.AllDomainsEnabled,
+					mashschema.MashEndpointCorsSubDomainMatchingAllowed: remote.Cors.SubDomainMatchingAllowed,
+					mashschema.MashEndpointCorsCookiesAllowed:           remote.Cors.CookiesAllowed,
+					mashschema.MashEndpointCorsMaxAge:                   remote.Cors.MaxAge,
+					mashschema.MashEndpointCorsExposedHeaders:           remote.Cors.ExposedHeaders,
 				}
+
+				if tfmapper.IsNonEmptyStringArray(&remote.Cors.AllowedDomains) {
+					mp[mashschema.MashEndpointCorsAllowedDomains] = remote.Cors.AllowedDomains
+				}
+				if tfmapper.IsNonEmptyStringArray(&remote.Cors.AllowedHeaders) {
+					mp[mashschema.MashEndpointCorsAllowedHeaders] = remote.Cors.AllowedHeaders
+				}
+				if tfmapper.IsNonEmptyStringArray(&remote.Cors.ExposedHeaders) {
+					mp[mashschema.MashEndpointCorsExposedHeaders] = remote.Cors.ExposedHeaders
+				}
+
 				v = append(v, mp)
 			}
 
@@ -287,15 +330,11 @@ func init() {
 		},
 		SchemaToRemoteFunc: func(state *schema.ResourceData, key string, remote *masherytypes.Endpoint) {
 			if cacheSet, exists := state.GetOk(key); exists {
-				tfCors := mashschema.UnwrapStructFromTerraformSet(cacheSet)
-
-				// TODO: unsafe lookups from the map. Should be extracted to avoid panic
-				rv := masherytypes.Cors{
-					AllDomainsEnabled: tfCors[mashschema.MashEndpointCorsAllDomainsEnabled].(bool),
-					MaxAge:            tfCors[mashschema.MashEndpointCorsMaxAge].(int),
+				if remote.Cors == nil {
+					remote.Cors = &masherytypes.Cors{}
 				}
 
-				remote.Cors = &rv
+				schemaMapToCORS(mashschema.UnwrapStructFromTerraformSet(cacheSet), remote.Cors)
 			}
 		},
 	}).Add(&tfmapper.StringPtrFieldMapper[masherytypes.Endpoint]{
@@ -786,6 +825,17 @@ func init() {
 	})
 }
 
+func schemaMapToCORS(tfCors map[string]interface{}, corsObject *masherytypes.Cors) {
+	mashschema.ExtractKeyFromMap(tfCors, mashschema.MashEndpointCorsAllDomainsEnabled, &corsObject.AllDomainsEnabled)
+	mashschema.ExtractKeyFromMap(tfCors, mashschema.MashEndpointCorsSubDomainMatchingAllowed, &corsObject.SubDomainMatchingAllowed)
+	mashschema.ExtractKeyFromMap(tfCors, mashschema.MashEndpointCorsCookiesAllowed, &corsObject.CookiesAllowed)
+	mashschema.ExtractKeyFromMap(tfCors, mashschema.MashEndpointCorsMaxAge, &corsObject.MaxAge)
+
+	mashschema.ExtractSchemaSetKeyFromMap(tfCors, mashschema.MashEndpointCorsAllowedDomains, &corsObject.AllowedDomains)
+	mashschema.ExtractSchemaSetKeyFromMap(tfCors, mashschema.MashEndpointCorsAllowedHeaders, &corsObject.AllowedHeaders)
+	mashschema.ExtractSchemaSetKeyFromMap(tfCors, mashschema.MashEndpointCorsExposedHeaders, &corsObject.ExposedHeaders)
+}
+
 // Implementation function
 func remoteProcessorToSchema(remote *masherytypes.Endpoint, key string, state *schema.ResourceData) *diag.Diagnostic {
 	v := []interface{}{}
@@ -952,5 +1002,26 @@ func schemaEndpointSystemAuthenticationToRemote(state *schema.ResourceData, key 
 		}
 
 		remote.SystemDomainAuthentication = &rv
+	}
+}
+
+func corsHashCode(cors interface{}) int {
+	if corsSchemaMap, ok := cors.(map[string]interface{}); !ok {
+		return 0
+	} else {
+		cors := masherytypes.Cors{}
+		schemaMapToCORS(corsSchemaMap, &cors)
+
+		hashStr := fmt.Sprintf("%t;%s;%s;%t;%s;%d;%t",
+			cors.AllDomainsEnabled,
+			mashschema.SortedStringOf(&cors.AllowedDomains),
+			mashschema.SortedStringOf(&cors.AllowedHeaders),
+			cors.CookiesAllowed,
+			mashschema.SortedStringOf(&cors.ExposedHeaders),
+			cors.MaxAge,
+			cors.SubDomainMatchingAllowed,
+		)
+
+		return schema.HashString(hashStr)
 	}
 }
