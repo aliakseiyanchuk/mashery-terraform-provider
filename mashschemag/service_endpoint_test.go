@@ -31,15 +31,6 @@ func TestServiceEndpointBuilderMappings(t *testing.T) {
 	})
 }
 
-func TestServiceEndpointMappingProcessorIsNullIfNotSpecified(t *testing.T) {
-	mapper, state := ServiceEndpointResourceSchemaBuilder.MapperAndTestData()
-
-	rv := masherytypes.Endpoint{}
-	mapper.SchemaToRemote(state, &rv)
-
-	assert.Nil(t, rv.Processor)
-}
-
 func TestServiceEndpointMappingProcessorReadWrite(t *testing.T) {
 	mapper, state := ServiceEndpointResourceSchemaBuilder.MapperAndTestData()
 
@@ -53,7 +44,7 @@ func TestServiceEndpointMappingProcessorReadWrite(t *testing.T) {
 		Adapter: "abc",
 	}
 	remote := masherytypes.Endpoint{
-		Processor: proc,
+		Processor: &proc,
 	}
 
 	mapper.RemoteToSchema(&remote, state)
@@ -62,7 +53,7 @@ func TestServiceEndpointMappingProcessorReadWrite(t *testing.T) {
 	mapper.SchemaToRemote(state, &rv)
 
 	assert.NotNil(t, rv.Processor)
-	assert.True(t, reflect.DeepEqual(proc, rv.Processor))
+	assert.True(t, reflect.DeepEqual(proc, *rv.Processor))
 }
 
 func TestServiceEndpointMappingSystemAuthReadWrite(t *testing.T) {
@@ -119,20 +110,10 @@ func TestServiceEndpointCorsMapping(t *testing.T) {
 func TestServiceEndpointProcessorMapping(t *testing.T) {
 	autoTestNestedObjectMappings(t, ServiceEndpointResourceSchemaBuilder, func() (masherytypes.Endpoint, *masherytypes.Processor) {
 		rv := masherytypes.Endpoint{
-			Processor: masherytypes.Processor{},
+			Processor: &masherytypes.Processor{},
 		}
-		return rv, &rv.Processor
+		return rv, rv.Processor
 	})
-}
-
-func TestServiceEndpointProcessorHasNonEmptyConfigMaps(t *testing.T) {
-	mapper, test := ServiceEndpointResourceSchemaBuilder.MapperAndTestData()
-
-	rv := masherytypes.Endpoint{}
-	mapper.SchemaToRemote(test, &rv)
-
-	assert.NotNil(t, rv.Processor.PreInputs)
-	assert.NotNil(t, rv.Processor.PostInputs)
 }
 
 func TestServiceEndpointCacheMapping(t *testing.T) {

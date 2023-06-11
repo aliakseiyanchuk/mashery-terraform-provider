@@ -3,12 +3,9 @@ package mashschema
 const (
 	MashPackageId                       = "package_id"
 	MashPackageRef                      = "package_ref"
-	MashPackName                        = "name"
-	MashPackNamePrefix                  = "name_prefix"
 	MashPackCreated                     = "created"
 	MashPackUpdated                     = "updated"
 	MashPackDescription                 = "description"
-	MashPackTags                        = "tags"
 	MashPackNotifyDeveloperPeriod       = "notify_developer_period"
 	MashPackNotifyDeveloperNearQuota    = "notify_developer_near_quota"
 	MashPackNotifyDeveloperOverQuota    = "notify_developer_over_quota"

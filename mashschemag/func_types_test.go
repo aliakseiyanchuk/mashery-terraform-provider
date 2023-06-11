@@ -65,6 +65,7 @@ func autoTestNestedObjectMappings[ParentIdent, Ident, MType, NestedPtr any](t *t
 func autoTestMappings[ParentIdent, Ident, MType any](t *testing.T, sb *tfmapper.SchemaBuilder[ParentIdent, Ident, MType], supplier funcsupport.Supplier[MType], except ...string) {
 	autoTestBoolMappings(t, sb, supplier, except...)
 	autoTestStringMappings(t, sb, supplier, except...)
+	autoTestStringPtrMappings(t, sb, supplier, except...)
 	autoTestIntMappings(t, sb, supplier, except...)
 	autoTestInt64PtrMappings(t, sb, supplier, except...)
 	autoTestEAVMappings(t, sb, supplier, except...)

@@ -160,21 +160,6 @@ func doLogf(format string, params ...interface{}) {
 	}
 }
 
-func doLogJson(msg string, obj interface{}) {
-	if logger != nil {
-		logger.Println(msg)
-		if obj != nil {
-			if b, err := json.Marshal(obj); err != nil {
-				logger.Println(err.Error())
-			} else {
-				logger.Println(string(b))
-			}
-		} else {
-			logger.Print("NULL JSON")
-		}
-	}
-}
-
 func vaultProxyConfiguration(d *schema.ResourceData) VaultProxyModeConfiguration {
 	rv := VaultProxyModeConfiguration{
 		addr:     d.Get(vaultAddrField).(string),
@@ -190,7 +175,7 @@ func vaultProxyConfiguration(d *schema.ResourceData) VaultProxyModeConfiguration
 	return rv
 }
 
-func transportLogging(ctx context.Context, wrq *transport.WrappedRequest, wrs *transport.WrappedResponse, err error) {
+func transportLogging(_ context.Context, wrq *transport.WrappedRequest, wrs *transport.WrappedResponse, err error) {
 	doLogf("-> %s %s", wrq.Request.Method, wrq.Request.URL)
 	for k, v := range wrq.Request.Header {
 		doLogf("H> %s = %s", k, v)

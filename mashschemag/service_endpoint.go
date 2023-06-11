@@ -203,7 +203,7 @@ func init() {
 		RemoteToSchemaFunc: func(remote *masherytypes.Endpoint, key string, state *schema.ResourceData) *diag.Diagnostic {
 			var v []interface{}
 
-			if remote.Cache != nil && remote.Cache.CacheTTLOverride > 0 {
+			if remote.Cache != nil && !remote.Cache.IsEmpty() {
 				mp := map[string]interface{}{
 					mashschema.MashEndpointCacheClientSurrogateControlEnabled:  remote.Cache.ClientSurrogateControlEnabled,
 					mashschema.MashEndpointCacheContentCacheKeyHeaders:         remote.Cache.ContentCacheKeyHeaders,
@@ -894,7 +894,7 @@ func schemaMapToCORS(tfCors map[string]interface{}, corsObject *masherytypes.Cor
 func remoteProcessorToSchema(remote *masherytypes.Endpoint, key string, state *schema.ResourceData) *diag.Diagnostic {
 	v := []interface{}{}
 
-	if !remote.Processor.IsEmpty() {
+	if remote.Processor != nil && !remote.Processor.IsEmpty() {
 		processorSchema := map[string]interface{}{
 			mashschema.MashEndpointProcessorAdapter:            remote.Processor.Adapter,
 			mashschema.MashEndpointProcessorPreProcessEnabled:  remote.Processor.PreProcessEnabled,
@@ -1012,14 +1012,14 @@ func init() {
 
 func schemaProcessorToRemote(state *schema.ResourceData, key string, remote *masherytypes.Endpoint) {
 	if set, ok := state.GetOk(key); ok {
-		// TODO It would be necessary to extract the length of the set as well.
-		// This extraction is deferred until the entire object mapping is generified.
 		tfProcMap := mashschema.UnwrapStructFromTerraformSet(set)
+		if len(tfProcMap) > 1 {
+			if remote.Processor == nil {
+				remote.Processor = &masherytypes.Processor{}
+			}
 
-		schemaMapToProcessor(tfProcMap, &remote.Processor)
-	} else {
-		remote.Processor.PreInputs = map[string]string{}
-		remote.Processor.PostInputs = map[string]string{}
+			schemaMapToProcessor(tfProcMap, remote.Processor)
+		}
 	}
 }
 
