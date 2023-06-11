@@ -23,9 +23,14 @@ const (
 	MashEndpointApiMethodDetectionKey       = "api_method_detection_key"
 	MashEndpointApiMethodDetectionLocations = "api_method_detection_locations"
 
-	MashEndpointCache                              = "cache"
-	MashEndpointCacheClientSurrogateControlEnabled = "client_surrogate_control_enabled"
-	MashEndpointCacheContentCacheKeyHeaders        = "content_cache_key_headers"
+	MashEndpointCache                               = "cache"
+	MashEndpointCacheClientSurrogateControlEnabled  = "client_surrogate_control_enabled"
+	MashEndpointCacheContentCacheKeyHeaders         = "content_cache_key_headers"
+	MashEndpointCacheTTLOverride                    = "cache_ttl_override"
+	MashEndpointCacheIncludeApiKeyInContentCacheKey = "include_api_key_in_content_cache_key"
+	MashEndpointCacheRespondFromStaleCacheEnabled   = "respond_from_stale_cache_enabled"
+	MashEndpointCacheResponseCacheControlEnabled    = "response_cache_control_enabled"
+	MashEndpointCacheVaryHeaderEnabled              = "vary_header_enabled"
 
 	MashEndpointConnectionTimeoutForSystemDomainRequest  = "connection_timeout_for_system_domain_request"
 	MashEndpointConnectionTimeoutForSystemDomainResponse = "connection_timeout_for_system_domain_response"

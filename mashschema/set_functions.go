@@ -1,6 +1,7 @@
 package mashschema
 
 import (
+	"fmt"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"sort"
 	"strings"
@@ -23,4 +24,27 @@ func SortedStringOf(arr *[]string) string {
 	cp := cloneStringArray(arr)
 	sort.Strings(cp)
 	return strings.Join(cp, ",")
+}
+
+func SortedMapOf[T any](inp *map[string]T) string {
+	if inp == nil {
+		return ""
+	}
+
+	keys := make([]string, len(*inp))
+
+	idx := 0
+	for k, _ := range *inp {
+		keys[idx] = k
+		idx++
+	}
+
+	sort.Strings(keys)
+
+	sb := strings.Builder{}
+	for _, k := range keys {
+		sb.WriteString(fmt.Sprintf("%s::=%s/", k, (*inp)[k]))
+	}
+
+	return sb.String()
 }

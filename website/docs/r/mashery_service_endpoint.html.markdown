@@ -44,9 +44,14 @@ resource "mashery_endpoint" "terraform-endpoint" {
 * `api_key_value_locations`
 * `api_method_detection_key`
 * `api_method_detection_locations`
-* `cache`
-* `client_surrogate_control_enabled`
-* `content_cache_key_headers`
+* `cache` endpoint cache configuration block, providing the following key:
+  * `client_surrogate_control_enabled`
+  * `content_cache_key_headers`
+  * `cache_ttl_override`
+  * `include_api_key_in_content_cache_key`
+  * `respond_from_stale_cache_enabled`
+  * `response_cache_control_enabled`
+  * `vary_header_enabled`
 * `connection_timeout_for_system_domain_request`
 * `connection_timeout_for_system_domain_response`
 * `cookies_during_http_redirects_enabled`
@@ -59,8 +64,6 @@ resource "mashery_endpoint" "terraform-endpoint" {
   * `allowed_headers` a set of headers that are allowed in CORS requests
   * `exposed_headers` a set of headers that are exposed (returned) back to the calling browser
   * `max_age` CORS max age to be set
-* `all_domains_enabled`
-* `max_age`
 * `custom_request_authentication_adapter`
 * `drop_api_key_from_incoming_call`
 * `force_gzip_of_backend_call`
@@ -79,12 +82,12 @@ resource "mashery_endpoint" "terraform-endpoint" {
 * `outbound_request_target_path`
 * `outbound_request_target_query_parameters`
 * `outbound_transport_protocol`
-* `processor`
-* `adapter`
-* `pre_process_enabled`
-* `post_process_enabled`
-* `pre_config`
-* `post_config`
+* `processor` configures the endpoint processor
+  * `adapter` adapter class
+  * `pre_process_enabled` whether to enable pre-processors
+  * `pre_config` pre-configuration key-value map as required by the processor
+  * `post_process_enabled` whether to enable post-processors
+  * `post_config` post-configuration key-value map as required by the processor
 * `public_domains`
 * `request_authentication_type`
 * `request_path_alias`
@@ -93,11 +96,15 @@ resource "mashery_endpoint" "terraform-endpoint" {
 * `strings_to_trim_from_api_key`
 * `supported_http_methods`
 * `system_domain_authentication`
+  * `type` type of the system domain authentication: `httpBasic` or `clientSslCert`
+  * `username` username to login
+  * `password` password
+  * `certificate` certificate name to use for authentication
 * `system_domains`
 * `traffic_manager_domain`
 * `use_system_domain_credentials`
 * `system_domain_credential_key`
- * `system_domain_credential_secret`
+* `system_domain_credential_secret`
 
 ## CORS Configuration Example
 
@@ -115,6 +122,31 @@ resource "mashery_service_endpoint" "cors_endpoint" {
     max_age = 30
   }
 }
+```
+
+## Processor Configuration Example
+
+Processor configuration requires adapter name and indication of call transformations to include (pre-processor and/or
+post-processor). The plugin will block pointless configurations (which doesn't define adapter or defines to 
+call transformation points). The pre- and post-configuration is optional and depends on the requirements of the
+processor being configured.
+
+```terraform
+resource "mashery_service_endpoint" "endp" {
+  # Configuration as desired
+
+  processor {
+    adapter = "com.github.fake-demo-processor"
+    pre_process_enabled             = true
+    pre_config     = {
+      "a": "b",
+      "c": "d",
+      "e": "FFFddd"
+    }
+  }
+}
+
+
 ```
 
 

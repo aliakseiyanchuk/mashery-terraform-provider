@@ -160,6 +160,7 @@ func init() {
 				Type:     schema.TypeSet,
 				Optional: true,
 				MaxItems: 1,
+				Set:      cacheHashCode,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						mashschema.MashEndpointCacheClientSurrogateControlEnabled: {
@@ -170,9 +171,30 @@ func init() {
 						mashschema.MashEndpointCacheContentCacheKeyHeaders: {
 							Type:     schema.TypeSet,
 							Required: true,
+							Set:      mashschema.StringHashcode,
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
 							},
+						},
+						mashschema.MashEndpointCacheTTLOverride: {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						mashschema.MashEndpointCacheIncludeApiKeyInContentCacheKey: {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						mashschema.MashEndpointCacheRespondFromStaleCacheEnabled: {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						mashschema.MashEndpointCacheResponseCacheControlEnabled: {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						mashschema.MashEndpointCacheVaryHeaderEnabled: {
+							Type:     schema.TypeBool,
+							Optional: true,
 						},
 					},
 				},
@@ -181,10 +203,15 @@ func init() {
 		RemoteToSchemaFunc: func(remote *masherytypes.Endpoint, key string, state *schema.ResourceData) *diag.Diagnostic {
 			var v []interface{}
 
-			if remote.Cache != nil && !remote.Cache.IsEmpty() {
+			if remote.Cache != nil && remote.Cache.CacheTTLOverride > 0 {
 				mp := map[string]interface{}{
-					mashschema.MashEndpointCacheClientSurrogateControlEnabled: remote.Cache.ClientSurrogateControlEnabled,
-					mashschema.MashEndpointCacheContentCacheKeyHeaders:        remote.Cache.ContentCacheKeyHeaders,
+					mashschema.MashEndpointCacheClientSurrogateControlEnabled:  remote.Cache.ClientSurrogateControlEnabled,
+					mashschema.MashEndpointCacheContentCacheKeyHeaders:         remote.Cache.ContentCacheKeyHeaders,
+					mashschema.MashEndpointCacheTTLOverride:                    int(remote.Cache.CacheTTLOverride),
+					mashschema.MashEndpointCacheIncludeApiKeyInContentCacheKey: remote.Cache.IncludeApiKeyInContentCacheKey,
+					mashschema.MashEndpointCacheRespondFromStaleCacheEnabled:   remote.Cache.RespondFromStaleCacheEnabled,
+					mashschema.MashEndpointCacheResponseCacheControlEnabled:    remote.Cache.ResponseCacheControlEnabled,
+					mashschema.MashEndpointCacheVaryHeaderEnabled:              remote.Cache.VaryHeaderEnabled,
 				}
 				v = append(v, mp)
 			}
@@ -193,15 +220,13 @@ func init() {
 		},
 		SchemaToRemoteFunc: func(state *schema.ResourceData, key string, remote *masherytypes.Endpoint) {
 			if cacheSet, exists := state.GetOk(key); exists {
-				tfCache := mashschema.UnwrapStructFromTerraformSet(cacheSet)
-
-				// TODO: unsafe lookups from the map. Should be extracted to avoid panic
-				rv := masherytypes.Cache{
-					ClientSurrogateControlEnabled: tfCache[mashschema.MashEndpointCacheClientSurrogateControlEnabled].(bool),
-					ContentCacheKeyHeaders:        mashschema.SchemaSetToStringArray(tfCache[mashschema.MashEndpointCacheContentCacheKeyHeaders]),
+				if remote.Cache == nil {
+					remote.Cache = &masherytypes.Cache{}
 				}
 
-				remote.Cache = &rv
+				tfCache := mashschema.UnwrapStructFromTerraformSet(cacheSet)
+
+				schemaMapToCache(tfCache, remote.Cache)
 			}
 		},
 	}).Add(&tfmapper.IntFieldMapper[masherytypes.Endpoint]{
@@ -580,9 +605,26 @@ func init() {
 				Type:     schema.TypeSet,
 				Optional: true,
 				MaxItems: 1,
+				Set:      processorHashCode,
 				Elem: &schema.Resource{
 					Schema: mashschema.EndpointProcessorSchema,
 				},
+			},
+			ValidateFunc: func(in *schema.ResourceData, key string) (bool, string) {
+				if cfgRAW, ok := in.GetOk(key); ok {
+					cfg := mashschema.UnwrapStructFromTerraformSet(cfgRAW)
+					processor := masherytypes.Processor{}
+
+					schemaMapToProcessor(cfg, &processor)
+
+					if len(processor.Adapter) == 0 {
+						return false, "empty adapter string is pointless"
+					} else if !processor.PreProcessEnabled && !processor.PostProcessEnabled {
+						return false, "an adapter configuration that enables neither pre- nor post-processing is pointless"
+					}
+				}
+
+				return true, ""
 			},
 		},
 		RemoteToSchemaFunc: remoteProcessorToSchema,
@@ -712,6 +754,7 @@ func init() {
 				Type:     schema.TypeSet,
 				Optional: true,
 				MaxItems: 1,
+				Set:      systemDomainAuthHashCode,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						mashschema.MashEndpointSystemDomainAuthenticationType: {
@@ -721,13 +764,10 @@ func init() {
 						mashschema.MashEndpointSystemDomainAuthenticationUsername: {
 							Type:     schema.TypeString,
 							Optional: true,
-							// TODO: How to use AtLeastOneOf???
-							//AtLeastOneOf: []string{"username", "certificate"},
 						},
 						mashschema.MashEndpointSystemDomainAuthenticationCertificate: {
 							Type:     schema.TypeString,
 							Optional: true,
-							//AtLeastOneOf: []string{"username", "certificate"},
 						},
 						mashschema.MashEndpointSystemDomainAuthenticationPassword: {
 							Type:     schema.TypeString,
@@ -825,6 +865,20 @@ func init() {
 	})
 }
 
+func schemaMapToCache(tfCache map[string]interface{}, v *masherytypes.Cache) {
+	mashschema.ExtractKeyFromMap(tfCache, mashschema.MashEndpointCacheClientSurrogateControlEnabled, &v.ClientSurrogateControlEnabled)
+	mashschema.ExtractKeyFromMap(tfCache, mashschema.MashEndpointCacheIncludeApiKeyInContentCacheKey, &v.IncludeApiKeyInContentCacheKey)
+	mashschema.ExtractKeyFromMap(tfCache, mashschema.MashEndpointCacheRespondFromStaleCacheEnabled, &v.RespondFromStaleCacheEnabled)
+	mashschema.ExtractKeyFromMap(tfCache, mashschema.MashEndpointCacheResponseCacheControlEnabled, &v.ResponseCacheControlEnabled)
+	mashschema.ExtractKeyFromMap(tfCache, mashschema.MashEndpointCacheVaryHeaderEnabled, &v.VaryHeaderEnabled)
+
+	var ttl int
+	mashschema.ExtractKeyFromMap(tfCache, mashschema.MashEndpointCacheTTLOverride, &ttl)
+	v.CacheTTLOverride = float64(ttl)
+
+	mashschema.ExtractSchemaSetKeyFromMap(tfCache, mashschema.MashEndpointCacheContentCacheKeyHeaders, &v.ContentCacheKeyHeaders)
+}
+
 func schemaMapToCORS(tfCors map[string]interface{}, corsObject *masherytypes.Cors) {
 	mashschema.ExtractKeyFromMap(tfCors, mashschema.MashEndpointCorsAllDomainsEnabled, &corsObject.AllDomainsEnabled)
 	mashschema.ExtractKeyFromMap(tfCors, mashschema.MashEndpointCorsSubDomainMatchingAllowed, &corsObject.SubDomainMatchingAllowed)
@@ -840,13 +894,18 @@ func schemaMapToCORS(tfCors map[string]interface{}, corsObject *masherytypes.Cor
 func remoteProcessorToSchema(remote *masherytypes.Endpoint, key string, state *schema.ResourceData) *diag.Diagnostic {
 	v := []interface{}{}
 
-	if remote.Processor != nil && !remote.Processor.IsEmpty() {
+	if !remote.Processor.IsEmpty() {
 		processorSchema := map[string]interface{}{
 			mashschema.MashEndpointProcessorAdapter:            remote.Processor.Adapter,
 			mashschema.MashEndpointProcessorPreProcessEnabled:  remote.Processor.PreProcessEnabled,
 			mashschema.MashEndpointProcessorPostProcessEnabled: remote.Processor.PostProcessEnabled,
-			mashschema.MashEndpointProcessorPreConfig:          remote.Processor.PreInputs,
-			mashschema.MashEndpointProcessorPostConfig:         remote.Processor.PostInputs,
+		}
+
+		if len(remote.Processor.PreInputs) > 0 {
+			processorSchema[mashschema.MashEndpointProcessorPreConfig] = remote.Processor.PreInputs
+		}
+		if len(remote.Processor.PostInputs) > 0 {
+			processorSchema[mashschema.MashEndpointProcessorPostConfig] = remote.Processor.PostInputs
 		}
 
 		v = append(v, processorSchema)
@@ -957,16 +1016,20 @@ func schemaProcessorToRemote(state *schema.ResourceData, key string, remote *mas
 		// This extraction is deferred until the entire object mapping is generified.
 		tfProcMap := mashschema.UnwrapStructFromTerraformSet(set)
 
-		rv := masherytypes.Processor{
-			PreProcessEnabled:  tfProcMap[mashschema.MashEndpointProcessorPreProcessEnabled].(bool),
-			PostProcessEnabled: tfProcMap[mashschema.MashEndpointProcessorPostProcessEnabled].(bool),
-			PreInputs:          mashschema.SchemaMapToStringMap(tfProcMap[mashschema.MashEndpointProcessorPreConfig]),
-			PostInputs:         mashschema.SchemaMapToStringMap(tfProcMap[mashschema.MashEndpointProcessorPostConfig]),
-			Adapter:            tfProcMap[mashschema.MashEndpointProcessorAdapter].(string),
-		}
-
-		remote.Processor = &rv
+		schemaMapToProcessor(tfProcMap, &remote.Processor)
+	} else {
+		remote.Processor.PreInputs = map[string]string{}
+		remote.Processor.PostInputs = map[string]string{}
 	}
+}
+
+func schemaMapToProcessor(tfProcMap map[string]interface{}, v *masherytypes.Processor) {
+	mashschema.ExtractKeyFromMap(tfProcMap, mashschema.MashEndpointProcessorPreProcessEnabled, &v.PreProcessEnabled)
+	mashschema.ExtractKeyFromMap(tfProcMap, mashschema.MashEndpointProcessorPostProcessEnabled, &v.PostProcessEnabled)
+	mashschema.ExtractKeyFromMap(tfProcMap, mashschema.MashEndpointProcessorAdapter, &v.Adapter)
+
+	v.PreInputs = mashschema.SchemaMapToStringMap(tfProcMap[mashschema.MashEndpointProcessorPreConfig])
+	v.PostInputs = mashschema.SchemaMapToStringMap(tfProcMap[mashschema.MashEndpointProcessorPostConfig])
 }
 
 // Implementation function
@@ -989,20 +1052,23 @@ func remoteEndpointSystemAuthenticationToSchema(remote *masherytypes.Endpoint, k
 
 func schemaEndpointSystemAuthenticationToRemote(state *schema.ResourceData, key string, remote *masherytypes.Endpoint) {
 	if set, ok := state.GetOk(key); ok {
-		// TODO It would be necessary to extract the length of the set as well.
-		// This extraction is deferred until the entire object mapping is generified.
+		if remote.SystemDomainAuthentication == nil {
+			remote.SystemDomainAuthentication = &masherytypes.SystemDomainAuthentication{}
+		}
+		v := remote.SystemDomainAuthentication
+
 		tfSysDomain := mashschema.UnwrapStructFromTerraformSet(set)
 
 		// TODO: Unsafe lookups
-		rv := masherytypes.SystemDomainAuthentication{
-			Type:        tfSysDomain[mashschema.MashEndpointSystemDomainAuthenticationType].(string),
-			Username:    mashschema.SafeLookupStringPointer(&tfSysDomain, mashschema.MashEndpointSystemDomainAuthenticationUsername),
-			Certificate: mashschema.SafeLookupStringPointer(&tfSysDomain, mashschema.MashEndpointSystemDomainAuthenticationCertificate),
-			Password:    mashschema.SafeLookupStringPointer(&tfSysDomain, mashschema.MashEndpointSystemDomainAuthenticationPassword),
-		}
-
-		remote.SystemDomainAuthentication = &rv
+		schemaMapToSystemDomainAuthentication(tfSysDomain, v)
 	}
+}
+
+func schemaMapToSystemDomainAuthentication(tfSysDomain map[string]interface{}, v *masherytypes.SystemDomainAuthentication) {
+	mashschema.ExtractKeyFromMap(tfSysDomain, mashschema.MashEndpointSystemDomainAuthenticationType, &v.Type)
+	v.Username = mashschema.SafeLookupStringPointer(&tfSysDomain, mashschema.MashEndpointSystemDomainAuthenticationUsername)
+	v.Certificate = mashschema.SafeLookupStringPointer(&tfSysDomain, mashschema.MashEndpointSystemDomainAuthenticationCertificate)
+	v.Password = mashschema.SafeLookupStringPointer(&tfSysDomain, mashschema.MashEndpointSystemDomainAuthenticationPassword)
 }
 
 func corsHashCode(cors interface{}) int {
@@ -1020,6 +1086,70 @@ func corsHashCode(cors interface{}) int {
 			mashschema.SortedStringOf(&cors.ExposedHeaders),
 			cors.MaxAge,
 			cors.SubDomainMatchingAllowed,
+		)
+
+		return schema.HashString(hashStr)
+	}
+}
+
+func processorHashCode(cors interface{}) int {
+	if corsSchemaMap, ok := cors.(map[string]interface{}); !ok {
+		return 0
+	} else {
+		proc := masherytypes.Processor{}
+		schemaMapToProcessor(corsSchemaMap, &proc)
+
+		hashStr := fmt.Sprintf("%s;%t;%s;%t;%s",
+			proc.Adapter,
+			proc.PreProcessEnabled,
+			mashschema.SortedMapOf(&proc.PreInputs),
+			proc.PostProcessEnabled,
+			mashschema.SortedMapOf(&proc.PostInputs),
+		)
+
+		return schema.HashString(hashStr)
+	}
+}
+func cacheHashCode(cache interface{}) int {
+	if cacheSchemaMap, ok := cache.(map[string]interface{}); !ok {
+		return 0
+	} else {
+		c := masherytypes.Cache{}
+		schemaMapToCache(cacheSchemaMap, &c)
+
+		hashStr := fmt.Sprintf("%d;%s;%t;%t;%t;%t",
+			int64(c.CacheTTLOverride),
+			mashschema.SortedStringOf(&c.ContentCacheKeyHeaders),
+			c.VaryHeaderEnabled,
+			c.ResponseCacheControlEnabled,
+			c.RespondFromStaleCacheEnabled,
+			c.IncludeApiKeyInContentCacheKey,
+		)
+
+		return schema.HashString(hashStr)
+	}
+}
+
+func nilOrValue(str *string) string {
+	if str == nil {
+		return "--NULL--"
+	} else {
+		return *str
+	}
+}
+
+func systemDomainAuthHashCode(cache interface{}) int {
+	if cacheSchemaMap, ok := cache.(map[string]interface{}); !ok {
+		return 0
+	} else {
+		auth := masherytypes.SystemDomainAuthentication{}
+		schemaMapToSystemDomainAuthentication(cacheSchemaMap, &auth)
+
+		hashStr := fmt.Sprintf("%s;%s;%s;%s",
+			auth.Type,
+			nilOrValue(auth.Username),
+			nilOrValue(auth.Password),
+			nilOrValue(auth.Certificate),
 		)
 
 		return schema.HashString(hashStr)

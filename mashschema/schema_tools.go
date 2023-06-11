@@ -220,6 +220,10 @@ func SchemaMapToStringMap(v interface{}) map[string]string {
 }
 
 func SchemaMapToStringMapWithEmpty(v interface{}, emptyAsNil bool) map[string]string {
+	if v == nil && !emptyAsNil {
+		return map[string]string{}
+	}
+
 	if mp, ok := v.(map[string]interface{}); ok {
 		if emptyAsNil && len(mp) == 0 {
 			return nil

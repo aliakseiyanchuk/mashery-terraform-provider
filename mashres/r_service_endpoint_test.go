@@ -16,8 +16,15 @@ func TestCreatingEndpointWillSucceed(t *testing.T) {
 		ServiceId: "abc",
 	}
 
+	// Pointless configuration no. 2
+	processorCfg := map[string]interface{}{
+		mashschema.MashEndpointProcessorAdapter:           "com.github.fake-adapter",
+		mashschema.MashEndpointProcessorPreProcessEnabled: true,
+	}
+
 	h.givenParentIdentity(t, serviceIdent)
 	h.givenStateFieldSetTo(t, mashschema.MashObjName, "sample-endpoint")
+	h.givenStateFieldSetTo(t, mashschema.MashEndpointProcessor, []interface{}{processorCfg})
 	givenCreatingEndpointSucceeds(h, serviceIdent)
 
 	h.thenExecutingCreate(t)
@@ -27,7 +34,36 @@ func TestCreatingEndpointWillSucceed(t *testing.T) {
 		assert.Equal(t, "abc", id.ServiceId)
 		assert.Equal(t, "endpointId", id.EndpointId)
 	})
+}
 
+func TestCreatingPointlessEndpointWillBeRejected(t *testing.T) {
+	h := CreateTestResource(ServiceEndpointResource)
+
+	serviceIdent := masherytypes.ServiceIdentifier{
+		ServiceId: "abc",
+	}
+
+	// Pointless configuration no. 1
+	processorCfg := map[string]interface{}{
+		mashschema.MashEndpointProcessorAdapter:           "",
+		mashschema.MashEndpointProcessorPreProcessEnabled: false,
+	}
+
+	h.givenParentIdentity(t, serviceIdent)
+	h.givenStateFieldSetTo(t, mashschema.MashEndpointProcessor, []interface{}{processorCfg})
+
+	h.thenExecutingCreateWillYieldDiagnostic(t, "invalid input for field processor")
+
+	// Pointless configuration no. 2
+	processorCfg = map[string]interface{}{
+		mashschema.MashEndpointProcessorAdapter:           "com.github.fake-adapter",
+		mashschema.MashEndpointProcessorPreProcessEnabled: false,
+	}
+
+	h.givenParentIdentity(t, serviceIdent)
+	h.givenStateFieldSetTo(t, mashschema.MashEndpointProcessor, []interface{}{processorCfg})
+
+	h.thenExecutingCreateWillYieldDiagnostic(t, "invalid input for field processor")
 }
 
 // ---------------------------------------------------------------------------------------------------------
