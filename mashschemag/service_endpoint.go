@@ -1011,13 +1011,20 @@ func init() {
 }
 
 func schemaProcessorToRemote(state *schema.ResourceData, key string, remote *masherytypes.Endpoint) {
+	// Initialize the default processor
+	if remote.Processor == nil {
+		remote.Processor = &masherytypes.Processor{
+			Adapter:            "",
+			PreProcessEnabled:  false,
+			PostProcessEnabled: false,
+			PreInputs:          map[string]string{},
+			PostInputs:         map[string]string{},
+		}
+	}
+
 	if set, ok := state.GetOk(key); ok {
 		tfProcMap := mashschema.UnwrapStructFromTerraformSet(set)
 		if len(tfProcMap) > 1 {
-			if remote.Processor == nil {
-				remote.Processor = &masherytypes.Processor{}
-			}
-
 			schemaMapToProcessor(tfProcMap, remote.Processor)
 		}
 	}

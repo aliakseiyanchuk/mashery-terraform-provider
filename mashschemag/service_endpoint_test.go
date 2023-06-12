@@ -124,3 +124,18 @@ func TestServiceEndpointCacheMapping(t *testing.T) {
 		return rv, rv.Cache
 	})
 }
+
+func TestEndpointWillContainEmptyNonNilProcessor(t *testing.T) {
+	mapper, state := ServiceEndpointResourceSchemaBuilder.MapperAndTestData()
+	rv := masherytypes.Endpoint{}
+
+	mapper.SchemaToRemote(state, &rv)
+
+	assert.NotNil(t, rv.Processor)
+	assert.Equal(t, "", rv.Processor.Adapter)
+	assert.False(t, rv.Processor.PreProcessEnabled)
+	assert.False(t, rv.Processor.PostProcessEnabled)
+
+	assert.NotNil(t, rv.Processor.PreInputs)
+	assert.NotNil(t, rv.Processor.PostInputs)
+}
