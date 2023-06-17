@@ -31,6 +31,6 @@ resource "mashery_package_plan" "default" {
   admin_provisioning = true
   portal_access_roles = toset([data.mashery_role.content_manager.id])
 
-  email_template_set = data.mashery_email_template_set.user_email_template.id
+  developer_email_template_set = data.mashery_email_template_set.user_email_template.id
   admin_email_template_set = data.mashery_email_template_set.admin_email_template.id
 }

@@ -2,7 +2,7 @@
 layout: "mashery"
 page_title: "Provider: Mashery"
 description: |-
-The TIBCO Cloud Mashery provider is used to interact with the Mashery services and packages. The provider needs to be configured with the proper credentials before it can be used.
+  The TIBCO Cloud Mashery provider is used to interact with the Mashery services and packages. The provider needs to be configured with the proper credentials before it can be used.
 ---
 
 # TIBCO Cloud Mashery Terraform Provider

@@ -1,12 +1,8 @@
 package mashschema
 
 const (
-	MashPlanId                                = "plan_id"
-	MashPlanRef                               = "plan_ref"
-	MashPlanCreated                           = "created"
-	MashPlanUpdated                           = "updated"
-	MashPlanName                              = "name"
-	MashPlanDescription                       = "description"
+	MashPackagePlanId                         = "package_plan_id"
+	MashPackagePlanRef                        = "package_plan_ref"
 	MashPlanEAV                               = "extended_attribute_values"
 	MashPlanSelfServiceKeyProvisioningEnabled = "self_service_provisioning"
 	MashPlanAdminKeyProvisioningEnabled       = "admin_provisioning"
@@ -26,8 +22,9 @@ const (
 
 	MashPlanResponseFilterOverrideAllowed = "response_filter_override"
 	MashPlanStatus                        = "status"
-	MashPlanEmailTemplateSetId            = "email_template_set"
+	MashPlanDeveloperEmailTemplateSetId   = "developer_email_template_set"
 	MashPlanAdminEmailTemplateSetId       = "admin_email_template_set"
 )
 
+var MashPlanStatusEnum = []string{"active", "inactive"}
 var RateLimitPeriodEnum = []string{MashDurationMinute, MashDurationHourly, MashDurationDay, MashDurationMonth}

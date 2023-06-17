@@ -4,11 +4,11 @@ package mashschema
 // Schemas for Mashery service resource and data sources.
 
 // Unused args in mashschema -> to be moved to the provider resource
-var supportedForwardedHeaders = []string{
+var SupportedForwardedHeaders = []string{
 	"access-token", "client-id", "scope", "user-context",
 }
 
-var supportedMasheryGrantTypes = []string{"authorization_code", "implicit", "password", "client_credentials"}
+var SupportedMasheryGrantTypes = []string{"authorization_code", "implicit", "password", "client_credentials"}
 var SupportedMasheryMacAlgorithms = []string{"hmac-sha-1", "hmac-sha-256"}
 
 const (
@@ -31,14 +31,12 @@ const (
 	MashSvcOAuthRefreshTokenTtl             = "refresh_token_ttl"
 	MashSvcOAuthSecureTokensEnabled         = "secure_tokens_enabled"
 
-	// MashSvcOAuth Mashery OAuth Service Element
 	MashSvcInteractiveDocsRoles = "iodocs_accessed_by"
-	MashSvcOrganization         = "organization"
+	MashOrganization            = "organization"
 
 	// MashSvcId Mashery Service element keys
 	MashSvcId                   = "service_id"
 	MashSvcRef                  = "service_ref"
-	MashSvcName                 = "name"
 	MashSvcEditorHandle         = "editor_handle"
 	MashSvcRevisionNumber       = "revision_number"
 	MashSvcRobotsPolicy         = "robots_policy"

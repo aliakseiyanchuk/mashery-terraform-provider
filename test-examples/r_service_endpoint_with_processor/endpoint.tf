@@ -8,7 +8,7 @@ resource "mashery_service_endpoint" "endp" {
   service_ref                 = mashery_service.srv.id
   name                        = "service-endpoint-1"
   request_authentication_type = "apiKey"
-  api_key_value_locations     = ["request-header"]
+  developer_api_key_locations     = ["request-header"]
   request_path_alias          = "/my-demo-endpoint-processor"
   supported_http_methods      = ["get"]
   system_domains              = ["171.21.35.46"]

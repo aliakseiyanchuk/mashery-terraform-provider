@@ -1,5 +1,5 @@
 package mashschema
 
 const (
-	MashPlanServiceRef = "plan_service_ref"
+	MashPackagePlanServiceRef = "package_plan_service_ref"
 )

@@ -3,6 +3,7 @@ package mashschemag
 import (
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/stretchr/testify/assert"
+	"terraform-provider-mashery/mashschema"
 	"testing"
 )
 
@@ -25,4 +26,8 @@ func TestServiceOAuthBuilderMappings(t *testing.T) {
 	autoTestMappings(t, ServiceOAuthResourceSchemaBuilder, func() masherytypes.MasheryOAuth {
 		return masherytypes.MasheryOAuth{}
 	})
+}
+
+func TestServiceOAuthGrantTypes(t *testing.T) {
+	autoTestFieldEnumValuesValidation(t, ServiceOAuthResourceSchemaBuilder, mashschema.MashSvcOAuthGrantTypes, mashschema.SupportedMasheryGrantTypes)
 }

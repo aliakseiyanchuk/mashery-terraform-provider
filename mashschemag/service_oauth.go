@@ -220,6 +220,16 @@ func init() {
 				Set:         mashschema.StringHashcode,
 				Description: "Grant types selected for this service",
 			},
+			ValidateFunc: func(in *schema.ResourceData, key string) (bool, string) {
+				vals := mashschema.ExtractStringArray(in, key, &mashschema.EmptyStringArray)
+				for _, val := range vals {
+					if dg := mashschema.ValidateStringValueInSet(val, cty.GetAttrPath(key), &mashschema.SupportedMasheryGrantTypes); dg.HasError() {
+						return false, dg[0].Detail
+					}
+				}
+
+				return true, ""
+			},
 		},
 	}).Add(&tfmapper.StringFieldMapper[masherytypes.MasheryOAuth]{
 		Locator: func(in *masherytypes.MasheryOAuth) *string {

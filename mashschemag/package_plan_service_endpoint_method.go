@@ -77,7 +77,7 @@ func init() {
 func init() {
 	mapper := tfmapper.JsonIdentityFieldMapper[masherytypes.ServiceEndpointMethodFilterIdentifier, PackagePlanServiceEndpointMethodParam]{
 		FieldMapperBase: tfmapper.FieldMapperBase[PackagePlanServiceEndpointMethodParam]{
-			Key: mashschema.ServiceEndpointMethodFilterRef,
+			Key: mashschema.MashSvcEndpointMethodFilterRef,
 			Schema: &schema.Schema{
 				Type:        schema.TypeString,
 				Optional:    true,

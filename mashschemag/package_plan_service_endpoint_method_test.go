@@ -86,7 +86,7 @@ func TestPackagePlanServiceEndpointMethodMapperFilterIdent(t *testing.T) {
 		},
 	}
 
-	err := mapper.TestAssign(mashschema.ServiceEndpointMethodFilterRef, testData, filterIdent)
+	err := mapper.TestAssign(mashschema.MashSvcEndpointMethodFilterRef, testData, filterIdent)
 	assert.Nil(t, err)
 
 	rv := PackagePlanServiceEndpointMethodParam{}

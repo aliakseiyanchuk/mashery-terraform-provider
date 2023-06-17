@@ -15,7 +15,7 @@ func TestCreatingPackagePlanServiceEndpointMethodSucceeds(t *testing.T) {
 
 	h.givenParentIdentity(t, stateParentIdent)
 	h.givenStateFieldSetToWrappedJSON(t, mashschema.ServiceEndpointMethodRef, stateMethodIdent)
-	h.givenStateFieldSetToWrappedJSON(t, mashschema.ServiceEndpointMethodFilterRef, stateFilterIdent)
+	h.givenStateFieldSetToWrappedJSON(t, mashschema.MashSvcEndpointMethodFilterRef, stateFilterIdent)
 
 	givenCreatingPackagePlanServiceEndpointMethodSucceeds(h, callExpectedMethodIdent)
 	givenCreatingPackagePlanServiceEndpointMethodFilterSucceeds(h, callExpectedFilterIdent)

@@ -17,7 +17,7 @@ var ServiceEndpointMethodResourceSchemaBuilder = tfmapper.NewSchemaBuilder[mashe
 // Parent service endpoint identity
 func init() {
 	mapper := tfmapper.JsonIdentityMapper[masherytypes.ServiceEndpointIdentifier]{
-		Key: mashschema.MashEndpointRef,
+		Key: mashschema.MashServiceEndpointRef,
 		Schema: schema.Schema{
 			Type:        schema.TypeString,
 			Required:    true,

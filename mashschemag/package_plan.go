@@ -43,7 +43,7 @@ func init() {
 			return &in.Id
 		},
 		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Plan]{
-			Key: mashschema.MashPlanId,
+			Key: mashschema.MashPackagePlanId,
 			Schema: &schema.Schema{
 				Type:        schema.TypeString,
 				Computed:    true,
@@ -84,6 +84,9 @@ func init() {
 				Type:        schema.TypeString,
 				Computed:    true,
 				Description: "status of this plan",
+				ValidateDiagFunc: func(i interface{}, path cty.Path) diag.Diagnostics {
+					return mashschema.ValidateStringValueInSet(i, path, &mashschema.MashPlanStatusEnum)
+				},
 			},
 		},
 	}).Add(&tfmapper.StringPtrFieldMapper[masherytypes.Plan]{
@@ -91,7 +94,7 @@ func init() {
 			return &in.EmailTemplateSetId
 		},
 		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Plan]{
-			Key: mashschema.MashPlanEmailTemplateSetId,
+			Key: mashschema.MashPlanDeveloperEmailTemplateSetId,
 			Schema: &schema.Schema{
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -119,7 +122,7 @@ func init() {
 			return &in.Name
 		},
 		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Plan]{
-			Key: mashschema.MashPlanName,
+			Key: mashschema.MashObjName,
 			Schema: &schema.Schema{
 				Type:             schema.TypeString,
 				Required:         true,
@@ -132,7 +135,7 @@ func init() {
 			return &in.Description
 		},
 		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Plan]{
-			Key: mashschema.MashPlanDescription,
+			Key: mashschema.MashObjDescription,
 			Schema: &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,

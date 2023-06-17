@@ -21,8 +21,6 @@ const (
 	MashPackKeyLength                   = "key_length"
 	MashPackSharedSecretLength          = "shared_secret_length"
 
-	// Developer notifications
-	// TODO: MOve to shared go file.
 	MashDurationMinute = "minute"
 	MashDurationHourly = "hour"
 	MashDurationDay    = "day"
@@ -32,5 +30,5 @@ const (
 
 var NotifyDeveloperPeriodEnum = []string{MashDurationMinute, MashDurationHourly,
 	MashDurationDay, MashDurationWeek, MashDurationMonth}
-var notifyAdminPeriodEnum = []string{MashDurationMinute, MashDurationHourly,
+var NotifyAdminPeriodEnum = []string{MashDurationMinute, MashDurationHourly,
 	MashDurationDay, MashDurationWeek, MashDurationMonth}

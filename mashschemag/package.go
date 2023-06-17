@@ -191,7 +191,7 @@ func init() {
 				Optional: true,
 				Default:  "hour",
 				ValidateDiagFunc: func(i interface{}, path cty.Path) diag.Diagnostics {
-					return mashschema.ValidateStringValueInSet(i, path, &mashschema.NotifyDeveloperPeriodEnum)
+					return mashschema.ValidateStringValueInSet(i, path, &mashschema.NotifyAdminPeriodEnum)
 				},
 			},
 		},
@@ -361,6 +361,42 @@ func init() {
 				Computed:    true,
 				Description: "Length of shared secret for this package",
 			},
+		},
+	})
+}
+
+// Initialize Roles mapper
+func init() {
+	PackageResourceSchemaBuilder.Add(&tfmapper.PluggableFiledMapperBase[masherytypes.Package]{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Package]{
+			Key: mashschema.MashOrganization,
+			Schema: &schema.Schema{
+				Optional: true,
+				Type:     schema.TypeString,
+			},
+		},
+		NilRemoteToSchemaFunc: func(key string, state *schema.ResourceData) *diag.Diagnostic {
+			return tfmapper.SetKeyWithDiag(state, key, "")
+		},
+		RemoteToSchemaFunc: func(remote *masherytypes.Package, key string, state *schema.ResourceData) *diag.Diagnostic {
+			value := ""
+
+			if remote.Organization != nil {
+				value = remote.Organization.Id
+			}
+
+			return tfmapper.SetKeyWithDiag(state, key, value)
+		},
+		SchemaToRemoteFunc: func(state *schema.ResourceData, key string, remote *masherytypes.Package) {
+			orgId := mashschema.ExtractString(state, key, "")
+
+			if len(orgId) > 0 {
+				remote.Organization = &masherytypes.Organization{
+					AddressableV3Object: masherytypes.AddressableV3Object{
+						Id: orgId,
+					},
+				}
+			}
 		},
 	})
 }

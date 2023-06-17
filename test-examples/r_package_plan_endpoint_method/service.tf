@@ -32,14 +32,14 @@ resource "mashery_service_endpoint" "endp" {
   outbound_transport_protocol = "http"
 }
 
-resource "mashery_endpoint_method" "meth_abc" {
+resource "mashery_service_endpoint_method" "meth_abc" {
   endpoint_ref = mashery_service_endpoint.endp.id
   name = "do something good"
   sample_json = file("${path.module}/meth_abc.json")
 }
 
-resource "mashery_endpoint_method_filter" "abc_filter" {
-  method_ref = mashery_endpoint_method.meth_abc.id
+resource "mashery_service_endpoint_method_filter" "abc_filter" {
+  method_ref = mashery_service_endpoint_method.meth_abc.id
   name = "abc filter"
   json_fields = "/a"
 }

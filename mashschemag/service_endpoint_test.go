@@ -4,6 +4,7 @@ import (
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/stretchr/testify/assert"
 	"reflect"
+	"terraform-provider-mashery/mashschema"
 	"testing"
 )
 
@@ -138,4 +139,102 @@ func TestEndpointWillContainEmptyNonNilProcessor(t *testing.T) {
 
 	assert.NotNil(t, rv.Processor.PreInputs)
 	assert.NotNil(t, rv.Processor.PostInputs)
+}
+
+func TestServiceEndpointDeveloperKeyLocation_WillAcceptExpectedValues(t *testing.T) {
+	autoTestFieldEnumValuesValidation(t,
+		ServiceEndpointResourceSchemaBuilder,
+		mashschema.MashEndpointApiKeyValueLocations,
+		mashschema.DeveloperAPIKeyLocationsEnum)
+}
+
+func TestServiceEndpointDeveloperKeyLocation_WillAcceptCombination(t *testing.T) {
+	mapper, state := ServiceEndpointResourceSchemaBuilder.MapperAndTestData()
+
+	err := state.Set(mashschema.MashEndpointApiKeyValueLocations, []string{"request-body", "request-parameters"})
+	assert.Nil(t, err)
+	dg := mapper.IsStateValid(state)
+	assert.Equal(t, 0, len(dg))
+
+	err = state.Set(mashschema.MashEndpointApiKeyValueLocations, []string{"request-parameters", "request-body"})
+	assert.Nil(t, err)
+	dg = mapper.IsStateValid(state)
+	assert.Equal(t, 0, len(dg))
+}
+
+func TestServiceEndpointDeveloperKeyLocation_WillRejectIllegalCombination(t *testing.T) {
+	mapper, state := ServiceEndpointResourceSchemaBuilder.MapperAndTestData()
+
+	err := state.Set(mashschema.MashEndpointApiKeyValueLocations, []string{"request-body", "request-header"})
+	assert.Nil(t, err)
+	dg := mapper.IsStateValid(state)
+
+	assert.Equal(t, 1, len(dg))
+	assert.Equal(t,
+		"field validation has returned the following error: request-header and request-body is an illegal combination, only request-body and request-parameters can be specified together",
+		dg[0].Detail)
+
+	err = state.Set(mashschema.MashEndpointApiKeyValueLocations, []string{"request-body", "request-parameters", "request-header"})
+	assert.Nil(t, err)
+	dg = mapper.IsStateValid(state)
+
+	assert.Equal(t, 1, len(dg))
+	assert.Equal(t,
+		"field validation has returned the following error: too many options specified (3), maximum possible is 2",
+		dg[0].Detail)
+}
+
+func TestServiceEndpointMethodLocation_WillAcceptExpectedValues(t *testing.T) {
+	autoTestFieldEnumValuesValidation(t,
+		ServiceEndpointResourceSchemaBuilder,
+		mashschema.MashEndpointApiMethodDetectionLocations,
+		mashschema.MethodLocationsEnum)
+}
+
+func TestServiceEndpointMethod_WillAcceptCombination(t *testing.T) {
+	mapper, state := ServiceEndpointResourceSchemaBuilder.MapperAndTestData()
+
+	err := state.Set(mashschema.MashEndpointApiMethodDetectionLocations, []string{"request-body", "request-parameters"})
+	assert.Nil(t, err)
+	dg := mapper.IsStateValid(state)
+	assert.Equal(t, 0, len(dg))
+
+	err = state.Set(mashschema.MashEndpointApiMethodDetectionLocations, []string{"request-parameters", "request-body"})
+	assert.Nil(t, err)
+	dg = mapper.IsStateValid(state)
+	assert.Equal(t, 0, len(dg))
+}
+
+func TestServiceEndpointMethod_WillRejectIllegalCombination(t *testing.T) {
+	mapper, state := ServiceEndpointResourceSchemaBuilder.MapperAndTestData()
+
+	err := state.Set(mashschema.MashEndpointApiMethodDetectionLocations, []string{"request-body", "request-header"})
+	assert.Nil(t, err)
+	dg := mapper.IsStateValid(state)
+
+	assert.Equal(t, 1, len(dg))
+	assert.Equal(t,
+		"field validation has returned the following error: request-header and request-body is an illegal combination, only request-body and request-parameters can be specified together",
+		dg[0].Detail)
+
+	err = state.Set(mashschema.MashEndpointApiMethodDetectionLocations, []string{"request-body", "request-parameters", "request-header"})
+	assert.Nil(t, err)
+	dg = mapper.IsStateValid(state)
+
+	assert.Equal(t, 1, len(dg))
+	assert.Equal(t,
+		"field validation has returned the following error: too many options specified (3), maximum possible is 2",
+		dg[0].Detail)
+}
+
+func TestServiceEndpointForwardedHeaders(t *testing.T) {
+	autoTestFieldEnumValuesValidation(t, ServiceEndpointResourceSchemaBuilder, mashschema.MashEndpointForwardedHeaders, mashschema.ForwardedHeadersEnum)
+}
+
+func TestServiceEndpointReturnedHeaders(t *testing.T) {
+	autoTestFieldEnumValuesValidation(t, ServiceEndpointResourceSchemaBuilder, mashschema.MashEndpointReturnedHeaders, mashschema.ReturnedHeadersEnum)
+}
+
+func TestServiceEndpointHttpMethods(t *testing.T) {
+	autoTestFieldEnumValuesValidation(t, ServiceEndpointResourceSchemaBuilder, mashschema.MashEndpointSupportedHttpMethods, mashschema.HttoMethodsEnum)
 }

@@ -3,10 +3,10 @@ subcategory: "mashery"
 layout: "mashery"
 page_title: "Mashery: mashery_service"
 description: |-
-Creates a uniquely prefixed path
+  Creates a uniquely prefixed path
 ---
 
-# Resource: mashery_unique_path
+# Resource: `mashery_unique_path`
 
 This resource is used to generate a uniquely-prefixed path, allowing creating non-intersecting
 copies of the API definition services.
@@ -76,7 +76,7 @@ locals {
   ctx = var.usePrefixPath ? mashery_unique_path.ctx.path : var.ctx
 }
 
-resource "mashery_endpoint" "demo-endpoint" {
+resource "mashery_service_endpoint" "demo-endpoint" {
   # ... other endpoint settings ...
   # Use the va 
   request_path_alias = "${local.ctx}/a"

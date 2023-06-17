@@ -40,7 +40,7 @@ func TestPackagePlanServiceEndpointMapperServiceEndpointIdRef(t *testing.T) {
 			ServiceId: "def",
 		},
 	}
-	err := mapper.TestAssign(mashschema.MashEndpointRef, testState, identIn)
+	err := mapper.TestAssign(mashschema.MashServiceEndpointRef, testState, identIn)
 	assert.Nil(t, err)
 
 	rv := PackagePlanServiceEndpointParam{}

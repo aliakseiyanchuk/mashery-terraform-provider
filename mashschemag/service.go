@@ -240,7 +240,7 @@ func init() {
 func init() {
 	ServiceResourceSchemaBuilder.Add(&tfmapper.PluggableFiledMapperBase[masherytypes.Service]{
 		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Service]{
-			Key: mashschema.MashSvcOrganization,
+			Key: mashschema.MashOrganization,
 			Schema: &schema.Schema{
 				Optional: true,
 				Type:     schema.TypeString,

@@ -41,7 +41,7 @@ func init() {
 			return &in.Id
 		},
 		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.ServiceEndpointMethodFilter]{
-			Key: mashschema.MashEndpointMethodFilterId,
+			Key: mashschema.MashSvcEndpointMethodFilterId,
 			Schema: &schema.Schema{
 				Type:        schema.TypeString,
 				Computed:    true,

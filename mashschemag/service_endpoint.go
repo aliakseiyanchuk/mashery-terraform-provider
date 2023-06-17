@@ -44,7 +44,7 @@ func init() {
 			return &in.Id
 		},
 		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Endpoint]{
-			Key: mashschema.MashEndpointId,
+			Key: mashschema.MashServiceEndpointId,
 			Schema: &schema.Schema{
 				Type:        schema.TypeString,
 				Computed:    true,
@@ -122,6 +122,30 @@ func init() {
 					Type: schema.TypeString,
 				},
 			},
+			ValidateFunc: func(in *schema.ResourceData, key string) (bool, string) {
+				vals := mashschema.ExtractStringArray(in, key, &mashschema.EmptyStringArray)
+				for _, val := range vals {
+					if dg := mashschema.ValidateStringValueInSet(val, cty.GetAttrPath(key), &mashschema.ForwardedHeadersEnum); dg.HasError() {
+						return false, dg[0].Detail
+					}
+				}
+
+				// If
+				if len(vals) == 2 {
+					// Validate that only request-parameters and request-body are specified
+					if mashschema.FindInArray(mashschema.RequestBodyVal, &vals) < 0 ||
+						mashschema.FindInArray(mashschema.RequestParametersVal, &vals) < 0 {
+						return false, fmt.Sprintf("%s and %s is an illegal combination, only %s and %s can be specified together",
+							vals[0], vals[1],
+							mashschema.RequestBodyVal, mashschema.RequestParametersVal,
+						)
+					}
+				} else if len(vals) > 2 {
+					return false, fmt.Sprintf("too many options specified (%d), maximum possible is 2", len(vals))
+				}
+
+				return true, ""
+			},
 		},
 	}).Add(&tfmapper.StringFieldMapper[masherytypes.Endpoint]{
 		Locator: func(in *masherytypes.Endpoint) *string {
@@ -145,12 +169,35 @@ func init() {
 				Type:        schema.TypeSet,
 				Optional:    true,
 				Computed:    true,
-				Description: "Locations to derive api method from. Valid options are: request-header, request-body, request-parameters, and request-path",
-				// Probably would be worth-while adding defaults in the description
+				Description: "Locations to derive api method from. Valid options are: request-header, request-body, request-parameters, request-path, and custom",
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
 				Set: mashschema.StringHashcode,
+			},
+			ValidateFunc: func(in *schema.ResourceData, key string) (bool, string) {
+				vals := mashschema.ExtractStringArray(in, key, &mashschema.EmptyStringArray)
+				for _, val := range vals {
+					if dg := mashschema.ValidateStringValueInSet(val, cty.GetAttrPath(key), &mashschema.MethodLocationsEnum); dg.HasError() {
+						return false, dg[0].Detail
+					}
+				}
+
+				// If
+				if len(vals) == 2 {
+					// Validate that only request-parameters and request-body are specified
+					if mashschema.FindInArray(mashschema.RequestBodyVal, &vals) < 0 ||
+						mashschema.FindInArray(mashschema.RequestParametersVal, &vals) < 0 {
+						return false, fmt.Sprintf("%s and %s is an illegal combination, only %s and %s can be specified together",
+							vals[0], vals[1],
+							mashschema.RequestBodyVal, mashschema.RequestParametersVal,
+						)
+					}
+				} else if len(vals) > 2 {
+					return false, fmt.Sprintf("too many options specified (%d), maximum possible is 2", len(vals))
+				}
+
+				return true, ""
 			},
 		},
 	}).Add(&tfmapper.PluggableFiledMapperBase[masherytypes.Endpoint]{
@@ -514,6 +561,16 @@ func init() {
 				},
 				Set: mashschema.StringHashcode,
 			},
+			ValidateFunc: func(in *schema.ResourceData, key string) (bool, string) {
+				vals := mashschema.ExtractStringArray(in, key, &mashschema.EmptyStringArray)
+				for _, val := range vals {
+					if dg := mashschema.ValidateStringValueInSet(val, cty.GetAttrPath(key), &mashschema.ForwardedHeadersEnum); dg.HasError() {
+						return false, dg[0].Detail
+					}
+				}
+
+				return true, ""
+			},
 		},
 	}).Add(&tfmapper.StringArrayFieldMapper[masherytypes.Endpoint]{
 		Locator: func(in *masherytypes.Endpoint) *[]string {
@@ -530,6 +587,16 @@ func init() {
 					Type: schema.TypeString,
 				},
 				Set: mashschema.StringHashcode,
+			},
+			ValidateFunc: func(in *schema.ResourceData, key string) (bool, string) {
+				vals := mashschema.ExtractStringArray(in, key, &mashschema.EmptyStringArray)
+				for _, val := range vals {
+					if dg := mashschema.ValidateStringValueInSet(val, cty.GetAttrPath(key), &mashschema.ReturnedHeadersEnum); dg.HasError() {
+						return false, dg[0].Detail
+					}
+				}
+
+				return true, ""
 			},
 		},
 	}).Add(&tfmapper.StringFieldMapper[masherytypes.Endpoint]{
@@ -716,7 +783,16 @@ func init() {
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
-				// TODO: Add validation
+			},
+			ValidateFunc: func(in *schema.ResourceData, key string) (bool, string) {
+				vals := mashschema.ExtractStringArray(in, key, &mashschema.EmptyStringArray)
+				for _, val := range vals {
+					if dg := mashschema.ValidateStringValueInSet(val, cty.GetAttrPath(key), &mashschema.OAuthGrantTypesEnum); dg.HasError() {
+						return false, dg[0].Detail
+					}
+				}
+
+				return true, ""
 			},
 		},
 	}).Add(&tfmapper.StringFieldMapper[masherytypes.Endpoint]{
@@ -744,6 +820,16 @@ func init() {
 					Type: schema.TypeString,
 				},
 				Set: mashschema.StringHashcode,
+			},
+			ValidateFunc: func(in *schema.ResourceData, key string) (bool, string) {
+				vals := mashschema.ExtractStringArray(in, key, &mashschema.EmptyStringArray)
+				for _, val := range vals {
+					if dg := mashschema.ValidateStringValueInSet(val, cty.GetAttrPath(key), &mashschema.HttoMethodsEnum); dg.HasError() {
+						return false, dg[0].Detail
+					}
+				}
+
+				return true, ""
 			},
 		},
 	}).Add(&tfmapper.PluggableFiledMapperBase[masherytypes.Endpoint]{

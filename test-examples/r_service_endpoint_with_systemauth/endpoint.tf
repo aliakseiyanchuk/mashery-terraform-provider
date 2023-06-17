@@ -8,7 +8,7 @@ resource "mashery_service_endpoint" "endp" {
   service_ref                 = mashery_service.srv.id
   name                        = "service-endpoint-1"
   request_authentication_type = "apiKey"
-  api_key_value_locations     = ["request-header"]
+  developer_api_key_locations = ["request-header"]
   request_path_alias          = "/my-demo-systemauth-processor"
   supported_http_methods      = ["get"]
   system_domains              = ["171.21.35.46"]
@@ -24,7 +24,7 @@ resource "mashery_service_endpoint" "endp" {
   outbound_transport_protocol              = "http"
 
   system_domain_authentication {
-    type = "httpBasic"
+    type     = "httpBasic"
     username = "adsfasdf"
     password = "asdfasdfasdf"
   }
@@ -51,9 +51,9 @@ resource "mashery_service_endpoint" "endp2" {
   outbound_transport_protocol              = "http"
 
   system_domain_authentication {
-    type = "clientSslCert"
+    type        = "clientSslCert"
     certificate = "abc"
-    password = "def"
+    password    = "def"
   }
 }
 

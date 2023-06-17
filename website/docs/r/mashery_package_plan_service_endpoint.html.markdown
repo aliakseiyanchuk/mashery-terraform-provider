@@ -3,10 +3,10 @@ subcategory: "mashery"
 layout: "mashery"
 page_title: "Mashery: mashery_service"
 description: |-
-Defines Mashery service
+  Defines Mashery service
 ---
 
-# Resource: mashery_plan_service_endpoint
+# Resource: `mashery_plan_service_endpoint`
 
 The `masher_plan_service_endpoint` represents [`/packages/{packageId}/plans/{planId}/services/{serviceId}/endpoints/{endpointId}`](https://developer.mashery.com/docs/read/mashery_api/30/resources/packages/plans/services/endpoints)
 V3 API resource.
@@ -22,8 +22,8 @@ resource "mashery_package_plan_endpoint" "fff" {
 
 ## Argument Reference
 
-* `plan_service_id`
-* `endpoint_id`
+* `plan_service_ref` Package plan service id
+* `endpoint_ref` endpoint id to be included. Must be from the same service as a referred by `plan_service_ref` attribute
 
 ## Attribute Reference
 

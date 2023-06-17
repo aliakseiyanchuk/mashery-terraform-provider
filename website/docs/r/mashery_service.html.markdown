@@ -3,10 +3,10 @@ subcategory: "mashery"
 layout: "mashery"
 page_title: "Mashery: mashery_service"
 description: |-
-Defines Mashery service
+  Defines Mashery service
 ---
 
-# Resource: mashery_service
+# Resource: `mashery_service`
 
 The resource represents [API definitions](https://developer.mashery.com/docs/read/mashery_api/30/resources/services)
 configured using Mashery V3 API resource. The resource allows configuring:
