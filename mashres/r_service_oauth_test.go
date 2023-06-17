@@ -17,7 +17,7 @@ func TestCreatingServiceOAuthWillSucceed(t *testing.T) {
 
 	h.givenParentIdentity(t, serviceIdent)
 	h.givenStateFieldSetTo(t, mashschema.MashSvcOAuthAccessTokenTtl, "1h")
-	h.givenStateFieldSetTo(t, mashschema.MashSvcOAuthGrantTypes, []string{"client-credentials"})
+	h.givenStateFieldSetTo(t, mashschema.MashSvcOAuthGrantTypes, []string{"client_credentials"})
 
 	givenCreatingServiceOAuthSucceeds(h)
 	h.thenExecutingCreate(t)

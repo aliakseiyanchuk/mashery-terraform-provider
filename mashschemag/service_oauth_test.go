@@ -31,3 +31,6 @@ func TestServiceOAuthBuilderMappings(t *testing.T) {
 func TestServiceOAuthGrantTypes(t *testing.T) {
 	autoTestFieldEnumValuesValidation(t, ServiceOAuthResourceSchemaBuilder, mashschema.MashSvcOAuthGrantTypes, mashschema.SupportedMasheryGrantTypes)
 }
+func TestServiceOAuthForwardHeaders(t *testing.T) {
+	autoTestFieldEnumValuesValidation(t, ServiceOAuthResourceSchemaBuilder, mashschema.MashSvcOAuthForwardedHeaders, mashschema.SupportedForwardedHeaders)
+}

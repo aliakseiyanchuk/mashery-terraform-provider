@@ -27,7 +27,7 @@ func SortedStringOf(arr *[]string) string {
 }
 
 func SortedMapOf[T any](inp *map[string]T) string {
-	if inp == nil {
+	if inp == nil || len(*inp) == 0 {
 		return ""
 	}
 
@@ -43,7 +43,9 @@ func SortedMapOf[T any](inp *map[string]T) string {
 
 	sb := strings.Builder{}
 	for _, k := range keys {
-		sb.WriteString(fmt.Sprintf("%s::=%s/", k, (*inp)[k]))
+		var v interface{}
+		v = (*inp)[k]
+		sb.WriteString(fmt.Sprintf("%s::=%s/", k, v))
 	}
 
 	return sb.String()

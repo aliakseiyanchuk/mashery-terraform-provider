@@ -126,6 +126,16 @@ func init() {
 				Set:         mashschema.StringHashcode,
 				Description: "Mashery-generated headers that should be forwarded to the back-end",
 			},
+			ValidateFunc: func(in *schema.ResourceData, key string) (bool, string) {
+				vals := mashschema.ExtractStringArray(in, key, &mashschema.EmptyStringArray)
+				for _, val := range vals {
+					if dg := mashschema.ValidateStringValueInSet(val, cty.GetAttrPath(key), &mashschema.SupportedForwardedHeaders); dg.HasError() {
+						return false, dg[0].Detail
+					}
+				}
+
+				return true, ""
+			},
 		},
 	}).Add(&tfmapper.BoolFieldMapper[masherytypes.MasheryOAuth]{
 		Locator: func(in *masherytypes.MasheryOAuth) *bool {
