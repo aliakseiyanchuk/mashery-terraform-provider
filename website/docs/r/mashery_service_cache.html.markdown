@@ -8,7 +8,7 @@ description: |-
 
 # Resource: `mashery_service_cache`
 
-The resource represents [API caceh definitions](https://support.mashery.com/docs/read/mashery_api/30/resources/services/cache)
+The resource represents [API cache definitions](https://support.mashery.com/docs/read/mashery_api/30/resources/services/cache)
 configured using Mashery V3 API resource. 
 
 > Note: this resource is meaningful if caching is changed frequently without affecting
