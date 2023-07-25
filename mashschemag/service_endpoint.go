@@ -102,7 +102,6 @@ func init() {
 			Schema: &schema.Schema{
 				Type:        schema.TypeString,
 				Optional:    true,
-				Default:     "api_key",
 				Description: "Key in request parameters that identifies developer's api key",
 			},
 		},
