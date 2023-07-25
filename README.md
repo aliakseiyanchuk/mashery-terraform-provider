@@ -22,6 +22,8 @@ applied via Mashery administrative portal. This includes the following resources
       - [package plan service endpoint](./website/docs/r/package_plan_service_endpoint_method.html.markdown)
         - [package plan service endpoint method and filter](./website/docs/r/mashery_package_plan_service_endpoint_method.html.markdown)
 
+Endpoint maintenance events are current not implemented.
+
 The provider allows querying for [roles](./website/docs/d/mashery_role.html.markdown), 
 [organizations](./website/docs/d/mashery_organization.html.markdown), and 
 [email templates](./website/docs/d/mashery_email_template_set.html.markdown). In practice relatively

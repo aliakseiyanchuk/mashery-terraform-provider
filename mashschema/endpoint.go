@@ -66,7 +66,6 @@ const (
 	MashEndpointInboundMutualSslRequired                   = "inbound_mutual_ssl_required"
 	MashEndpointJsonpCallbackParameter                     = "jsonp_callback_parameter"
 	MashEndpointJsonpCallbackParameterValue                = "jsonp_callback_parameter_value"
-	MashEndpointScheduledMaintenanceEvent                  = "scheduled_maintenance_event"
 	MashEndpointForwardedHeaders                           = "forwarded_headers"
 	MashEndpointReturnedHeaders                            = "returned_headers"
 	MashEndpointName                                       = "name"
@@ -105,10 +104,6 @@ const (
 	MashEndpointErrorSetRef                    = "error_set_ref"
 	MashEndpointUserControlledErrorLocation    = "user_controlled_error_format_location"
 	MashEndpointUserControlledErrorLocationKey = "user_controlled_error_format_location_key"
-
-	MashEndpointMultiRef                = "endpoint_ids"
-	MashEndpointsExplained              = "endpoints_explained"
-	DataSourceServiceEndpointPathRegexp = "filter_request_path_alias"
 )
 
 // Terraform specification for the Mashery endpoint.

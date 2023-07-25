@@ -34,7 +34,7 @@ func SortedMapOf[T any](inp *map[string]T) string {
 	keys := make([]string, len(*inp))
 
 	idx := 0
-	for k, _ := range *inp {
+	for k := range *inp {
 		keys[idx] = k
 		idx++
 	}
