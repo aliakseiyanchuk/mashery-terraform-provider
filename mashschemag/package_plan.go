@@ -82,7 +82,8 @@ func init() {
 			Key: mashschema.MashPlanStatus,
 			Schema: &schema.Schema{
 				Type:        schema.TypeString,
-				Computed:    true,
+				Optional:    true,
+				Default:     "active",
 				Description: "status of this plan",
 				ValidateDiagFunc: func(i interface{}, path cty.Path) diag.Diagnostics {
 					return mashschema.ValidateStringValueInSet(i, path, &mashschema.MashPlanStatusEnum)
