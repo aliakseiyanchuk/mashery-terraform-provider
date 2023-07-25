@@ -382,7 +382,7 @@ func init() {
 			value := ""
 
 			if remote.Organization != nil {
-				value = remote.Organization.Id
+				value = *remote.Organization.Id
 			}
 
 			return tfmapper.SetKeyWithDiag(state, key, value)
@@ -391,10 +391,12 @@ func init() {
 			orgId := mashschema.ExtractString(state, key, "")
 
 			if len(orgId) > 0 {
-				remote.Organization = &masherytypes.Organization{
-					AddressableV3Object: masherytypes.AddressableV3Object{
-						Id: orgId,
-					},
+				remote.Organization = &masherytypes.NilAddressableOrganization{
+					Id: &orgId,
+				}
+			} else {
+				remote.Organization = &masherytypes.NilAddressableOrganization{
+					Name: "Area Level",
 				}
 			}
 		},
