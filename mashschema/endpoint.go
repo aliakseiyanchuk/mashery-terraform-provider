@@ -21,7 +21,6 @@ var UserControlledErrorFormatEnum = []string{"request-header", "request-body", "
 
 var ForwardedHeadersEnum = []string{"mashery-host", "mashery-message-id", "mashery-service-id"}
 var ReturnedHeadersEnum = []string{"mashery-message-id", "mashery-responder"}
-var OAuthGrantTypesEnum = []string{"authorization-code", "implicit", "password", "client-credentials"}
 var HttoMethodsEnum = []string{"get", "post", "put", "delete", "head", "options", "patch"}
 
 const (

@@ -124,11 +124,11 @@ resource "mashery_service_endpoint" "terraform-endpoint" {
   * `xml-rpc`
   * `json-rpc`
   * `other`
-* `oauth_grant_types enabled for this endpoint:
-  * `authorization-code`
+* `oauth_grant_types` enabled for this endpoint:
+  * `authorization_code`
   * `implicit`
   * `password`
-  * `client-credentials`
+  * `client_credentials`
 * `strings_to_trim_from_api_key` strings to trio from API key
 * `supported_http_methods` supported HTTP methods on this endpoint
 * `system_domain_authentication`: object defining how Mashery should authenticate towards the backend:

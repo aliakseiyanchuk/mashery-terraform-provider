@@ -786,7 +786,7 @@ func init() {
 			ValidateFunc: func(in *schema.ResourceData, key string) (bool, string) {
 				vals := mashschema.ExtractStringArray(in, key, &mashschema.EmptyStringArray)
 				for _, val := range vals {
-					if dg := mashschema.ValidateStringValueInSet(val, cty.GetAttrPath(key), &mashschema.OAuthGrantTypesEnum); dg.HasError() {
+					if dg := mashschema.ValidateStringValueInSet(val, cty.GetAttrPath(key), &mashschema.SupportedMasheryGrantTypes); dg.HasError() {
 						return false, dg[0].Detail
 					}
 				}
