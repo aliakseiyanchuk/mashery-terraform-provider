@@ -15,6 +15,13 @@ type DurationFieldMapper[MType any] struct {
 	Unit    time.Duration
 }
 
+func SuppressSameDuration(_, ov, nw string, _ *schema.ResourceData) bool {
+	ovt, _ := time.ParseDuration(ov)
+	nvt, _ := time.ParseDuration(nw)
+
+	return ovt == nvt
+}
+
 func (sfm *DurationFieldMapper[MType]) NilRemote(state *schema.ResourceData) *diag.Diagnostic {
 	return SetKeyWithDiag(state, sfm.Key, "")
 }

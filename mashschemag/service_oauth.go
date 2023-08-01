@@ -65,6 +65,7 @@ func init() {
 				Description:      "Access token expires after the specified time has passed. TTL time is specified in seconds",
 				Default:          "1h",
 				ValidateDiagFunc: mashschema.ValidateDuration,
+				DiffSuppressFunc: tfmapper.SuppressSameDuration,
 			},
 		},
 	}).Add(&tfmapper.StringFieldMapper[masherytypes.MasheryOAuth]{
@@ -109,6 +110,7 @@ func init() {
 				Default:          "5m",
 				Description:      "Authorization Code will expire after the specified time has passed. TTL time is specified in seconds.",
 				ValidateDiagFunc: mashschema.ValidateDuration,
+				DiffSuppressFunc: tfmapper.SuppressSameDuration,
 			},
 		},
 	}).Add(&tfmapper.StringArrayFieldMapper[masherytypes.MasheryOAuth]{
@@ -297,6 +299,7 @@ func init() {
 				Default:          "768h",
 				Description:      "The refresh token gets expired after it crosses the TTL value",
 				ValidateDiagFunc: mashschema.ValidateDuration,
+				DiffSuppressFunc: tfmapper.SuppressSameDuration,
 			},
 		},
 	}).Add(&tfmapper.BoolFieldMapper[masherytypes.MasheryOAuth]{
