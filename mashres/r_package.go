@@ -35,14 +35,27 @@ func init() {
 		DoUpdate: func(ctx context.Context, client v3client.Client, identifier masherytypes.PackageIdentifier, m masherytypes.Package) (*masherytypes.Package, error) {
 			m.Id = identifier.PackageId
 
-			if updatedPack, err := client.UpdatePackage(ctx, m); err != nil {
-				if m.Organization == nil && updatedPack.Organization != nil {
+			// The reason why this code is organized this way is that:
+			// - We may need to set organization to the area level if it was previously set; however
+			// - testing shows that Mashery doesn't treat organization attribute as a purely CRUD logic; e.g. it
+			//   will not be returned during the update.
+			//
+			// So the working process here is:
+			// - Send the update to the desired state.
+			// - Read the actual state in the separate call
+			// - In case the desired state does NOT have an organization, and actual DOES, call a
+			//   specialized ownership reset method to drop the package ownership to the area level.
+
+			if updatedPack, updateErr := client.UpdatePackage(ctx, m); updateErr != nil {
+				return updatedPack, updateErr
+			} else {
+				if readBackPack, readBackErr := client.GetPackage(ctx, m.Identifier()); readBackErr != nil {
+					return readBackPack, readBackErr
+				} else if m.Organization == nil && readBackPack.Organization != nil {
 					return client.ResetPackageOwnership(ctx, m.Identifier())
 				} else {
-					return updatedPack, err
+					return updatedPack, updateErr
 				}
-			} else {
-				return updatedPack, err
 			}
 		},
 
