@@ -81,7 +81,7 @@ var ProviderConfigSchema = map[string]*schema.Schema{
 	providerQPSField: {
 		Type:        schema.TypeInt,
 		Optional:    true,
-		DefaultFunc: intValueFromVariable(envV3QPS, 1),
+		DefaultFunc: initValueFromVariable(envV3QPS, 1),
 		Description: "Queries per second to observe. Default to 1 queries per second",
 	},
 	providerNetworkLatencyField: {
@@ -126,10 +126,10 @@ type VaultAuthorizer struct {
 	vaultAuth map[string]string
 }
 
-func (va VaultAuthorizer) HeaderAuthorization() (map[string]string, error) {
+func (va VaultAuthorizer) HeaderAuthorization(_ context.Context) (map[string]string, error) {
 	return va.vaultAuth, nil
 }
-func (va VaultAuthorizer) QueryStringAuthorization() (map[string]string, error) {
+func (va VaultAuthorizer) QueryStringAuthorization(_ context.Context) (map[string]string, error) {
 	return nil, nil
 }
 
@@ -140,7 +140,7 @@ func (va VaultAuthorizer) Close() {
 // -----------------------------------------------------------------------------
 // Implementation
 
-func intValueFromVariable(envVar string, defaultVal int) schema.SchemaDefaultFunc {
+func initValueFromVariable(envVar string, defaultVal int) schema.SchemaDefaultFunc {
 	return func() (interface{}, error) {
 		if v := os.Getenv(envVar); v != "" {
 			return strconv.ParseInt(v, 10, 0)

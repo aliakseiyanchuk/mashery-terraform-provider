@@ -36,7 +36,11 @@ func init() {
 			m.Id = identifier.PackageId
 
 			if updatedPack, err := client.UpdatePackage(ctx, m); err != nil {
-				return nil, err
+				if m.Organization == nil && updatedPack.Organization != nil {
+					return client.ResetPackageOwnership(ctx, m.Identifier())
+				} else {
+					return updatedPack, err
+				}
 			} else {
 				return updatedPack, err
 			}
