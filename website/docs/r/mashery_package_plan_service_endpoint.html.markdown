@@ -15,8 +15,8 @@ V3 API resource.
 
 ```hcl
 resource "mashery_package_plan_endpoint" "fff" {
-  plan_service_id = mashery_package_plan_service.lspwd_Default_service.id
-  endpoint_id = mashery_endpoint.lspwd2-enp-a.id
+  package_plan_service_ref = mashery_package_plan_service.lspwd_Default_service.id
+  service_endpoint_ref = mashery_endpoint.lspwd2-enp-a.id
 }
 ```
 

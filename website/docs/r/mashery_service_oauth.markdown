@@ -62,10 +62,10 @@ The optional parameters configure the desired security settings:
 - `force_oauth_redirect_url` verify redirect URL in the token request
 - `force_ssl_redirect_url_enabled` the redirect URL must contain https
 - `grant_types` grant types, option include:
-  - `authorization-code`
+  - `authorization_code`
   - `implicit`
   - `password`
-  - `client-credentials`
+  - `client_credentials`
 - `mac_algorithm` a MAC algorithm for MAC tokens, either  `hmac-sha-1` or `hmac-sha-256`
 - `qps_limit_ceiling` QPS limit ceiling
 - `rate_limit_ceiling` rate limit ceiling

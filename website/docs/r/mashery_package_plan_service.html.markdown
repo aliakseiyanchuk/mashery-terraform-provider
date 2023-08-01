@@ -15,13 +15,13 @@ V3 resource. It is used to link a service with the package plan.
 
 ```hcl
 resource mashery_package_plan_service "lspwds_Default_service" {
-  plan_id  = mashery_package_plan.lspwd_Default.id
-  service_id = mashery_service.lspwd2-first.id
+  package_plan_ref  = mashery_package_plan.lspwd_Default.id
+  service_ref = mashery_service.lspwd2-first.id
 }
 ```
 
 ## Argument Reference
-* `plan_ref` package plan identifier
+* `package_plan_ref` package plan reference
 * `service_ref` service reference
 * 
 ## Attribute Reference
