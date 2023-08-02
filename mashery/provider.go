@@ -299,7 +299,7 @@ func ProviderConfigure(_ context.Context, d *schema.ResourceData) (interface{}, 
 			AvgNetLatency: netLatency,
 		}
 
-		cl = v3client.NewHttpClient(clParams)
+		cl = v3client.NewHttpClientWithAutoRetries(clParams)
 	}
 
 	doLogf("Provider initialized with %d diagnostic messages", len(diags))
