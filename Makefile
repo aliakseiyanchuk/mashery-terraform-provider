@@ -4,7 +4,11 @@ NAMESPACE=aliakseiyanchuk
 NAME=mashery
 BINARY=terraform-provider-${NAME}
 VERSION=0.4
+BUILD_PRERELEASE=alpha.2
 OS_ARCH=darwin_arm64
+DOCKER_IMAGE=nexus:5001
+
+LOCAL_MIRROR_PATH=${HOSTNAME}/${NAMESPACE}/${NAME}/${VERSION}
 
 default: install
 
@@ -35,3 +39,18 @@ test:
 
 testacc:
 	TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 120m
+
+compile_docker_binaries:
+	rm -rf ./docker/dist
+	GOOS=linux GOARCH=arm64 		go build -o ./docker/dist/${LOCAL_MIRROR_PATH}/linux_arm/${BINARY}			main.go
+	GOOS=linux GOARCH=arm GOARM=6 	go build -o ./docker/dist/${LOCAL_MIRROR_PATH}/linux_armv6/${BINARY} 		main.go
+	GOOS=linux GOARCH=amd64 		go build -o ./docker/dist/${LOCAL_MIRROR_PATH}/linux_amd64/${BINARY}		main.go
+	GOOS=linux GOARCH=386 			go build -o ./docker/dist/${LOCAL_MIRROR_PATH}/linux_386/${BINARY}			main.go
+
+push_dev_container: compile_docker_binaries
+	docker build ./docker -t nexus:5001/terraform/mashery-terraform-container:v${VERSION}-${BUILD_PRERELEASE}
+	docker push nexus:5001/terraform/mashery-terraform-container:v${VERSION}-${BUILD_PRERELEASE}
+
+push_release_container: compile_docker_binaries
+	docker build ./docker -t lspwd2/terraform-provider-mashery:v${VERSION} -t lspwd2/terraform-provider-mashery:latest
+	docker image push --all-tags lspwd2/terraform-provider-mashery
