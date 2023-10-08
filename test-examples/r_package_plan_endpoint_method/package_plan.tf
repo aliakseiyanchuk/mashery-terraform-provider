@@ -25,6 +25,6 @@ resource "mashery_package_plan_service_endpoint" "endp" {
 
 resource "mashery_package_plan_service_endpoint_method" "meth_abc" {
   package_plan_service_endpoint_ref = mashery_package_plan_service_endpoint.endp.id
-  method_ref = mashery_endpoint_method.meth_abc.id
-  service_filter_ref = mashery_endpoint_method_filter.abc_filter.id
+  method_ref = mashery_service_endpoint_method.meth_abc.id
+  service_filter_ref = mashery_service_endpoint_method_filter.abc_filter.id
 }

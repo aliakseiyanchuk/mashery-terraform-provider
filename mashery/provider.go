@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/transport"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"log"
 	"os"
 	"strconv"
 	"terraform-provider-mashery/mashschema"
@@ -150,15 +150,9 @@ func initValueFromVariable(envVar string, defaultVal int) schema.SchemaDefaultFu
 	}
 }
 
-var logger *log.Logger
 var encoder *json.Encoder
 
 // Send a message to the log file if it exists
-func doLogf(format string, params ...interface{}) {
-	if logger != nil {
-		logger.Printf(format, params...)
-	}
-}
 
 func vaultProxyConfiguration(d *schema.ResourceData) VaultProxyModeConfiguration {
 	rv := VaultProxyModeConfiguration{
@@ -175,10 +169,10 @@ func vaultProxyConfiguration(d *schema.ResourceData) VaultProxyModeConfiguration
 	return rv
 }
 
-func transportLogging(_ context.Context, wrq *transport.WrappedRequest, wrs *transport.WrappedResponse, err error) {
-	doLogf("-> %s %s", wrq.Request.Method, wrq.Request.URL)
+func transportLogging(ctx context.Context, wrq *transport.WrappedRequest, wrs *transport.WrappedResponse, err error) {
+	tflog.Trace(ctx, fmt.Sprintf("-> %s %s", wrq.Request.Method, wrq.Request.URL))
 	for k, v := range wrq.Request.Header {
-		doLogf("H> %s = %s", k, v)
+		tflog.Trace(ctx, fmt.Sprintf("H> %s = %s", k, v))
 	}
 	if wrq.Body != nil {
 		bodyOut := wrq.Body
@@ -187,40 +181,31 @@ func transportLogging(_ context.Context, wrq *transport.WrappedRequest, wrs *tra
 			bodyOut = str
 		}
 
-		doLogf("B>\n%s", bodyOut)
+		tflog.Trace(ctx, fmt.Sprintf("B>\n%s", bodyOut))
 	}
 
 	if wrs != nil {
-		doLogf("<- %d", wrs.StatusCode)
+		tflog.Trace(ctx, fmt.Sprintf("<- %d", wrs.StatusCode))
 		for k, v := range wrs.Header {
-			doLogf("<H %s = %s", k, v)
+			tflog.Trace(ctx, fmt.Sprintf("<H %s = %s", k, v))
 		}
 
 		if body, err := wrs.Body(); err != nil {
-			doLogf("<H Can't read body: %s", err.Error())
+			tflog.Trace(ctx, fmt.Sprintf("<H Can't read body: %s", err.Error()))
 		} else if len(body) > 0 {
-			doLogf("<H Response body:%s\n", string(body))
+			tflog.Trace(ctx, fmt.Sprintf("<H Response body:%s\n", string(body)))
 		}
 
 	}
 
 	if err != nil {
-		doLogf("Error: %s", err.Error())
+		tflog.Trace(ctx, fmt.Sprintf("Error: %s", err.Error()))
 	}
 }
 
-func ProviderConfigure(_ context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
+func ProviderConfigure(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
 
 	var diags diag.Diagnostics
-	logFile := d.Get("log_file").(string)
-	if len(logFile) > 0 {
-		encoder = new(json.Encoder)
-		encoder.SetIndent("", "  ")
-
-		now := time.Now()
-		f, _ := os.Create(fmt.Sprintf("%s_%d%02d%02d_%02d%02d%02d.log", logFile, now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second()))
-		logger = log.New(f, "TF_MASHERY :", log.LstdFlags)
-	}
 
 	var tokenProvider v3client.V3AccessTokenProvider
 	qps := d.Get(providerQPSField).(int)
@@ -228,11 +213,11 @@ func ProviderConfigure(_ context.Context, d *schema.ResourceData) (interface{}, 
 	requestedLatencyCompensation := mashschema.ExtractString(d, providerNetworkLatencyField, "173ms")
 	netLatency, err := time.ParseDuration(requestedLatencyCompensation)
 
-	doLogf("Requested observed QPS: %d", qps)
-	doLogf("Requested network latency compensation: %s", netLatency)
+	tflog.Info(ctx, fmt.Sprintf("Requested observed QPS: %d", qps))
+	tflog.Info(ctx, fmt.Sprintf("Requested network latency compensation: %s", netLatency))
 
 	if err != nil {
-		doLogf("Network latency compensation is not valid: %s", err.Error())
+		tflog.Error(ctx, fmt.Sprintf("Network latency compensation is not valid: %s", err.Error()))
 
 		diags = append(diags, diag.Diagnostic{
 			Severity: diag.Error,
@@ -262,10 +247,10 @@ func ProviderConfigure(_ context.Context, d *schema.ResourceData) (interface{}, 
 
 		cl := v3client.NewHttpClient(clParams)
 
-		doLogf("Provider initialized with the Vault proxy mode, proxy=%s", vaultProxyMode.fullAddress())
+		tflog.Info(ctx, fmt.Sprintf("Provider initialized with the Vault proxy mode, proxy=%s", vaultProxyMode.fullAddress()))
 		return cl, diags
 	} else {
-		doLogf("Provider configuration does not meet Vault proxy mode requirements")
+		tflog.Info(ctx, "Provider configuration does not meet Vault proxy mode requirements")
 	}
 
 	if tknRaw, ok := d.GetOk(providerV3Token); ok {
@@ -274,7 +259,7 @@ func ProviderConfigure(_ context.Context, d *schema.ResourceData) (interface{}, 
 		// developer passing invalid tokens
 		if len(tkn) > 20 {
 			tokenProvider = v3client.NewFixedTokenProvider(tkn)
-			doLogf("Provider is initialized with explicitly supplied token")
+			tflog.Info(ctx, "Provider is initialized with explicitly supplied token.")
 		} else {
 			diags = append(diags, diag.Diagnostic{
 				Severity: diag.Error,
@@ -302,6 +287,9 @@ func ProviderConfigure(_ context.Context, d *schema.ResourceData) (interface{}, 
 		cl = v3client.NewHttpClientWithAutoRetries(clParams)
 	}
 
-	doLogf("Provider initialized with %d diagnostic messages", len(diags))
+	tflog.Info(ctx, "Provider initialized completed", map[string]interface{}{
+		"diagnostic_count": len(diags),
+		"diagnostic_error": diags.HasError(),
+	})
 	return cl, diags
 }
