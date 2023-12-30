@@ -18,25 +18,25 @@ func init() {
 			return masherytypes.ServiceEndpointMethodFilter{}
 		},
 
-		DoRead: func(ctx context.Context, client v3client.Client, identifier masherytypes.ServiceEndpointMethodFilterIdentifier) (*masherytypes.ServiceEndpointMethodFilter, error) {
+		DoRead: func(ctx context.Context, client v3client.Client, identifier masherytypes.ServiceEndpointMethodFilterIdentifier) (masherytypes.ServiceEndpointMethodFilter, bool, error) {
 			return client.GetEndpointMethodFilter(ctx, identifier)
 		},
 
-		DoCreate: func(ctx context.Context, client v3client.Client, methIdent masherytypes.ServiceEndpointMethodIdentifier, m masherytypes.ServiceEndpointMethodFilter) (*masherytypes.ServiceEndpointMethodFilter, *masherytypes.ServiceEndpointMethodFilterIdentifier, error) {
+		DoCreate: func(ctx context.Context, client v3client.Client, methIdent masherytypes.ServiceEndpointMethodIdentifier, m masherytypes.ServiceEndpointMethodFilter) (masherytypes.ServiceEndpointMethodFilter, masherytypes.ServiceEndpointMethodFilterIdentifier, error) {
 			if createdFilter, err := client.CreateEndpointMethodFilter(ctx, methIdent, m); err != nil {
-				return nil, nil, err
+				return masherytypes.ServiceEndpointMethodFilter{}, masherytypes.ServiceEndpointMethodFilterIdentifier{}, err
 			} else {
 				rvIdent := createdFilter.Identifier()
-				return createdFilter, &rvIdent, nil
+				return createdFilter, rvIdent, nil
 			}
 		},
 
-		DoUpdate: func(ctx context.Context, client v3client.Client, identifier masherytypes.ServiceEndpointMethodFilterIdentifier, m masherytypes.ServiceEndpointMethodFilter) (*masherytypes.ServiceEndpointMethodFilter, error) {
+		DoUpdate: func(ctx context.Context, client v3client.Client, identifier masherytypes.ServiceEndpointMethodFilterIdentifier, m masherytypes.ServiceEndpointMethodFilter) (masherytypes.ServiceEndpointMethodFilter, error) {
 			m.Id = identifier.FilterId
 			m.ServiceEndpointMethod = identifier.ServiceEndpointMethodIdentifier
 
 			if updatedFilter, err := client.UpdateEndpointMethodFilter(ctx, m); err != nil {
-				return nil, err
+				return masherytypes.ServiceEndpointMethodFilter{}, err
 			} else {
 				return updatedFilter, err
 			}

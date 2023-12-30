@@ -23,10 +23,12 @@ func (ri *ResourceImporter[ParentIdent, Ident, MType]) Import(ctx context.Contex
 	if identity, err := ri.resourceTemplate.Mapper.Identity(rd); err != nil {
 		return nil, err
 	} else {
-		if curState, err := ri.resourceTemplate.DoRead(ctx, m.(v3client.Client), identity); err != nil {
+		if curState, exists, err := ri.resourceTemplate.DoRead(ctx, m.(v3client.Client), identity); err != nil {
 			return nil, err
+		} else if !exists {
+			return nil, errors.New("referenced resource is missing")
 		} else {
-			if diag := ri.resourceTemplate.Mapper.RemoteToSchema(curState, rd); diag.HasError() {
+			if diag := ri.resourceTemplate.Mapper.RemoteToSchema(&curState, rd); diag.HasError() {
 				return nil, errors.New("returned data cannot be persisted")
 			}
 

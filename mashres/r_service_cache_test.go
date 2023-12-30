@@ -31,6 +31,6 @@ func givenCreatingServiceCacheSucceeds(h *ResourceTemplateMockHelper[masherytype
 	}
 	h.mockClientWill().
 		On("CreateServiceCache", mock.Anything, serviceIdent, mock.Anything).
-		Return(&rv, nil).
+		Return(rv, nil).
 		Once()
 }

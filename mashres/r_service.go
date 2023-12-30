@@ -18,49 +18,49 @@ func init() {
 			return masherytypes.Service{}
 		},
 
-		DoRead: func(ctx context.Context, client v3client.Client, identifier masherytypes.ServiceIdentifier) (*masherytypes.Service, error) {
-			if service, err := client.GetService(ctx, identifier); err != nil {
-				return service, err
+		DoRead: func(ctx context.Context, client v3client.Client, identifier masherytypes.ServiceIdentifier) (masherytypes.Service, bool, error) {
+			if service, serviceExists, err := client.GetService(ctx, identifier); err != nil || !serviceExists {
+				return service, serviceExists, err
 			} else {
-				if roles, rolesReadErr := client.GetServiceRoles(ctx, identifier); rolesReadErr != nil {
-					return service, rolesReadErr
-				} else if roles != nil {
+				if roles, rolesExist, rolesReadErr := client.GetServiceRoles(ctx, identifier); rolesReadErr != nil {
+					return service, true, rolesReadErr
+				} else if rolesExist {
 					service.Roles = &roles
 				}
 
-				return service, nil
+				return service, true, nil
 			}
 		},
 
-		DoCreate: func(ctx context.Context, client v3client.Client, orphan tfmapper.Orphan, m masherytypes.Service) (*masherytypes.Service, *masherytypes.ServiceIdentifier, error) {
+		DoCreate: func(ctx context.Context, client v3client.Client, orphan tfmapper.Orphan, m masherytypes.Service) (masherytypes.Service, masherytypes.ServiceIdentifier, error) {
 			if cratedService, err := client.CreateService(ctx, m); err != nil {
-				return nil, nil, err
+				return m, masherytypes.ServiceIdentifier{}, err
 			} else {
 				rvIdent := cratedService.Identifier()
 				var rvError error
 
 				if m.Roles != nil {
-					if readBackRoles, roleReadErr := client.GetServiceRoles(ctx, rvIdent); roleReadErr != nil {
+					if readBackRoles, rolesExist, roleReadErr := client.GetServiceRoles(ctx, rvIdent); roleReadErr != nil {
 						rvError = roleReadErr
-					} else {
+					} else if rolesExist {
 						cratedService.Roles = &readBackRoles
 					}
 				}
 
-				return cratedService, &rvIdent, rvError
+				return cratedService, rvIdent, rvError
 			}
 		},
 
-		DoUpdate: func(ctx context.Context, client v3client.Client, identifier masherytypes.ServiceIdentifier, m masherytypes.Service) (*masherytypes.Service, error) {
+		DoUpdate: func(ctx context.Context, client v3client.Client, identifier masherytypes.ServiceIdentifier, m masherytypes.Service) (masherytypes.Service, error) {
 			m.Id = identifier.ServiceId
 
 			if updatedService, err := client.UpdateService(ctx, m); err != nil {
-				return nil, err
+				return masherytypes.Service{}, err
 			} else {
 				if m.Roles != nil {
-					if readBackRoles, roleSetErr := client.GetServiceRoles(ctx, identifier); roleSetErr != nil {
+					if readBackRoles, rolesExist, roleSetErr := client.GetServiceRoles(ctx, identifier); roleSetErr != nil {
 						return updatedService, roleSetErr
-					} else {
+					} else if rolesExist {
 						updatedService.Roles = &readBackRoles
 					}
 				}

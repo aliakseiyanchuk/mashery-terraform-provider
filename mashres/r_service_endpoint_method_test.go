@@ -49,6 +49,6 @@ func givenCreatingEndpointMethodSucceeds(h *ResourceTemplateMockHelper[masheryty
 
 	h.mockClientWill().
 		On("CreateEndpointMethod", mock.Anything, ident, mock.Anything).
-		Return(&retVal, nil).
+		Return(retVal, nil).
 		Once()
 }

@@ -18,28 +18,28 @@ func init() {
 			return masherytypes.MasheryOAuth{}
 		},
 
-		DoRead: func(ctx context.Context, client v3client.Client, identifier masherytypes.ServiceIdentifier) (*masherytypes.MasheryOAuth, error) {
+		DoRead: func(ctx context.Context, client v3client.Client, identifier masherytypes.ServiceIdentifier) (masherytypes.MasheryOAuth, bool, error) {
 			return client.GetServiceOAuthSecurityProfile(ctx, identifier)
 		},
 
-		DoCreate: func(ctx context.Context, client v3client.Client, ident masherytypes.ServiceIdentifier, m masherytypes.MasheryOAuth) (*masherytypes.MasheryOAuth, *masherytypes.ServiceIdentifier, error) {
+		DoCreate: func(ctx context.Context, client v3client.Client, ident masherytypes.ServiceIdentifier, m masherytypes.MasheryOAuth) (masherytypes.MasheryOAuth, masherytypes.ServiceIdentifier, error) {
 			m.ParentService.ServiceId = ident.ServiceId
 
-			if createOAuth, err := client.CreateServiceOAuthSecurityProfile(ctx, m); err != nil {
-				return nil, nil, err
+			if createOAuth, err := client.CreateServiceOAuthSecurityProfile(ctx, ident, m); err != nil {
+				return masherytypes.MasheryOAuth{}, ident, err
 			} else {
 				rvIdent := masherytypes.ServiceIdentifier{
 					ServiceId: ident.ServiceId,
 				}
-				return createOAuth, &rvIdent, nil
+				return createOAuth, rvIdent, nil
 			}
 		},
 
-		DoUpdate: func(ctx context.Context, client v3client.Client, identifier masherytypes.ServiceIdentifier, m masherytypes.MasheryOAuth) (*masherytypes.MasheryOAuth, error) {
+		DoUpdate: func(ctx context.Context, client v3client.Client, identifier masherytypes.ServiceIdentifier, m masherytypes.MasheryOAuth) (masherytypes.MasheryOAuth, error) {
 			m.ParentService.ServiceId = identifier.ServiceId
 
 			if updatedOAuth, err := client.UpdateServiceOAuthSecurityProfile(ctx, m); err != nil {
-				return nil, err
+				return masherytypes.MasheryOAuth{}, err
 			} else {
 				return updatedOAuth, err
 			}

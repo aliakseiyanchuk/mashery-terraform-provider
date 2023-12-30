@@ -69,18 +69,18 @@ func givenEmailTemplateSetIsReturned(h *DatasourceTemplateMockHelper, params map
 	}
 
 	h.mockClientWill().
-		On("ListEmailTemplateSetsFiltered", mock.Anything, params, mashschema.EmptyStringArray).
+		On("ListEmailTemplateSetsFiltered", mock.Anything, params).
 		Return(returnedSet, nil)
 }
 
 func givenQueryingEmailTemplatesReturnsError(h *DatasourceTemplateMockHelper, params map[string]string) {
 	h.mockClientWill().
-		On("ListEmailTemplateSetsFiltered", mock.Anything, params, mashschema.EmptyStringArray).
+		On("ListEmailTemplateSetsFiltered", mock.Anything, params).
 		Return([]masherytypes.EmailTemplateSet{}, errors.New("sample rejection for email template set"))
 }
 
 func givenQueryingEmailTemplatesReturnsNothing(h *DatasourceTemplateMockHelper, params map[string]string) {
 	h.mockClientWill().
-		On("ListEmailTemplateSetsFiltered", mock.Anything, params, mashschema.EmptyStringArray).
+		On("ListEmailTemplateSetsFiltered", mock.Anything, params).
 		Return([]masherytypes.EmailTemplateSet{}, nil)
 }

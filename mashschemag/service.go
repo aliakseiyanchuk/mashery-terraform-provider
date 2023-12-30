@@ -13,6 +13,9 @@ var ServiceResourceSchemaBuilder = tfmapper.NewSchemaBuilder[tfmapper.Orphan, ma
 		IdentityFunc: func() masherytypes.ServiceIdentifier {
 			return masherytypes.ServiceIdentifier{}
 		},
+		ValidateIdentFunc: func(inp masherytypes.ServiceIdentifier) bool {
+			return len(inp.ServiceId) > 3
+		},
 	}).
 	RootIdentity(&tfmapper.RootParentIdentity{})
 

@@ -73,17 +73,17 @@ func givenSingleRoleMatchIsReturned(h *DatasourceTemplateMockHelper, params map[
 		},
 	}
 	h.mockClientWill().
-		On("ListRolesFiltered", mock.Anything, params, mashschema.EmptyStringArray).
+		On("ListRolesFiltered", mock.Anything, params).
 		Return(returnedRoles, nil)
 }
 func givenNoRoleMatchIsReturned(h *DatasourceTemplateMockHelper, params map[string]string) {
 	h.mockClientWill().
-		On("ListRolesFiltered", mock.Anything, params, mashschema.EmptyStringArray).
+		On("ListRolesFiltered", mock.Anything, params).
 		Return([]masherytypes.Role{}, nil)
 }
 
 func givenErrorReturnedWhenQueryingRoles(h *DatasourceTemplateMockHelper, params map[string]string) {
 	h.mockClientWill().
-		On("ListRolesFiltered", mock.Anything, params, mashschema.EmptyStringArray).
+		On("ListRolesFiltered", mock.Anything, params).
 		Return([]masherytypes.Role{}, errors.New("sample rejection"))
 }

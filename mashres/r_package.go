@@ -19,20 +19,20 @@ func init() {
 			return masherytypes.Package{}
 		},
 
-		DoRead: func(ctx context.Context, client v3client.Client, identifier masherytypes.PackageIdentifier) (*masherytypes.Package, error) {
+		DoRead: func(ctx context.Context, client v3client.Client, identifier masherytypes.PackageIdentifier) (masherytypes.Package, bool, error) {
 			return client.GetPackage(ctx, identifier)
 		},
 
-		DoCreate: func(ctx context.Context, client v3client.Client, orphan tfmapper.Orphan, m masherytypes.Package) (*masherytypes.Package, *masherytypes.PackageIdentifier, error) {
+		DoCreate: func(ctx context.Context, client v3client.Client, orphan tfmapper.Orphan, m masherytypes.Package) (masherytypes.Package, masherytypes.PackageIdentifier, error) {
 			if createdPackage, err := client.CreatePackage(ctx, m); err != nil {
-				return nil, nil, err
+				return masherytypes.Package{}, masherytypes.PackageIdentifier{}, err
 			} else {
 				rvIdent := createdPackage.Identifier()
-				return createdPackage, &rvIdent, nil
+				return createdPackage, rvIdent, nil
 			}
 		},
 
-		DoUpdate: func(ctx context.Context, client v3client.Client, identifier masherytypes.PackageIdentifier, m masherytypes.Package) (*masherytypes.Package, error) {
+		DoUpdate: func(ctx context.Context, client v3client.Client, identifier masherytypes.PackageIdentifier, m masherytypes.Package) (masherytypes.Package, error) {
 			m.Id = identifier.PackageId
 
 			// The reason why this code is organized this way is that:
@@ -49,7 +49,7 @@ func init() {
 			if updatedPack, updateErr := client.UpdatePackage(ctx, m); updateErr != nil {
 				return updatedPack, updateErr
 			} else {
-				if readBackPack, readBackErr := client.GetPackage(ctx, m.Identifier()); readBackErr != nil {
+				if readBackPack, _, readBackErr := client.GetPackage(ctx, m.Identifier()); readBackErr != nil {
 					return readBackPack, readBackErr
 				} else if m.Organization == nil && readBackPack.Organization != nil {
 					return client.ResetPackageOwnership(ctx, m.Identifier())

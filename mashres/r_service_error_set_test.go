@@ -153,7 +153,7 @@ func givenCreateErrorSetSucceeds(h *ResourceTemplateMockHelper[masherytypes.Serv
 
 	h.mockClientWill().
 		On("CreateErrorSet", mock.Anything, serviceId, mock.Anything).
-		Return(&rv, nil).
+		Return(rv, nil).
 		Once()
 }
 
@@ -180,6 +180,6 @@ func givenReadErrorSetSucceeds(h *ResourceTemplateMockHelper[masherytypes.Servic
 
 	h.mockClientWill().
 		On("GetErrorSet", mock.Anything, errId).
-		Return(&rv, nil).
+		Return(rv, true, nil).
 		Once()
 }

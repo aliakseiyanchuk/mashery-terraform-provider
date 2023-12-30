@@ -51,6 +51,6 @@ func givenCreatingPackageSucceeds(h *ResourceTemplateMockHelper[tfmapper.Orphan,
 
 	h.mockClientWill().
 		On("CreatePackage", mock.Anything, mock.Anything).
-		Return(&rv, nil).
+		Return(rv, nil).
 		Once()
 }

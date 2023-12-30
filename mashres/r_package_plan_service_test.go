@@ -145,7 +145,7 @@ func givenCreatingPackagePlanServiceSucceeds(h *ResourceTemplateMockHelper[mashe
 
 	h.mockClientWill().
 		On("CreatePlanService", mock.Anything, expectedIdent).
-		Return(&rv, nil).
+		Return(rv, nil).
 		Once()
 }
 
@@ -170,6 +170,6 @@ func givenCreatingPackagePlanServiceFails(h *ResourceTemplateMockHelper[masheryt
 
 	h.mockClientWill().
 		On("CreatePlanService", mock.Anything, expectedIdent).
-		Return(nil, errors.New("unit test failure during creating package plan service")).
+		Return(masherytypes.AddressableV3Object{}, errors.New("unit test failure during creating package plan service")).
 		Once()
 }

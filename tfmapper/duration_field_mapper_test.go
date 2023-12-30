@@ -10,8 +10,8 @@ import (
 )
 
 func TestSuppressSameDuration(t *testing.T) {
-	assert.True(t, SuppressSameDuration("key", "1h", "1h0m0s", nil))
-	assert.False(t, SuppressSameDuration("key", "1h", "1h0m1s", nil))
+	assert.True(t, ShouldSuppressSameDuration("1h", "1h0m0s"))
+	assert.False(t, ShouldSuppressSameDuration("1h", "1h0m1s"))
 }
 
 func TestDurationMapperSettingLeniency(t *testing.T) {

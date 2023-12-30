@@ -18,25 +18,24 @@ func init() {
 			return masherytypes.Endpoint{}
 		},
 
-		DoRead: func(ctx context.Context, client v3client.Client, identifier masherytypes.ServiceEndpointIdentifier) (*masherytypes.Endpoint, error) {
+		DoRead: func(ctx context.Context, client v3client.Client, identifier masherytypes.ServiceEndpointIdentifier) (masherytypes.Endpoint, bool, error) {
 			return client.GetEndpoint(ctx, identifier)
 		},
 
-		DoCreate: func(ctx context.Context, client v3client.Client, serviceIdent masherytypes.ServiceIdentifier, m masherytypes.Endpoint) (*masherytypes.Endpoint, *masherytypes.ServiceEndpointIdentifier, error) {
+		DoCreate: func(ctx context.Context, client v3client.Client, serviceIdent masherytypes.ServiceIdentifier, m masherytypes.Endpoint) (masherytypes.Endpoint, masherytypes.ServiceEndpointIdentifier, error) {
 			if createdEndpoint, err := client.CreateEndpoint(ctx, serviceIdent, m); err != nil {
-				return nil, nil, err
+				return masherytypes.Endpoint{}, masherytypes.ServiceEndpointIdentifier{}, err
 			} else {
-				rvIdent := createdEndpoint.Identifier()
-				return createdEndpoint, &rvIdent, nil
+				return createdEndpoint, createdEndpoint.Identifier(), nil
 			}
 		},
 
-		DoUpdate: func(ctx context.Context, client v3client.Client, identifier masherytypes.ServiceEndpointIdentifier, m masherytypes.Endpoint) (*masherytypes.Endpoint, error) {
+		DoUpdate: func(ctx context.Context, client v3client.Client, identifier masherytypes.ServiceEndpointIdentifier, m masherytypes.Endpoint) (masherytypes.Endpoint, error) {
 			m.Id = identifier.EndpointId
 			m.ParentServiceId = identifier.ServiceIdentifier
 
 			if updatedService, err := client.UpdateEndpoint(ctx, m); err != nil {
-				return nil, err
+				return masherytypes.Endpoint{}, err
 			} else {
 				return updatedService, err
 			}

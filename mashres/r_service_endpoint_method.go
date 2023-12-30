@@ -18,27 +18,27 @@ func init() {
 			return masherytypes.ServiceEndpointMethod{}
 		},
 
-		DoRead: func(ctx context.Context, client v3client.Client, identifier masherytypes.ServiceEndpointMethodIdentifier) (*masherytypes.ServiceEndpointMethod, error) {
+		DoRead: func(ctx context.Context, client v3client.Client, identifier masherytypes.ServiceEndpointMethodIdentifier) (masherytypes.ServiceEndpointMethod, bool, error) {
 			return client.GetEndpointMethod(ctx, identifier)
 		},
 
-		DoCreate: func(ctx context.Context, client v3client.Client, serviceEndpointIdent masherytypes.ServiceEndpointIdentifier, m masherytypes.ServiceEndpointMethod) (*masherytypes.ServiceEndpointMethod, *masherytypes.ServiceEndpointMethodIdentifier, error) {
+		DoCreate: func(ctx context.Context, client v3client.Client, serviceEndpointIdent masherytypes.ServiceEndpointIdentifier, m masherytypes.ServiceEndpointMethod) (masherytypes.ServiceEndpointMethod, masherytypes.ServiceEndpointMethodIdentifier, error) {
 			if createdMethod, err := client.CreateEndpointMethod(ctx, serviceEndpointIdent, m); err != nil {
-				return nil, nil, err
+				return masherytypes.ServiceEndpointMethod{}, masherytypes.ServiceEndpointMethodIdentifier{}, err
 			} else {
 				rvIdent := createdMethod.Identifier()
-				return createdMethod, &rvIdent, nil
+				return createdMethod, rvIdent, nil
 			}
 		},
 
-		DoUpdate: func(ctx context.Context, client v3client.Client, identifier masherytypes.ServiceEndpointMethodIdentifier, m masherytypes.ServiceEndpointMethod) (*masherytypes.ServiceEndpointMethod, error) {
+		DoUpdate: func(ctx context.Context, client v3client.Client, identifier masherytypes.ServiceEndpointMethodIdentifier, m masherytypes.ServiceEndpointMethod) (masherytypes.ServiceEndpointMethod, error) {
 			m.Id = identifier.MethodId
 			m.ParentEndpointId = identifier.ServiceEndpointIdentifier
 
-			if updatedService, err := client.UpdateEndpointMethod(ctx, m); err != nil {
-				return nil, err
+			if updatedMethod, err := client.UpdateEndpointMethod(ctx, m); err != nil {
+				return updatedMethod, err
 			} else {
-				return updatedService, err
+				return updatedMethod, nil
 			}
 		},
 

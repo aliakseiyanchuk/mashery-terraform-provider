@@ -69,7 +69,7 @@ func TestCreatingServiceWillReturnDiagnosticIfNotSuccessful(t *testing.T) {
 func TestReadServiceWithNoRolesWillSucceed(t *testing.T) {
 	h := CreateTestResource(ServiceResource)
 	serviceId := masherytypes.ServiceIdentifier{
-		ServiceId: "abc",
+		ServiceId: "abcdefg",
 	}
 
 	h.givenIdentity(t, serviceId)
@@ -83,7 +83,7 @@ func TestReadServiceWithNoRolesWillSucceed(t *testing.T) {
 func TestReadServiceWithRolesWillSucceed(t *testing.T) {
 	h := CreateTestResource(ServiceResource)
 	serviceId := masherytypes.ServiceIdentifier{
-		ServiceId: "abc",
+		ServiceId: "abcdefg",
 	}
 
 	h.givenIdentity(t, serviceId)
@@ -97,7 +97,7 @@ func TestReadServiceWithRolesWillSucceed(t *testing.T) {
 func TestReadServiceWithReturnDiagOnAPIFailure(t *testing.T) {
 	h := CreateTestResource(ServiceResource)
 	serviceId := masherytypes.ServiceIdentifier{
-		ServiceId: "abc",
+		ServiceId: "abcdefg",
 	}
 
 	h.givenIdentity(t, serviceId)
@@ -109,7 +109,7 @@ func TestReadServiceWithReturnDiagOnAPIFailure(t *testing.T) {
 func TestReadServiceWithReturnDiagOnRolesReadAPIFailure(t *testing.T) {
 	h := CreateTestResource(ServiceResource)
 	serviceId := masherytypes.ServiceIdentifier{
-		ServiceId: "abc",
+		ServiceId: "abcdefg",
 	}
 
 	h.givenIdentity(t, serviceId)
@@ -126,7 +126,7 @@ func TestUpdateServiceWithNoRolesWillSucceed(t *testing.T) {
 	h := CreateTestResource(ServiceResource)
 
 	serviceId := masherytypes.ServiceIdentifier{
-		ServiceId: "abc",
+		ServiceId: "abcdefg",
 	}
 
 	h.givenIdentity(t, serviceId)
@@ -141,7 +141,7 @@ func TestUpdateServiceWithNoRolesWillReturnDiagnosticIfServiceUpdateErrs(t *test
 	h := CreateTestResource(ServiceResource)
 
 	serviceId := masherytypes.ServiceIdentifier{
-		ServiceId: "abc",
+		ServiceId: "abcdefg",
 	}
 
 	h.givenIdentity(t, serviceId)
@@ -154,7 +154,7 @@ func TestUpdateServiceWithRolesWillSucceed(t *testing.T) {
 	h := CreateTestResource(ServiceResource)
 
 	serviceId := masherytypes.ServiceIdentifier{
-		ServiceId: "abc",
+		ServiceId: "abcdefg",
 	}
 
 	h.givenIdentity(t, serviceId)
@@ -170,7 +170,7 @@ func TestUpdateServiceWithRolesWillReturnDiagnosticIfRoleReadbackErrs(t *testing
 	h := CreateTestResource(ServiceResource)
 
 	serviceId := masherytypes.ServiceIdentifier{
-		ServiceId: "abc",
+		ServiceId: "abcdefg",
 	}
 
 	h.givenIdentity(t, serviceId)
@@ -188,7 +188,7 @@ func TestDeleteServiceWillComplete(t *testing.T) {
 	h := CreateTestResource(ServiceResource)
 
 	testIdent := masherytypes.ServiceIdentifier{
-		ServiceId: "abc",
+		ServiceId: "abcdefg",
 	}
 
 	h.givenIdentity(t, testIdent)
@@ -203,7 +203,7 @@ func TestDeleteServiceWillBlockOnOffendingEndpoints(t *testing.T) {
 	h := CreateTestResource(ServiceResource)
 
 	testIdent := masherytypes.ServiceIdentifier{
-		ServiceId: "abc",
+		ServiceId: "abcdefg",
 	}
 
 	h.givenIdentity(t, testIdent)
@@ -217,7 +217,7 @@ func TestDeleteServiceWillBlockOnFailureToCountOffendingEndpoints(t *testing.T) 
 	h := CreateTestResource(ServiceResource)
 
 	testIdent := masherytypes.ServiceIdentifier{
-		ServiceId: "abc",
+		ServiceId: "abcdefg",
 	}
 
 	h.givenIdentity(t, testIdent)
@@ -268,7 +268,7 @@ func givenCreateServiceSucceeds(h *ResourceTemplateMockHelper[tfmapper.Orphan, m
 	}
 	h.mockClientWill().
 		On("CreateService", mock.Anything, mock.Anything).
-		Return(&returnedService, nil).
+		Return(returnedService, nil).
 		Once()
 }
 
@@ -299,7 +299,7 @@ func givenReadServiceSucceeds(h *ResourceTemplateMockHelper[tfmapper.Orphan, mas
 	}
 	h.mockClientWill().
 		On("GetService", mock.Anything, ident).
-		Return(&returnedService, nil).
+		Return(returnedService, true, nil).
 		Once()
 }
 
@@ -330,21 +330,21 @@ func givenUpdatingServiceSucceeds(h *ResourceTemplateMockHelper[tfmapper.Orphan,
 	}
 	h.mockClientWill().
 		On("UpdateService", mock.Anything, mock.Anything).
-		Return(&returnedService, nil).
+		Return(returnedService, nil).
 		Once()
 }
 
 func givenUpdatingServiceFails(h *ResourceTemplateMockHelper[tfmapper.Orphan, masherytypes.ServiceIdentifier, masherytypes.Service], ident masherytypes.ServiceIdentifier) {
 	h.mockClientWill().
 		On("UpdateService", mock.Anything, mock.Anything).
-		Return(nil, errors.New("unit test rejection of UpdateService method")).
+		Return(masherytypes.Service{}, errors.New("unit test rejection of UpdateService method")).
 		Once()
 }
 
 func givenReadServiceFails(h *ResourceTemplateMockHelper[tfmapper.Orphan, masherytypes.ServiceIdentifier, masherytypes.Service], ident masherytypes.ServiceIdentifier) {
 	h.mockClientWill().
 		On("GetService", mock.Anything, ident).
-		Return(nil, errors.New("unit test error on reading the service")).
+		Return(masherytypes.Service{}, false, errors.New("unit test error on reading the service")).
 		Once()
 }
 
@@ -362,7 +362,7 @@ func givenReadingServiceRolesYieldsData(h *ResourceTemplateMockHelper[tfmapper.O
 	}
 	h.mockClientWill().
 		On("GetServiceRoles", mock.Anything, ident).
-		Return(returnedPermissions, nil).
+		Return(returnedPermissions, true, nil).
 		Once()
 }
 
@@ -380,35 +380,35 @@ func givenReadingServiceRolesOfACreatedServiceYieldsData(h *ResourceTemplateMock
 	}
 	h.mockClientWill().
 		On("GetServiceRoles", mock.Anything, mock.Anything).
-		Return(returnedPermissions, nil).
+		Return(returnedPermissions, true, nil).
 		Once()
 }
 
 func givenReadingServiceRolesYieldsNothing(h *ResourceTemplateMockHelper[tfmapper.Orphan, masherytypes.ServiceIdentifier, masherytypes.Service], ident masherytypes.ServiceIdentifier) {
 	h.mockClientWill().
 		On("GetServiceRoles", mock.Anything, ident).
-		Return([]masherytypes.RolePermission{}, nil).
+		Return([]masherytypes.RolePermission{}, false, nil).
 		Once()
 }
 
 func givenReadingServiceRolesOfACreatedServiceYieldsNothing(h *ResourceTemplateMockHelper[tfmapper.Orphan, masherytypes.ServiceIdentifier, masherytypes.Service]) {
 	h.mockClientWill().
 		On("GetServiceRoles", mock.Anything, mock.Anything).
-		Return([]masherytypes.RolePermission{}, nil).
+		Return([]masherytypes.RolePermission{}, true, nil).
 		Once()
 }
 
 func givenReadingServiceRolesFails(h *ResourceTemplateMockHelper[tfmapper.Orphan, masherytypes.ServiceIdentifier, masherytypes.Service], ident masherytypes.ServiceIdentifier) {
 	h.mockClientWill().
 		On("GetServiceRoles", mock.Anything, ident).
-		Return([]masherytypes.RolePermission{}, errors.New("unit-test rejection while reading roles")).
+		Return([]masherytypes.RolePermission{}, false, errors.New("unit-test rejection while reading roles")).
 		Once()
 }
 
 func givenReadingServiceRolesOfACreatedServiceFails(h *ResourceTemplateMockHelper[tfmapper.Orphan, masherytypes.ServiceIdentifier, masherytypes.Service]) {
 	h.mockClientWill().
 		On("GetServiceRoles", mock.Anything, mock.Anything).
-		Return([]masherytypes.RolePermission{}, errors.New("unit-test rejection while reading roles")).
+		Return([]masherytypes.RolePermission{}, false, errors.New("unit-test rejection while reading roles")).
 		Once()
 }
 
@@ -443,7 +443,7 @@ func givenCreateServiceRolesFails(h *ResourceTemplateMockHelper[tfmapper.Orphan,
 func givenCreateServiceFails(h *ResourceTemplateMockHelper[tfmapper.Orphan, masherytypes.ServiceIdentifier, masherytypes.Service]) {
 	h.mockClientWill().
 		On("CreateService", mock.Anything, mock.Anything).
-		Return(nil, errors.New("service creation failed for unit test reason")).
+		Return(masherytypes.Service{}, errors.New("service creation failed for unit test reason")).
 		Once()
 
 }

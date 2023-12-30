@@ -18,23 +18,22 @@ func init() {
 			return masherytypes.ErrorSet{}
 		},
 
-		DoRead: func(ctx context.Context, client v3client.Client, identifier masherytypes.ErrorSetIdentifier) (*masherytypes.ErrorSet, error) {
+		DoRead: func(ctx context.Context, client v3client.Client, identifier masherytypes.ErrorSetIdentifier) (masherytypes.ErrorSet, bool, error) {
 			return client.GetErrorSet(ctx, identifier)
 		},
 
-		DoCreate: func(ctx context.Context, client v3client.Client, identifier masherytypes.ServiceIdentifier, set masherytypes.ErrorSet) (*masherytypes.ErrorSet, *masherytypes.ErrorSetIdentifier, error) {
+		DoCreate: func(ctx context.Context, client v3client.Client, identifier masherytypes.ServiceIdentifier, set masherytypes.ErrorSet) (masherytypes.ErrorSet, masherytypes.ErrorSetIdentifier, error) {
 			readBack, err := client.CreateErrorSet(ctx, identifier, set)
 
-			var rvIdent *masherytypes.ErrorSetIdentifier = nil
-			if readBack != nil {
-				setIdent := readBack.Identifier()
-				rvIdent = &setIdent
+			var rvIdent masherytypes.ErrorSetIdentifier
+			if err == nil {
+				rvIdent = readBack.Identifier()
 			}
 
 			return readBack, rvIdent, err
 		},
 
-		DoUpdate: func(ctx context.Context, client v3client.Client, identifier masherytypes.ErrorSetIdentifier, set masherytypes.ErrorSet) (*masherytypes.ErrorSet, error) {
+		DoUpdate: func(ctx context.Context, client v3client.Client, identifier masherytypes.ErrorSetIdentifier, set masherytypes.ErrorSet) (masherytypes.ErrorSet, error) {
 			set.ParentServiceId = identifier.ServiceIdentifier
 
 			return client.UpdateErrorSet(ctx, set)

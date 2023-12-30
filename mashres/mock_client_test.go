@@ -12,25 +12,22 @@ type MockClient struct {
 	mock.Mock
 }
 
-func (mc *MockClient) ListRolesFiltered(ctx context.Context, params map[string]string, fields []string) ([]masherytypes.Role, error) {
-	args := mc.Called(ctx, params, fields)
+func (mc *MockClient) ListRolesFiltered(ctx context.Context, params map[string]string) ([]masherytypes.Role, error) {
+	args := mc.Called(ctx, params)
 	return args.Get(0).([]masherytypes.Role), args.Error(1)
 }
 
-func (mc *MockClient) ListEmailTemplateSetsFiltered(ctx context.Context, params map[string]string, fields []string) ([]masherytypes.EmailTemplateSet, error) {
-	args := mc.Called(ctx, params, fields)
+func (mc *MockClient) ListEmailTemplateSetsFiltered(ctx context.Context, params map[string]string) ([]masherytypes.EmailTemplateSet, error) {
+	args := mc.Called(ctx, params)
 	return args.Get(0).([]masherytypes.EmailTemplateSet), args.Error(1)
 }
 
-func (mc *MockClient) CreateService(ctx context.Context, service masherytypes.Service) (*masherytypes.Service, error) {
+func (mc *MockClient) CreateService(ctx context.Context, service masherytypes.Service) (masherytypes.Service, error) {
 	return servicePointerWithError(mc.Called(ctx, service))
 }
 
-func servicePointerWithError(args mock.Arguments) (*masherytypes.Service, error) {
-	var rv *masherytypes.Service = nil
-	if rawRw := args.Get(0); rawRw != nil {
-		rv = rawRw.(*masherytypes.Service)
-	}
+func servicePointerWithError(args mock.Arguments) (masherytypes.Service, error) {
+	var rv = args.Get(0).(masherytypes.Service)
 
 	return rv, args.Error(1)
 }
@@ -50,13 +47,16 @@ func (mc *MockClient) CountEndpointsOf(ctx context.Context, serviceId masherytyp
 	return args.Get(0).(int64), args.Error(1)
 }
 
-func (mc *MockClient) GetService(ctx context.Context, id masherytypes.ServiceIdentifier) (*masherytypes.Service, error) {
-	return servicePointerWithError(mc.Called(ctx, id))
+func (mc *MockClient) GetService(ctx context.Context, id masherytypes.ServiceIdentifier) (masherytypes.Service, bool, error) {
+	args := mc.Called(ctx, id)
+	var rv = args.Get(0).(masherytypes.Service)
+
+	return rv, args.Bool(1), args.Error(2)
 }
 
-func (mc *MockClient) GetServiceRoles(ctx context.Context, serviceId masherytypes.ServiceIdentifier) ([]masherytypes.RolePermission, error) {
+func (mc *MockClient) GetServiceRoles(ctx context.Context, serviceId masherytypes.ServiceIdentifier) ([]masherytypes.RolePermission, bool, error) {
 	args := mc.Called(ctx, serviceId)
-	return args.Get(0).([]masherytypes.RolePermission), args.Error(1)
+	return args.Get(0).([]masherytypes.RolePermission), args.Bool(1), args.Error(2)
 }
 
 func (mc *MockClient) DeleteServiceRoles(ctx context.Context, id masherytypes.ServiceIdentifier) error {
@@ -64,80 +64,58 @@ func (mc *MockClient) DeleteServiceRoles(ctx context.Context, id masherytypes.Se
 	return args.Error(0)
 }
 
-func (mc *MockClient) UpdateService(ctx context.Context, service masherytypes.Service) (*masherytypes.Service, error) {
+func (mc *MockClient) UpdateService(ctx context.Context, service masherytypes.Service) (masherytypes.Service, error) {
 	return servicePointerWithError(mc.Called(ctx, service))
 }
 
-func (mc *MockClient) CreateServiceOAuthSecurityProfile(ctx context.Context, service masherytypes.MasheryOAuth) (*masherytypes.MasheryOAuth, error) {
-	args := mc.Called(ctx, service)
-
-	var rv *masherytypes.MasheryOAuth
-	if rawRV := args.Get(0); rawRV != nil {
-		rv = rawRV.(*masherytypes.MasheryOAuth)
-	}
+func (mc *MockClient) CreateServiceOAuthSecurityProfile(ctx context.Context, id masherytypes.ServiceIdentifier, service masherytypes.MasheryOAuth) (masherytypes.MasheryOAuth, error) {
+	args := mc.Called(ctx, id, service)
+	var rv = args.Get(0).(masherytypes.MasheryOAuth)
 
 	return rv, args.Error(1)
 }
 
-func (mc *MockClient) GetServiceCache(ctx context.Context, id masherytypes.ServiceIdentifier) (*masherytypes.ServiceCache, error) {
+func (mc *MockClient) GetServiceCache(ctx context.Context, id masherytypes.ServiceIdentifier) (masherytypes.ServiceCache, bool, error) {
 	args := mc.Called(ctx, id)
+	var rv = args.Get(0).(masherytypes.ServiceCache)
 
-	return serviceCacheAndErrorFrom(args)
+	return rv, args.Bool(1), args.Error(2)
 }
 
-func serviceCacheAndErrorFrom(args mock.Arguments) (*masherytypes.ServiceCache, error) {
-	var rv *masherytypes.ServiceCache
-	if rawRV := args.Get(0); rawRV != nil {
-		rv = rawRV.(*masherytypes.ServiceCache)
-	}
+func serviceCacheAndErrorFrom(args mock.Arguments) (masherytypes.ServiceCache, error) {
+	var rv = args.Get(0).(masherytypes.ServiceCache)
 
 	return rv, args.Error(1)
 }
 
-func (mc *MockClient) CreateServiceCache(ctx context.Context, id masherytypes.ServiceIdentifier, service masherytypes.ServiceCache) (*masherytypes.ServiceCache, error) {
+func (mc *MockClient) CreateServiceCache(ctx context.Context, id masherytypes.ServiceIdentifier, service masherytypes.ServiceCache) (masherytypes.ServiceCache, error) {
 	args := mc.Called(ctx, id, service)
 	return serviceCacheAndErrorFrom(args)
 }
 
-func (mc *MockClient) CreateEndpoint(ctx context.Context, serviceId masherytypes.ServiceIdentifier, endp masherytypes.Endpoint) (*masherytypes.Endpoint, error) {
+func (mc *MockClient) CreateEndpoint(ctx context.Context, serviceId masherytypes.ServiceIdentifier, endp masherytypes.Endpoint) (masherytypes.Endpoint, error) {
 	args := mc.Called(ctx, serviceId, endp)
-
-	var rv *masherytypes.Endpoint = nil
-	if args.Get(0) != nil {
-		rv = args.Get(0).(*masherytypes.Endpoint)
-	}
+	var rv = args.Get(0).(masherytypes.Endpoint)
 
 	return rv, args.Error(1)
 }
 
-func (mc *MockClient) CreatePackage(ctx context.Context, pack masherytypes.Package) (*masherytypes.Package, error) {
+func (mc *MockClient) CreatePackage(ctx context.Context, pack masherytypes.Package) (masherytypes.Package, error) {
 	args := mc.Called(ctx, pack)
-
-	var rv *masherytypes.Package = nil
-	if args.Get(0) != nil {
-		rv = args.Get(0).(*masherytypes.Package)
-	}
+	var rv = args.Get(0).(masherytypes.Package)
 
 	return rv, args.Error(1)
 }
-func (mc *MockClient) CreatePlan(ctx context.Context, packageId masherytypes.PackageIdentifier, plan masherytypes.Plan) (*masherytypes.Plan, error) {
+func (mc *MockClient) CreatePlan(ctx context.Context, packageId masherytypes.PackageIdentifier, plan masherytypes.Plan) (masherytypes.Plan, error) {
 	args := mc.Called(ctx, packageId, plan)
-
-	var rv *masherytypes.Plan = nil
-	if args.Get(0) != nil {
-		rv = args.Get(0).(*masherytypes.Plan)
-	}
+	var rv masherytypes.Plan = args.Get(0).(masherytypes.Plan)
 
 	return rv, args.Error(1)
 }
 
-func (mc *MockClient) CreatePlanService(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier) (*masherytypes.AddressableV3Object, error) {
+func (mc *MockClient) CreatePlanService(ctx context.Context, planService masherytypes.PackagePlanServiceIdentifier) (masherytypes.AddressableV3Object, error) {
 	args := mc.Called(ctx, planService)
-
-	var rv *masherytypes.AddressableV3Object = nil
-	if rawRW := args.Get(0); rawRW != nil {
-		rv = rawRW.(*masherytypes.AddressableV3Object)
-	}
+	var rv = args.Get(0).(masherytypes.AddressableV3Object)
 
 	return rv, args.Error(1)
 }
@@ -146,13 +124,9 @@ func (mc *MockClient) CheckPlanServiceExists(ctx context.Context, planService ma
 	args := mc.Called(ctx, planService)
 	return args.Bool(0), args.Error(1)
 }
-func (mc *MockClient) CreatePlanEndpoint(ctx context.Context, planEndp masherytypes.PackagePlanServiceEndpointIdentifier) (*masherytypes.AddressableV3Object, error) {
+func (mc *MockClient) CreatePlanEndpoint(ctx context.Context, planEndp masherytypes.PackagePlanServiceEndpointIdentifier) (masherytypes.AddressableV3Object, error) {
 	args := mc.Called(ctx, planEndp)
-
-	var rv *masherytypes.AddressableV3Object = nil
-	if rawRW := args.Get(0); rawRW != nil {
-		rv = rawRW.(*masherytypes.AddressableV3Object)
-	}
+	var rv = args.Get(0).(masherytypes.AddressableV3Object)
 
 	return rv, args.Error(1)
 }
@@ -162,46 +136,30 @@ func (mc *MockClient) CheckPlanEndpointExists(ctx context.Context, planEndp mash
 	return args.Bool(0), args.Error(1)
 }
 
-func (mc *MockClient) CreateEndpointMethod(ctx context.Context, ident masherytypes.ServiceEndpointIdentifier, methodUpsert masherytypes.ServiceEndpointMethod) (*masherytypes.ServiceEndpointMethod, error) {
+func (mc *MockClient) CreateEndpointMethod(ctx context.Context, ident masherytypes.ServiceEndpointIdentifier, methodUpsert masherytypes.ServiceEndpointMethod) (masherytypes.ServiceEndpointMethod, error) {
 	args := mc.Called(ctx, ident, methodUpsert)
-
-	var rv *masherytypes.ServiceEndpointMethod
-	if rawRW := args.Get(0); rawRW != nil {
-		rv = rawRW.(*masherytypes.ServiceEndpointMethod)
-	}
+	var rv = args.Get(0).(masherytypes.ServiceEndpointMethod)
 
 	return rv, args.Error(1)
 }
 
-func (mc *MockClient) CreateEndpointMethodFilter(ctx context.Context, ident masherytypes.ServiceEndpointMethodIdentifier, filterUpsert masherytypes.ServiceEndpointMethodFilter) (*masherytypes.ServiceEndpointMethodFilter, error) {
+func (mc *MockClient) CreateEndpointMethodFilter(ctx context.Context, ident masherytypes.ServiceEndpointMethodIdentifier, filterUpsert masherytypes.ServiceEndpointMethodFilter) (masherytypes.ServiceEndpointMethodFilter, error) {
 	args := mc.Called(ctx, ident, filterUpsert)
-
-	var rv *masherytypes.ServiceEndpointMethodFilter
-	if rawRW := args.Get(0); rawRW != nil {
-		rv = rawRW.(*masherytypes.ServiceEndpointMethodFilter)
-	}
+	var rv = args.Get(0).(masherytypes.ServiceEndpointMethodFilter)
 
 	return rv, args.Error(1)
 }
 
-func (mc *MockClient) CreatePackagePlanMethod(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodIdentifier) (*masherytypes.PackagePlanServiceEndpointMethod, error) {
+func (mc *MockClient) CreatePackagePlanMethod(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodIdentifier) (masherytypes.PackagePlanServiceEndpointMethod, error) {
 	args := mc.Called(ctx, id)
-
-	var rv *masherytypes.PackagePlanServiceEndpointMethod
-	if rawRW := args.Get(0); rawRW != nil {
-		rv = rawRW.(*masherytypes.PackagePlanServiceEndpointMethod)
-	}
+	var rv = args.Get(0).(masherytypes.PackagePlanServiceEndpointMethod)
 
 	return rv, args.Error(1)
 }
 
-func (mc *MockClient) CreatePackagePlanMethodFilter(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodFilterIdentifier) (*masherytypes.PackagePlanServiceEndpointMethodFilter, error) {
+func (mc *MockClient) CreatePackagePlanMethodFilter(ctx context.Context, id masherytypes.PackagePlanServiceEndpointMethodFilterIdentifier) (masherytypes.PackagePlanServiceEndpointMethodFilter, error) {
 	args := mc.Called(ctx, id)
-
-	var rv *masherytypes.PackagePlanServiceEndpointMethodFilter
-	if rawRW := args.Get(0); rawRW != nil {
-		rv = rawRW.(*masherytypes.PackagePlanServiceEndpointMethodFilter)
-	}
+	var rv = args.Get(0).(masherytypes.PackagePlanServiceEndpointMethodFilter)
 
 	return rv, args.Error(1)
 }
@@ -211,24 +169,17 @@ func (mc *MockClient) ListOrganizationsFiltered(ctx context.Context, qs map[stri
 	return args.Get(0).([]masherytypes.Organization), args.Error(1)
 }
 
-func (mc *MockClient) CreateErrorSet(ctx context.Context, serviceId masherytypes.ServiceIdentifier, set masherytypes.ErrorSet) (*masherytypes.ErrorSet, error) {
+func (mc *MockClient) CreateErrorSet(ctx context.Context, serviceId masherytypes.ServiceIdentifier, set masherytypes.ErrorSet) (masherytypes.ErrorSet, error) {
 	args := mc.Called(ctx, serviceId, set)
-
-	var rv *masherytypes.ErrorSet = nil
-	if rawRV := args.Get(0); rawRV != nil {
-		rv = rawRV.(*masherytypes.ErrorSet)
-	}
+	var rv = args.Get(0).(masherytypes.ErrorSet)
 
 	return rv, args.Error(1)
 }
 
-func (mc *MockClient) GetErrorSet(ctx context.Context, ident masherytypes.ErrorSetIdentifier) (*masherytypes.ErrorSet, error) {
+func (mc *MockClient) GetErrorSet(ctx context.Context, ident masherytypes.ErrorSetIdentifier) (masherytypes.ErrorSet, bool, error) {
 	args := mc.Called(ctx, ident)
 
-	var rv *masherytypes.ErrorSet = nil
-	if rawRV := args.Get(0); rawRV != nil {
-		rv = rawRV.(*masherytypes.ErrorSet)
-	}
+	var rv = args.Get(0).(masherytypes.ErrorSet)
 
-	return rv, args.Error(1)
+	return rv, args.Bool(1), args.Error(2)
 }

@@ -423,6 +423,12 @@ func (im *JsonIdentityMapper[Ident]) ValidateIdent(i interface{}, _ cty.Path) di
 }
 
 func (im *JsonIdentityMapper[Ident]) Assign(ident Ident, state *schema.ResourceData) error {
+	// Passing in an incomplete identified is treated as a set of the empty string
+	if im.ValidateIdentFunc != nil && !im.ValidateIdentFunc(ident) {
+		state.SetId("")
+		return nil
+	}
+
 	val := WrapJSON(ident)
 	if len(im.Key) > 0 {
 		return state.Set(im.Key, val)

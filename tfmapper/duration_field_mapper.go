@@ -18,8 +18,12 @@ type DurationFieldMapper[MType any] struct {
 func SuppressSameDuration(key, _, _ string, s *schema.ResourceData) bool {
 	ovs, nvs := s.GetChange(key)
 
-	ovt, _ := time.ParseDuration(ovs.(string))
-	nvt, _ := time.ParseDuration(nvs.(string))
+	return ShouldSuppressSameDuration(ovs.(string), nvs.(string))
+}
+
+func ShouldSuppressSameDuration(ovs, nvs string) bool {
+	ovt, _ := time.ParseDuration(ovs)
+	nvt, _ := time.ParseDuration(nvs)
 
 	return ovt == nvt
 }

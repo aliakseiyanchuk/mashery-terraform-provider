@@ -87,7 +87,7 @@ func givenCreatingPackagePlanServiceEndpointMethodSucceeds(h *ResourceTemplateMo
 
 	h.mockClientWill().
 		On("CreatePackagePlanMethod", mock.Anything, expectedMethodIdent).
-		Return(&rv, nil).
+		Return(rv, nil).
 		Once()
 }
 
@@ -104,6 +104,6 @@ func givenCreatingPackagePlanServiceEndpointMethodFilterSucceeds(h *ResourceTemp
 
 	h.mockClientWill().
 		On("CreatePackagePlanMethodFilter", mock.Anything, expectedIdent).
-		Return(&rv, nil).
+		Return(rv, nil).
 		Once()
 }

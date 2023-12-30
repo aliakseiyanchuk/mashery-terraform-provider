@@ -52,6 +52,6 @@ func givenCreatingEndpointMethodFilterSucceeds(h *ResourceTemplateMockHelper[mas
 
 	h.mockClientWill().
 		On("CreateEndpointMethodFilter", mock.Anything, ident, mock.Anything).
-		Return(&retVal, nil).
+		Return(retVal, nil).
 		Once()
 }

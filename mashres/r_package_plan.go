@@ -18,25 +18,25 @@ func init() {
 			return masherytypes.Plan{}
 		},
 
-		DoRead: func(ctx context.Context, client v3client.Client, identifier masherytypes.PackagePlanIdentifier) (*masherytypes.Plan, error) {
+		DoRead: func(ctx context.Context, client v3client.Client, identifier masherytypes.PackagePlanIdentifier) (masherytypes.Plan, bool, error) {
 			return client.GetPlan(ctx, identifier)
 		},
 
-		DoCreate: func(ctx context.Context, client v3client.Client, packageId masherytypes.PackageIdentifier, m masherytypes.Plan) (*masherytypes.Plan, *masherytypes.PackagePlanIdentifier, error) {
+		DoCreate: func(ctx context.Context, client v3client.Client, packageId masherytypes.PackageIdentifier, m masherytypes.Plan) (masherytypes.Plan, masherytypes.PackagePlanIdentifier, error) {
 			if createdPackage, err := client.CreatePlan(ctx, packageId, m); err != nil {
-				return nil, nil, err
+				return masherytypes.Plan{}, masherytypes.PackagePlanIdentifier{}, err
 			} else {
 				rvIdent := createdPackage.Identifier()
-				return createdPackage, &rvIdent, nil
+				return createdPackage, rvIdent, nil
 			}
 		},
 
-		DoUpdate: func(ctx context.Context, client v3client.Client, identifier masherytypes.PackagePlanIdentifier, m masherytypes.Plan) (*masherytypes.Plan, error) {
+		DoUpdate: func(ctx context.Context, client v3client.Client, identifier masherytypes.PackagePlanIdentifier, m masherytypes.Plan) (masherytypes.Plan, error) {
 			m.Id = identifier.PlanId
 			m.ParentPackageId = identifier.PackageIdentifier
 
 			if updatedPack, err := client.UpdatePlan(ctx, m); err != nil {
-				return nil, err
+				return masherytypes.Plan{}, err
 			} else {
 				return updatedPack, err
 			}

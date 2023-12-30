@@ -19,19 +19,19 @@ func TestCreatingServiceOAuthWillSucceed(t *testing.T) {
 	h.givenStateFieldSetTo(t, mashschema.MashSvcOAuthAccessTokenTtl, "1h")
 	h.givenStateFieldSetTo(t, mashschema.MashSvcOAuthGrantTypes, []string{"client_credentials"})
 
-	givenCreatingServiceOAuthSucceeds(h)
+	givenCreatingServiceOAuthSucceeds(h, serviceIdent)
 	h.thenExecutingCreate(t)
 	h.thenAssignedIdIs(t, func(t *testing.T, id masherytypes.ServiceIdentifier) {
 		assert.Equal(t, "abc", id.ServiceId)
 	})
 }
 
-func givenCreatingServiceOAuthSucceeds(h *ResourceTemplateMockHelper[masherytypes.ServiceIdentifier, masherytypes.ServiceIdentifier, masherytypes.MasheryOAuth]) {
+func givenCreatingServiceOAuthSucceeds(h *ResourceTemplateMockHelper[masherytypes.ServiceIdentifier, masherytypes.ServiceIdentifier, masherytypes.MasheryOAuth], srvIdent masherytypes.ServiceIdentifier) {
 	rv := masherytypes.MasheryOAuth{
 		SecureTokensEnabled: true,
 	}
 	h.mockClientWill().
-		On("CreateServiceOAuthSecurityProfile", mock.Anything, mock.Anything).
-		Return(&rv, nil).
+		On("CreateServiceOAuthSecurityProfile", mock.Anything, srvIdent, mock.Anything).
+		Return(rv, nil).
 		Once()
 }

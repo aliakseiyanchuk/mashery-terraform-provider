@@ -284,7 +284,7 @@ func ProviderConfigure(ctx context.Context, d *schema.ResourceData) (interface{}
 			AvgNetLatency: netLatency,
 		}
 
-		cl = v3client.NewHttpClientWithAutoRetries(clParams)
+		cl = v3client.NewHttpClientWithBadRequestAutoRetries(clParams)
 	}
 
 	tflog.Info(ctx, "Provider initialized completed", map[string]interface{}{

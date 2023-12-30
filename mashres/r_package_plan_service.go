@@ -18,20 +18,16 @@ func init() {
 			return mashschemag.PackagePlanServiceParam{}
 		},
 
-		DoRead: func(ctx context.Context, client v3client.Client, identifier masherytypes.PackagePlanServiceIdentifier) (*mashschemag.PackagePlanServiceParam, error) {
-			serviceExists, err := client.CheckPlanServiceExists(ctx, identifier)
-			if serviceExists {
-				// If the service exists, return the reference to the service. This will be ignored during the
-				// Remote-to-Schema working.
-				return &mashschemag.PackagePlanServiceParam{
-					ServiceIdentifier: identifier.ServiceIdentifier,
-				}, err
-			} else {
-				return nil, err
+		DoRead: func(ctx context.Context, client v3client.Client, identifier masherytypes.PackagePlanServiceIdentifier) (mashschemag.PackagePlanServiceParam, bool, error) {
+			rvObj := mashschemag.PackagePlanServiceParam{
+				ServiceIdentifier: identifier.ServiceIdentifier,
 			}
+
+			serviceExists, err := client.CheckPlanServiceExists(ctx, identifier)
+			return rvObj, serviceExists, err
 		},
 
-		DoCreate: func(ctx context.Context, client v3client.Client, identifier masherytypes.PackagePlanIdentifier, m mashschemag.PackagePlanServiceParam) (*mashschemag.PackagePlanServiceParam, *masherytypes.PackagePlanServiceIdentifier, error) {
+		DoCreate: func(ctx context.Context, client v3client.Client, identifier masherytypes.PackagePlanIdentifier, m mashschemag.PackagePlanServiceParam) (mashschemag.PackagePlanServiceParam, masherytypes.PackagePlanServiceIdentifier, error) {
 
 			ident := masherytypes.PackagePlanServiceIdentifier{
 				ServiceIdentifier:     m.ServiceIdentifier,
@@ -39,9 +35,9 @@ func init() {
 			}
 
 			if _, err := client.CreatePlanService(ctx, ident); err != nil {
-				return nil, nil, err
+				return mashschemag.PackagePlanServiceParam{}, masherytypes.PackagePlanServiceIdentifier{}, err
 			} else {
-				return &m, &ident, nil
+				return m, ident, nil
 			}
 		},
 

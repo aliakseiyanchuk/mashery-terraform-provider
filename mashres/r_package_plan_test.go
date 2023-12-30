@@ -43,6 +43,6 @@ func givenCreatingPackagePlanSucceeds(h *ResourceTemplateMockHelper[masherytypes
 
 	h.mockClientWill().
 		On("CreatePlan", mock.Anything, ident.PackageIdentifier, mock.Anything).
-		Return(&retVal, nil).
+		Return(retVal, nil).
 		Once()
 }

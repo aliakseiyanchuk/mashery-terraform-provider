@@ -102,14 +102,14 @@ func init() {
 				Description: "email template set id to use",
 			},
 		},
-	}).Add(&tfmapper.StringPtrFieldMapper[masherytypes.Plan]{
-		Locator: func(in *masherytypes.Plan) **string {
+	}).Add(&tfmapper.IntPointerFieldMapper[masherytypes.Plan]{
+		Locator: func(in *masherytypes.Plan) **int {
 			return &in.AdminEmailTemplateSetId
 		},
 		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Plan]{
 			Key: mashschema.MashPlanAdminEmailTemplateSetId,
 			Schema: &schema.Schema{
-				Type:        schema.TypeString,
+				Type:        schema.TypeInt,
 				Optional:    true,
 				Description: "admin email template set id to use",
 			},

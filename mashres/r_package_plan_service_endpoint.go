@@ -32,31 +32,24 @@ func init() {
 			return ""
 		},
 
-		DoRead: func(ctx context.Context, client v3client.Client, identifier masherytypes.PackagePlanServiceEndpointIdentifier) (*mashschemag.PackagePlanServiceEndpointParam, error) {
-			ppsEndpointExists, err := client.CheckPlanEndpointExists(ctx, identifier)
-			if ppsEndpointExists {
-				// If endpoint exists; then the reference to the same identifier will be returned. The value
-				// in the state file will not change as this is an identity operation
-				return &mashschemag.PackagePlanServiceEndpointParam{
-					ServiceEndpointIdentifier: identifier.ServiceEndpointIdentifier,
-				}, err
-			} else {
-				return nil, err
+		DoRead: func(ctx context.Context, client v3client.Client, identifier masherytypes.PackagePlanServiceEndpointIdentifier) (mashschemag.PackagePlanServiceEndpointParam, bool, error) {
+			param := mashschemag.PackagePlanServiceEndpointParam{
+				ServiceEndpointIdentifier: identifier.ServiceEndpointIdentifier,
 			}
+
+			ppsEndpointExists, err := client.CheckPlanEndpointExists(ctx, identifier)
+			return param, ppsEndpointExists, err
 		},
 
-		DoCreate: func(ctx context.Context, client v3client.Client, identifier masherytypes.PackagePlanServiceIdentifier, m mashschemag.PackagePlanServiceEndpointParam) (*mashschemag.PackagePlanServiceEndpointParam, *masherytypes.PackagePlanServiceEndpointIdentifier, error) {
+		DoCreate: func(ctx context.Context, client v3client.Client, identifier masherytypes.PackagePlanServiceIdentifier, m mashschemag.PackagePlanServiceEndpointParam) (mashschemag.PackagePlanServiceEndpointParam, masherytypes.PackagePlanServiceEndpointIdentifier, error) {
 
 			ident := masherytypes.PackagePlanServiceEndpointIdentifier{
 				ServiceEndpointIdentifier: m.ServiceEndpointIdentifier,
 				PackagePlanIdentifier:     identifier.PackagePlanIdentifier,
 			}
 
-			if _, err := client.CreatePlanEndpoint(ctx, ident); err != nil {
-				return nil, nil, err
-			} else {
-				return &m, &ident, nil
-			}
+			_, err := client.CreatePlanEndpoint(ctx, ident)
+			return m, ident, err
 		},
 
 		// Update is not required: it will be delete-only

@@ -2,7 +2,6 @@ package mashres
 
 import (
 	"context"
-	"errors"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 	"terraform-provider-mashery/mashschemag"
@@ -19,21 +18,19 @@ func init() {
 			return mashschemag.PackagePlanServiceEndpointMethodParam{}
 		},
 
-		DoRead: func(ctx context.Context, client v3client.Client, identifier masherytypes.PackagePlanServiceEndpointMethodIdentifier) (*mashschemag.PackagePlanServiceEndpointMethodParam, error) {
-			if methState, err := client.GetPackagePlanMethod(ctx, identifier); err != nil {
-				return nil, err
-			} else if methState == nil {
-				// This method no longer exists.
-				return nil, nil
+		DoRead: func(ctx context.Context, client v3client.Client, identifier masherytypes.PackagePlanServiceEndpointMethodIdentifier) (mashschemag.PackagePlanServiceEndpointMethodParam, bool, error) {
+			rv := mashschemag.PackagePlanServiceEndpointMethodParam{
+				ServiceEndpointMethod: identifier.ServiceEndpointMethodIdentifier,
+			}
+
+			if _, methodExists, err := client.GetPackagePlanMethod(ctx, identifier); err != nil || !methodExists {
+				return rv, methodExists, err
 			} else {
-				rv := mashschemag.PackagePlanServiceEndpointMethodParam{
-					ServiceEndpointMethod: identifier.ServiceEndpointMethodIdentifier,
-				}
 
 				// Try reading a method to detect drift.
-				if filterState, err := client.GetPackagePlanMethodFilter(ctx, identifier); err != nil {
-					return nil, err
-				} else if filterState != nil {
+				if filterState, filterExists, filterErr := client.GetPackagePlanMethodFilter(ctx, identifier); filterErr != nil || !filterExists {
+					return rv, filterExists, filterErr
+				} else if filterExists {
 					filterIdent := filterState.Identifier()
 
 					desiredFilterIdent := masherytypes.ServiceEndpointMethodFilterIdentifier{}
@@ -43,13 +40,14 @@ func init() {
 					desiredFilterIdent.FilterId = filterIdent.FilterId
 
 					rv.ServiceEndpointMethodFilterDesired = desiredFilterIdent
+					return rv, filterExists, nil
+				} else {
+					return rv, false, nil
 				}
-
-				return &rv, nil
 			}
 		},
 
-		DoCreate: func(ctx context.Context, client v3client.Client, identifier masherytypes.PackagePlanServiceEndpointIdentifier, m mashschemag.PackagePlanServiceEndpointMethodParam) (*mashschemag.PackagePlanServiceEndpointMethodParam, *masherytypes.PackagePlanServiceEndpointMethodIdentifier, error) {
+		DoCreate: func(ctx context.Context, client v3client.Client, identifier masherytypes.PackagePlanServiceEndpointIdentifier, m mashschemag.PackagePlanServiceEndpointMethodParam) (mashschemag.PackagePlanServiceEndpointMethodParam, masherytypes.PackagePlanServiceEndpointMethodIdentifier, error) {
 
 			ident := masherytypes.PackagePlanServiceEndpointMethodIdentifier{
 				ServiceEndpointMethodIdentifier: m.ServiceEndpointMethod,
@@ -57,7 +55,7 @@ func init() {
 			}
 
 			if _, err := client.CreatePackagePlanMethod(ctx, ident); err != nil {
-				return nil, nil, err
+				return m, ident, err
 			} else {
 				if len(m.ServiceEndpointMethodFilterDesired.FilterId) > 0 {
 					filterIdent := masherytypes.PackagePlanServiceEndpointMethodFilterIdentifier{
@@ -65,27 +63,25 @@ func init() {
 						PackagePlanIdentifier:                 identifier.PackagePlanIdentifier,
 					}
 
-					if obj, err := client.CreatePackagePlanMethodFilter(ctx, filterIdent); err != nil {
-						return &m, &ident, err
-					} else if obj == nil {
-						return &m, &ident, errors.New("the api did not return a filter state; the filter was not created")
+					if _, err := client.CreatePackagePlanMethodFilter(ctx, filterIdent); err != nil {
+						return m, ident, err
 					}
 				}
 
-				return &m, &ident, nil
+				return m, ident, nil
 			}
 		},
 
 		// Update is not required: it will be delete-only
 
-		DoUpdate: func(ctx context.Context, client v3client.Client, identifier masherytypes.PackagePlanServiceEndpointMethodIdentifier, param mashschemag.PackagePlanServiceEndpointMethodParam) (*mashschemag.PackagePlanServiceEndpointMethodParam, error) {
+		DoUpdate: func(ctx context.Context, client v3client.Client, identifier masherytypes.PackagePlanServiceEndpointMethodIdentifier, param mashschemag.PackagePlanServiceEndpointMethodParam) (mashschemag.PackagePlanServiceEndpointMethodParam, error) {
 			rv := mashschemag.PackagePlanServiceEndpointMethodParam{}
 
 			if param.ServiceEndpointMethodFilterChanged {
 
 				if len(param.ServiceEndpointMethodFilterPrevious.FilterId) > 0 {
 					if err := client.DeleteEndpointMethodFilter(ctx, param.ServiceEndpointMethodFilterPrevious); err != nil {
-						return nil, err
+						return rv, err
 					}
 				}
 				if len(param.ServiceEndpointMethodFilterDesired.FilterId) > 0 {
@@ -94,15 +90,13 @@ func init() {
 						PackagePlanIdentifier:                 identifier.PackagePlanIdentifier,
 					}
 
-					if obj, err := client.CreatePackagePlanMethodFilter(ctx, ident); err != nil {
-						return nil, err
-					} else if obj == nil {
-						return nil, errors.New("the api did not return a filter state; the filter was not created")
+					if _, err := client.CreatePackagePlanMethodFilter(ctx, ident); err != nil {
+						return rv, err
 					}
 				}
 			}
 
-			return &rv, nil
+			return rv, nil
 		},
 
 		DoDelete: func(ctx context.Context, client v3client.Client, identifier masherytypes.PackagePlanServiceEndpointMethodIdentifier) error {

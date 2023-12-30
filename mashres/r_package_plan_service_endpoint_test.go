@@ -95,6 +95,6 @@ func givenCreatingPackagePlanServiceEndpointSucceeds(h *ResourceTemplateMockHelp
 
 	h.mockClientWill().
 		On("CreatePlanEndpoint", mock.Anything, expectedIdent).
-		Return(&rv, nil).
+		Return(rv, nil).
 		Once()
 }

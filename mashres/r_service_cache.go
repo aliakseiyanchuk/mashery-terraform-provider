@@ -18,25 +18,27 @@ func init() {
 			return masherytypes.ServiceCache{}
 		},
 
-		DoRead: func(ctx context.Context, client v3client.Client, identifier masherytypes.ServiceIdentifier) (*masherytypes.ServiceCache, error) {
+		DoRead: func(ctx context.Context, client v3client.Client, identifier masherytypes.ServiceIdentifier) (masherytypes.ServiceCache, bool, error) {
 			return client.GetServiceCache(ctx, identifier)
 		},
 
-		DoCreate: func(ctx context.Context, client v3client.Client, ident masherytypes.ServiceIdentifier, m masherytypes.ServiceCache) (*masherytypes.ServiceCache, *masherytypes.ServiceIdentifier, error) {
+		DoCreate: func(ctx context.Context, client v3client.Client, ident masherytypes.ServiceIdentifier, m masherytypes.ServiceCache) (masherytypes.ServiceCache, masherytypes.ServiceIdentifier, error) {
 			// Align the API of the Mashery V3 client
 			if createdCache, err := client.CreateServiceCache(ctx, ident, m); err != nil {
-				return nil, nil, err
+				return masherytypes.ServiceCache{}, masherytypes.ServiceIdentifier{}, err
 			} else {
 				rvIdent := masherytypes.ServiceIdentifier{
 					ServiceId: ident.ServiceId,
 				}
-				return createdCache, &rvIdent, nil
+				return createdCache, rvIdent, nil
 			}
 		},
 
-		DoUpdate: func(ctx context.Context, client v3client.Client, identifier masherytypes.ServiceIdentifier, m masherytypes.ServiceCache) (*masherytypes.ServiceCache, error) {
-			if updatedCache, err := client.UpdateServiceCache(ctx, identifier, m); err != nil {
-				return nil, err
+		DoUpdate: func(ctx context.Context, client v3client.Client, identifier masherytypes.ServiceIdentifier, m masherytypes.ServiceCache) (masherytypes.ServiceCache, error) {
+			m.ParentServiceId = identifier
+
+			if updatedCache, err := client.UpdateServiceCache(ctx, m); err != nil {
+				return masherytypes.ServiceCache{}, err
 			} else {
 				return updatedCache, err
 			}
