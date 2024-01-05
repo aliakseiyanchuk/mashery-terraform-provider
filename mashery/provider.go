@@ -146,8 +146,6 @@ func initValueFromVariable(envVar string, defaultVal int) schema.SchemaDefaultFu
 	}
 }
 
-var encoder *json.Encoder
-
 // Send a message to the log file if it exists
 
 func vaultPairingConfiguration(d *schema.ResourceData) VaultPairingConfiguration {
