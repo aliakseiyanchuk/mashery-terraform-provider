@@ -3,8 +3,8 @@ HOSTNAME=github.com
 NAMESPACE=aliakseiyanchuk
 NAME=mashery
 BINARY=terraform-provider-${NAME}
-VERSION=0.4
-BUILD_PRERELEASE=alpha.2
+VERSION=0.5
+BUILD_PRERELEASE=alpha.3
 OS_ARCH=darwin_arm64
 DOCKER_IMAGE=nexus:5001
 

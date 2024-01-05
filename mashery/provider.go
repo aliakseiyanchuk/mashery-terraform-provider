@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"os"
 	"strconv"
+	"strings"
 	"terraform-provider-mashery/mashschema"
 	"time"
 )
@@ -42,6 +43,7 @@ const (
 	vaultMountPathField = "vault_mount"
 	engineRoleField     = "role"
 	vaultTokenField     = "vault_token"
+	vaultProxyMode      = "vault_proxy_mode"
 
 	providerQPSField            = "qps"
 	providerNetworkLatencyField = "network_latency"
@@ -49,11 +51,6 @@ const (
 )
 
 var ProviderConfigSchema = map[string]*schema.Schema{
-	"log_file": {
-		Type:        schema.TypeString,
-		Optional:    true,
-		Description: "Log file where detailed Mashery session information will be saved",
-	},
 	vaultAddrField: {
 		Type:        schema.TypeString,
 		Optional:    true,
@@ -71,6 +68,12 @@ var ProviderConfigSchema = map[string]*schema.Schema{
 		Optional:    true,
 		Description: "Role name to use with this provider",
 		Default:     schema.EnvDefaultFunc(envVaultRole, "mash-auth"),
+	},
+	vaultProxyMode: {
+		Type:        schema.TypeBool,
+		Optional:    true,
+		Description: "Whether the provider should operate in Vault proxy mode (i.e. delegate all operations to Vault)",
+		Default:     false,
 	},
 	vaultTokenField: {
 		Type:        schema.TypeString,
@@ -102,39 +105,32 @@ var ProviderConfigSchema = map[string]*schema.Schema{
 // ----------------------------------------------------------------------------------------------
 // Vault proxy mode configuration
 
-type VaultProxyModeConfiguration struct {
-	addr     string
-	mount    string
-	roleName string
-	token    string
+type VaultPairingConfiguration struct {
+	addr      string
+	mount     string
+	roleName  string
+	proxyMode bool
+	token     string
 }
 
-func (vpm *VaultProxyModeConfiguration) isComplete() bool {
-	return len(vpm.addr) > 0 && len(vpm.mount) > 0 && len(vpm.roleName) > 0 && len(vpm.token) > 0
+func (vpm *VaultPairingConfiguration) isCompleteForProxyMode() bool {
+	return len(vpm.addr) > 0 && len(vpm.mount) > 0 && len(vpm.roleName) > 0 && len(vpm.token) > 0 && vpm.proxyMode
 }
 
-func (vpm *VaultProxyModeConfiguration) fullAddress() string {
+func (vpm *VaultPairingConfiguration) isCompleteForResourceFetch() bool {
+	return len(vpm.addr) > 0 && len(vpm.mount) > 0 && len(vpm.roleName) > 0 && len(vpm.token) > 0 && !vpm.proxyMode
+}
+
+func (vpm *VaultPairingConfiguration) fullAddress() string {
 	return fmt.Sprintf("%s/v1/%s/roles/%s/proxy/v3", vpm.addr, vpm.mount, vpm.roleName)
 }
 
-// --------------------------------------------------------------------------------------------
-// Vault authorizer
-
-type VaultAuthorizer struct {
-	transport.Authorizer
-
-	vaultAuth map[string]string
+func (vpm *VaultPairingConfiguration) tokenAddress() string {
+	return fmt.Sprintf("%s/v1/%s/roles/%s/token", vpm.addr, vpm.mount, vpm.roleName)
 }
 
-func (va VaultAuthorizer) HeaderAuthorization(_ context.Context) (map[string]string, error) {
-	return va.vaultAuth, nil
-}
-func (va VaultAuthorizer) QueryStringAuthorization(_ context.Context) (map[string]string, error) {
-	return nil, nil
-}
-
-func (va VaultAuthorizer) Close() {
-	// Do nothing
+func (vpm *VaultPairingConfiguration) vaultToken() transport.VaultToken {
+	return transport.VaultToken(vpm.token)
 }
 
 // -----------------------------------------------------------------------------
@@ -154,12 +150,13 @@ var encoder *json.Encoder
 
 // Send a message to the log file if it exists
 
-func vaultProxyConfiguration(d *schema.ResourceData) VaultProxyModeConfiguration {
-	rv := VaultProxyModeConfiguration{
-		addr:     d.Get(vaultAddrField).(string),
-		mount:    d.Get(vaultMountPathField).(string),
-		roleName: d.Get(engineRoleField).(string),
-		token:    d.Get(vaultTokenField).(string),
+func vaultPairingConfiguration(d *schema.ResourceData) VaultPairingConfiguration {
+	rv := VaultPairingConfiguration{
+		addr:      d.Get(vaultAddrField).(string),
+		mount:     d.Get(vaultMountPathField).(string),
+		roleName:  d.Get(engineRoleField).(string),
+		proxyMode: d.Get(vaultProxyMode).(bool),
+		token:     d.Get(vaultTokenField).(string),
 	}
 
 	if tknFromEnv := os.Getenv(envVaultToken); len(tknFromEnv) > 0 {
@@ -170,9 +167,20 @@ func vaultProxyConfiguration(d *schema.ResourceData) VaultProxyModeConfiguration
 }
 
 func transportLogging(ctx context.Context, wrq *transport.WrappedRequest, wrs *transport.WrappedResponse, err error) {
-	tflog.Trace(ctx, fmt.Sprintf("-> %s %s", wrq.Request.Method, wrq.Request.URL))
+	var b strings.Builder
+
+	b.WriteString("\n")
+	b.WriteString(fmt.Sprintf("-> %s %s\n", wrq.Request.Method, wrq.Request.URL))
 	for k, v := range wrq.Request.Header {
-		tflog.Trace(ctx, fmt.Sprintf("H> %s = %s", k, v))
+		// The Authorization and X-Vault-Token header value is never written into the logs.
+		// All other headers are written into the logs with their value as-is.
+		switch strings.ToLower(k) {
+		case "authorization":
+		case "x-vault-token":
+			b.WriteString(fmt.Sprintf("H> %s = %s\n", k, "****<REDACTED>****"))
+		default:
+			b.WriteString(fmt.Sprintf("H> %s = %s\n", k, v))
+		}
 	}
 	if wrq.Body != nil {
 		bodyOut := wrq.Body
@@ -181,26 +189,30 @@ func transportLogging(ctx context.Context, wrq *transport.WrappedRequest, wrs *t
 			bodyOut = str
 		}
 
-		tflog.Trace(ctx, fmt.Sprintf("B>\n%s", bodyOut))
+		b.WriteString(fmt.Sprintf("B>\n%s\n", bodyOut))
 	}
 
 	if wrs != nil {
-		tflog.Trace(ctx, fmt.Sprintf("<- %d", wrs.StatusCode))
+		b.WriteString(fmt.Sprintf("<- %d\n", wrs.StatusCode))
 		for k, v := range wrs.Header {
-			tflog.Trace(ctx, fmt.Sprintf("<H %s = %s", k, v))
+			b.WriteString(fmt.Sprintf("<H %s = %s\n", k, v))
 		}
 
 		if body, err := wrs.Body(); err != nil {
-			tflog.Trace(ctx, fmt.Sprintf("<H Can't read body: %s", err.Error()))
+			b.WriteString(fmt.Sprintf("<H Can't read body: %s\n", err.Error()))
 		} else if len(body) > 0 {
-			tflog.Trace(ctx, fmt.Sprintf("<H Response body:%s\n", string(body)))
+			b.WriteString(fmt.Sprintf("<H Response body:%s\n", string(body)))
 		}
 
 	}
 
 	if err != nil {
-		tflog.Trace(ctx, fmt.Sprintf("Error: %s", err.Error()))
+		b.WriteString(fmt.Sprintf("[Request Error] %s\n", err.Error()))
+		tflog.Warn(ctx, b.String())
+	} else {
+		tflog.Trace(ctx, b.String())
 	}
+
 }
 
 func ProviderConfigure(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
@@ -227,7 +239,7 @@ func ProviderConfigure(ctx context.Context, d *schema.ResourceData) (interface{}
 	}
 
 	// Prefer to use Vault proxy mode, if sufficiently configured.
-	if vaultProxyMode := vaultProxyConfiguration(d); vaultProxyMode.isComplete() {
+	if vaultPairingCfg := vaultPairingConfiguration(d); vaultPairingCfg.isCompleteForProxyMode() {
 		clParams := v3client.Params{
 			HTTPClientParams: transport.HTTPClientParams{
 				// Since the connection is made to Vault, the client will trust whatever the system
@@ -235,19 +247,32 @@ func ProviderConfigure(ctx context.Context, d *schema.ResourceData) (interface{}
 				TLSConfigDelegateSystem: true,
 				ExchangeListener:        transportLogging,
 			},
-			Authorizer: VaultAuthorizer{
-				vaultAuth: map[string]string{
-					"X-Vault-Token": vaultProxyMode.token,
-				},
-			},
+			Authorizer:    transport.NewVaultAuthorizer(vaultPairingCfg.vaultToken()),
 			QPS:           int64(qps),
 			AvgNetLatency: netLatency,
-			MashEndpoint:  vaultProxyMode.fullAddress(),
+			MashEndpoint:  vaultPairingCfg.fullAddress(),
 		}
 
 		cl := v3client.NewHttpClient(clParams)
 
-		tflog.Info(ctx, fmt.Sprintf("Provider initialized with the Vault proxy mode, proxy=%s", vaultProxyMode.fullAddress()))
+		tflog.Info(ctx, fmt.Sprintf("Provider initialized with the Vault *proxy* mode, proxy=%s", vaultPairingCfg.fullAddress()))
+		return cl, diags
+	} else if vaultPairingCfg.isCompleteForResourceFetch() {
+		clParams := v3client.Params{
+			HTTPClientParams: transport.HTTPClientParams{
+				TLSConfigDelegateSystem: true,
+				ExchangeListener:        transportLogging,
+			},
+			Authorizer:    transport.NewVaultTokenResourceAuthorizer(vaultPairingCfg.tokenAddress(), vaultPairingCfg.vaultToken()),
+			QPS:           int64(qps),
+			AvgNetLatency: netLatency,
+			// No Mashery endpoint override is necessary here: the connection is established
+			// directly to the Mashery API
+		}
+
+		cl := v3client.NewHttpClient(clParams)
+
+		tflog.Info(ctx, fmt.Sprintf("Provider initialized with the Vault *token fetch* mode, token endpoint=%s", vaultPairingCfg.tokenAddress()))
 		return cl, diags
 	} else {
 		tflog.Info(ctx, "Provider configuration does not meet Vault proxy mode requirements")

@@ -16,7 +16,7 @@ Terraform 0.13 and later:
 terraform {
   required_providers {
     mashery = {
-      version = "0.4"
+      version = "0.5"
       source = "yanchuk.nl/aliakseiyanchuk/mashery"
     }
   }
@@ -109,11 +109,31 @@ export TF_MASHERY_VAULT_TOKEN=hvs.CAESI<lots of letters>Gk
 >
 > Remember to revoke your Vault access token using `vault token revoke` when your interaction has been completed.
 
+Where the provider configuration specifies the Vault address, role, and token, the provider will use Vault to load a valid V3 access token
+for the duration of the execution. The access token is cached in Vault between individual provider runs, and is renewed
+within the Vault as required. 
+
+To activate the Vault proxy mode (i.e. the configuration where all V3 operations are delegated to Vault so that V3 tokens
+are not exposed outside Vault at all), the `vault_proxy_mode` parameter needs to be explicitly indicated. The following
+illustrates the minimum required provider configuration:
+```terraform
+terraform {
+  required_providers {
+    mashery = {
+      version = "0.4"
+      source = "github.com/aliakseiyanchuk/mashery"
+    }
+  }
+}
+
+provider "mashery" {
+  role = "<desired role name>"
+  vault_proxy_mode = "true"
+}
+```
+
 ## Supported parameters
 The provider accepts the following options:
-- `log_file`: a path  *prefix* where to store log files from individual provider runs. This is an optional
-   parameter that you may wish to set to troubleshoot a problem of the provider translating terraform configuration
-   into the V3 API calls.
 - `v3_token`: an active Mashery V3 access token, e.g. retrieved from HashiCorp vault. It can also be passed as `TF_MASHERY_V3_ACCESS_TOKEN`
   environment variable;
 - `qps`: number of calls per second to make towards Mashery API. For practical reasons, it should be set value slightly less 
@@ -121,13 +141,14 @@ The provider accepts the following options:
   recommended to throttle calls as 1 per second. It can also be passed as `TF_MASHERY_QPS` environment variable;
 - `network_latency`: average network latency between your location and Mashery V3 API gateway. It can also be passed
   as `TF_MASHERY_V3_NETWORK_LATENCY` environment variable
-- 'vault_addr': address of the Vault server. Can be passed using `VAULT_ADDR` environment variable
+- `vault_addr`: address of the Vault server. Can be passed using `VAULT_ADDR` environment variable
 - `vault_mount`: specifies the mounting path of Mashery secrets engine within the Vault server. A default value is
   `mash-auth`. The value can also be passed using `TF_MASHERY_VAULT_MOUNT` environment variable.
 - `role`: specifies the role (a wrapper over Mashery area and access credentials) within the Vault secret engine 
   the provider should use to interact with Mashery. Can also be passed using `TF_MASHERY_VAULT_ROLE` environment variable.
 - `vault_token`: specifies the Vault token to use. Given sensitive and transient nature of this value, it is highly
   recommended to have this value passed with `TF_MASHERY_VAULT_TOKEN` environment variable.
+- `vault_proxy_mode`: specifies that provider should delegate all operations to Vault.
 
 
 ## Configuring multiple Mashery Areas in the same Terraform project
