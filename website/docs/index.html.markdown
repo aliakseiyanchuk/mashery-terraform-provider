@@ -17,7 +17,7 @@ terraform {
   required_providers {
     mashery = {
       version = "0.5"
-      source = "yanchuk.nl/aliakseiyanchuk/mashery"
+      source = "github.com/aliakseiyanchuk/mashery"
     }
   }
 }
