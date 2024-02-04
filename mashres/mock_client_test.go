@@ -12,6 +12,16 @@ type MockClient struct {
 	mock.Mock
 }
 
+func (mc *MockClient) ListMembersFiltered(ctx context.Context, params map[string]string) ([]masherytypes.Member, error) {
+	args := mc.Called(ctx, params)
+	return args.Get(0).([]masherytypes.Member), args.Error(1)
+}
+
+func (mc *MockClient) ListApplicationsFiltered(ctx context.Context, params map[string]string) ([]masherytypes.Application, error) {
+	args := mc.Called(ctx, params)
+	return args.Get(0).([]masherytypes.Application), args.Error(1)
+}
+
 func (mc *MockClient) ListRolesFiltered(ctx context.Context, params map[string]string) ([]masherytypes.Role, error) {
 	args := mc.Called(ctx, params)
 	return args.Get(0).([]masherytypes.Role), args.Error(1)

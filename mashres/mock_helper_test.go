@@ -60,19 +60,19 @@ func (mhb *MockHelperBase) mockClientWill() *MockClient {
 // --------------------------------------------------------------------------------------------------------------
 // DatasourceTemplateMockHelper
 
-type DatasourceTemplateMockHelper struct {
+type DatasourceTemplateMockHelper[ParentIdent any, Ident any, MType any] struct {
 	MockHelperBase
-	template DatasourceTemplate
+	template DatasourceTemplate[ParentIdent, Ident, MType]
 }
 
-func (dtmh *DatasourceTemplateMockHelper) thenExecutingDataSourceQuery(t *testing.T) {
+func (dtmh *DatasourceTemplateMockHelper[ParentIdent, Ident, MType]) thenExecutingDataSourceQuery(t *testing.T) {
 	dg := dtmh.template.Query(context.TODO(), dtmh.data, &dtmh.mockCl)
 	assert.True(t, len(dg) == 0)
 
 	dtmh.mockCl.AssertExpectations(t)
 }
 
-func (dtmh *DatasourceTemplateMockHelper) thenExecutingDataSourceQueryWillYieldDiagnostic(t *testing.T, dgText string) {
+func (dtmh *DatasourceTemplateMockHelper[ParentIdent, Ident, MType]) thenExecutingDataSourceQueryWillYieldDiagnostic(t *testing.T, dgText string) {
 	dg := dtmh.template.Query(context.TODO(), dtmh.data, &dtmh.mockCl)
 	assert.True(t, len(dg) == 1)
 	assert.Equal(t, diag.Error, dg[0].Severity)
@@ -164,6 +164,12 @@ func (rthm *ResourceTemplateMockHelper[Parent, Ident, MTYpe]) thenAssignedIdIs(t
 	f(t, ident)
 }
 
+func (rthm *DatasourceTemplateMockHelper[Parent, Ident, MTYpe]) thenAssignedIdIs(t *testing.T, f IdentityValidator[Ident]) {
+	ident, err := rthm.template.DatasourceMapper().Identity(rthm.data)
+	assert.Nil(t, err)
+	f(t, ident)
+}
+
 func (rthm *ResourceTemplateMockHelper[Parent, Ident, MTYpe]) thenAssignedIdIsEmpty(t *testing.T) {
 	assert.Equal(t, "", rthm.data.Id())
 }
@@ -171,8 +177,8 @@ func (rthm *ResourceTemplateMockHelper[Parent, Ident, MTYpe]) thenAssignedIdIsEm
 // --------------------------------------------------------------------------------------------------------------
 // Static messages.
 
-func CreateTestDatasource(tmpl DatasourceTemplate) *DatasourceTemplateMockHelper {
-	rv := DatasourceTemplateMockHelper{
+func CreateTestDatasource[ParentIdent any, Ident any, MType any](tmpl DatasourceTemplate[ParentIdent, Ident, MType]) *DatasourceTemplateMockHelper[ParentIdent, Ident, MType] {
+	rv := DatasourceTemplateMockHelper[ParentIdent, Ident, MType]{
 		template: tmpl,
 		MockHelperBase: MockHelperBase{
 			schema: tmpl.DataSourceSchema(),

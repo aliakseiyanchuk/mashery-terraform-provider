@@ -5,13 +5,14 @@ import (
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/stretchr/testify/mock"
 	"terraform-provider-mashery/mashschema"
+	"terraform-provider-mashery/tfmapper"
 	"testing"
 	"time"
 )
 
 func TestQueryingRolesWillBeSavedOnUniqueMatch(t *testing.T) {
 	params := map[string]string{"name": "abc"}
-	h := CreateTestDatasource(RoleDataSource)
+	h := CreateTestDatasource[tfmapper.Orphan, string, masherytypes.Role](RoleDataSource)
 
 	h.givenStateFieldSetTo(t, mashschema.MashDataSourceSearch, params)
 	givenSingleRoleMatchIsReturned(h, params)
@@ -22,7 +23,7 @@ func TestQueryingRolesWillBeSavedOnUniqueMatch(t *testing.T) {
 
 func TestQueryingRoleWhereNoMatchReturnedWithRequiredWillGiveDiagnostics(t *testing.T) {
 	params := map[string]string{"name": "abc"}
-	h := CreateTestDatasource(RoleDataSource)
+	h := CreateTestDatasource[tfmapper.Orphan, string, masherytypes.Role](RoleDataSource)
 
 	h.givenStateFieldSetTo(t, mashschema.MashDataSourceSearch, params)
 	h.givenStateFieldSetTo(t, mashschema.MashDataSourceRequired, true)
@@ -33,7 +34,7 @@ func TestQueryingRoleWhereNoMatchReturnedWithRequiredWillGiveDiagnostics(t *test
 
 func TestQueryingRoleWhereAPICallFWillGiveDiagnostics(t *testing.T) {
 	params := map[string]string{"name": "abc"}
-	h := CreateTestDatasource(RoleDataSource)
+	h := CreateTestDatasource[tfmapper.Orphan, string, masherytypes.Role](RoleDataSource)
 
 	h.givenStateFieldSetTo(t, mashschema.MashDataSourceSearch, params)
 	givenErrorReturnedWhenQueryingRoles(h, params)
@@ -43,7 +44,7 @@ func TestQueryingRoleWhereAPICallFWillGiveDiagnostics(t *testing.T) {
 
 func TestQueryingRoleWithOptionalFlagWitchNoMatchesSucceeds(t *testing.T) {
 	params := map[string]string{"name": "abc"}
-	h := CreateTestDatasource(RoleDataSource)
+	h := CreateTestDatasource[tfmapper.Orphan, string, masherytypes.Role](RoleDataSource)
 
 	h.givenStateFieldSetTo(t, mashschema.MashDataSourceSearch, params)
 	h.givenStateFieldSetTo(t, mashschema.MashDataSourceRequired, false)
@@ -54,7 +55,7 @@ func TestQueryingRoleWithOptionalFlagWitchNoMatchesSucceeds(t *testing.T) {
 	h.willHaveFieldSetTo(t, mashschema.MashObjName, "")
 }
 
-func givenSingleRoleMatchIsReturned(h *DatasourceTemplateMockHelper, params map[string]string) {
+func givenSingleRoleMatchIsReturned(h *DatasourceTemplateMockHelper[tfmapper.Orphan, string, masherytypes.Role], params map[string]string) {
 	mashTime := masherytypes.MasheryJSONTime(time.Now())
 
 	returnedRoles := []masherytypes.Role{
@@ -76,13 +77,13 @@ func givenSingleRoleMatchIsReturned(h *DatasourceTemplateMockHelper, params map[
 		On("ListRolesFiltered", mock.Anything, params).
 		Return(returnedRoles, nil)
 }
-func givenNoRoleMatchIsReturned(h *DatasourceTemplateMockHelper, params map[string]string) {
+func givenNoRoleMatchIsReturned(h *DatasourceTemplateMockHelper[tfmapper.Orphan, string, masherytypes.Role], params map[string]string) {
 	h.mockClientWill().
 		On("ListRolesFiltered", mock.Anything, params).
 		Return([]masherytypes.Role{}, nil)
 }
 
-func givenErrorReturnedWhenQueryingRoles(h *DatasourceTemplateMockHelper, params map[string]string) {
+func givenErrorReturnedWhenQueryingRoles(h *DatasourceTemplateMockHelper[tfmapper.Orphan, string, masherytypes.Role], params map[string]string) {
 	h.mockClientWill().
 		On("ListRolesFiltered", mock.Anything, params).
 		Return([]masherytypes.Role{}, errors.New("sample rejection"))

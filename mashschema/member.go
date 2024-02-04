@@ -1,0 +1,27 @@
+package mashschema
+
+const (
+	MemberId              = "member_id"
+	MemberRef             = "member_ref"
+	MemberName            = "name"
+	MemberUserName        = "username"
+	MemberUserEmail       = "email"
+	MemberDisplayName     = "display_name"
+	ObjectUri             = "uri"
+	MemberBlog            = "blog"
+	MemberIM              = "instant_messenger"
+	MemberIMService       = "instant_messenger_service"
+	MemberPhone           = "phone"
+	MemberCompany         = "company"
+	MemberAddress1        = "address1"
+	MemberAddress2        = "address2"
+	MemberLocality        = "locality"
+	MemberRegion          = "region"
+	MemberPostalCode      = "postal_code"
+	MemberCountryCode     = "country_code"
+	MemberFirstName       = "first_name"
+	MemberLastName        = "last_name"
+	MemberAreaStatus      = "area_status"
+	ObjectExternalId      = "external_id"
+	MemberInitialPassword = "password"
+)

@@ -5,13 +5,14 @@ import (
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/stretchr/testify/mock"
 	"terraform-provider-mashery/mashschema"
+	"terraform-provider-mashery/tfmapper"
 	"testing"
 	"time"
 )
 
 func TestQueryingEmailTemplateSetWillSucceedOnUniqueMatch(t *testing.T) {
 	params := map[string]string{"name": "email-set-name"}
-	h := CreateTestDatasource(EmailTemplateSetDataSource)
+	h := CreateTestDatasource[tfmapper.Orphan, string, masherytypes.EmailTemplateSet](EmailTemplateSetDataSource)
 
 	h.givenStateFieldSetTo(t, mashschema.MashDataSourceSearch, params)
 	givenEmailTemplateSetIsReturned(h, params)
@@ -22,7 +23,7 @@ func TestQueryingEmailTemplateSetWillSucceedOnUniqueMatch(t *testing.T) {
 
 func TestQueryingEmailTemplateSetWillReturnDiagnosticOnAPIError(t *testing.T) {
 	params := map[string]string{"name": "email-set-name"}
-	h := CreateTestDatasource(EmailTemplateSetDataSource)
+	h := CreateTestDatasource[tfmapper.Orphan, string, masherytypes.EmailTemplateSet](EmailTemplateSetDataSource)
 
 	h.givenStateFieldSetTo(t, mashschema.MashDataSourceSearch, params)
 	givenQueryingEmailTemplatesReturnsError(h, params)
@@ -32,7 +33,7 @@ func TestQueryingEmailTemplateSetWillReturnDiagnosticOnAPIError(t *testing.T) {
 
 func TestQueryingEmailTemplateSetWillReturnDiagnosticOnNoMatch(t *testing.T) {
 	params := map[string]string{"name": "email-set-name"}
-	h := CreateTestDatasource(EmailTemplateSetDataSource)
+	h := CreateTestDatasource[tfmapper.Orphan, string, masherytypes.EmailTemplateSet](EmailTemplateSetDataSource)
 
 	h.givenStateFieldSetTo(t, mashschema.MashDataSourceSearch, params)
 	h.givenStateFieldSetTo(t, mashschema.MashDataSourceRequired, true)
@@ -43,7 +44,7 @@ func TestQueryingEmailTemplateSetWillReturnDiagnosticOnNoMatch(t *testing.T) {
 
 func TestQueryingEmailTemplateSetWillProcessOptionalMatch(t *testing.T) {
 	params := map[string]string{"name": "email-set-name"}
-	h := CreateTestDatasource(EmailTemplateSetDataSource)
+	h := CreateTestDatasource[tfmapper.Orphan, string, masherytypes.EmailTemplateSet](EmailTemplateSetDataSource)
 
 	h.givenStateFieldSetTo(t, mashschema.MashDataSourceSearch, params)
 	h.givenStateFieldSetTo(t, mashschema.MashDataSourceRequired, false)
@@ -53,7 +54,7 @@ func TestQueryingEmailTemplateSetWillProcessOptionalMatch(t *testing.T) {
 	h.willHaveStateId(t, "")
 }
 
-func givenEmailTemplateSetIsReturned(h *DatasourceTemplateMockHelper, params map[string]string) {
+func givenEmailTemplateSetIsReturned(h *DatasourceTemplateMockHelper[tfmapper.Orphan, string, masherytypes.EmailTemplateSet], params map[string]string) {
 	returnedSet := []masherytypes.EmailTemplateSet{
 		{
 			AddressableV3Object: masherytypes.AddressableV3Object{
@@ -73,13 +74,13 @@ func givenEmailTemplateSetIsReturned(h *DatasourceTemplateMockHelper, params map
 		Return(returnedSet, nil)
 }
 
-func givenQueryingEmailTemplatesReturnsError(h *DatasourceTemplateMockHelper, params map[string]string) {
+func givenQueryingEmailTemplatesReturnsError(h *DatasourceTemplateMockHelper[tfmapper.Orphan, string, masherytypes.EmailTemplateSet], params map[string]string) {
 	h.mockClientWill().
 		On("ListEmailTemplateSetsFiltered", mock.Anything, params).
 		Return([]masherytypes.EmailTemplateSet{}, errors.New("sample rejection for email template set"))
 }
 
-func givenQueryingEmailTemplatesReturnsNothing(h *DatasourceTemplateMockHelper, params map[string]string) {
+func givenQueryingEmailTemplatesReturnsNothing(h *DatasourceTemplateMockHelper[tfmapper.Orphan, string, masherytypes.EmailTemplateSet], params map[string]string) {
 	h.mockClientWill().
 		On("ListEmailTemplateSetsFiltered", mock.Anything, params).
 		Return([]masherytypes.EmailTemplateSet{}, nil)

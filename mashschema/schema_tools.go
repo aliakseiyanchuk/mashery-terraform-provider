@@ -56,6 +56,21 @@ func CloneAsComputed(inp map[string]*schema.Schema) map[string]*schema.Schema {
 	return rv
 }
 
+// CloneAsComputedExcept Clone input schema as computed except the specified keys
+func CloneAsComputedExcept(inp map[string]*schema.Schema, exceptKeys ...string) map[string]*schema.Schema {
+	rv := make(map[string]*schema.Schema, len(inp))
+
+	for k, v := range inp {
+		if FindInArray(k, &exceptKeys) < 0 {
+			rv[k] = cloneAsComputedSchema(v, true)
+		} else {
+			rv[k] = v
+		}
+	}
+
+	return rv
+}
+
 // Append the source mashschema as computed mashschema in the target map.
 // source: source mashschema
 // dest: destination mashschema

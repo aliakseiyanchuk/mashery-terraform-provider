@@ -87,6 +87,7 @@ func autoTestBoolMappings[ParentIdent, Ident, MType any](t *testing.T, sb *tfmap
 	}, except...)
 
 	for _, fldName := range boolFields {
+		fmt.Printf("Auto-testing bool field %s", fldName)
 		mapper := sb.Mapper()
 		testState := sb.TestResourceData()
 
@@ -367,14 +368,17 @@ func autoTestInt64PtrMappings[ParentIdent, Ident, MType any](t *testing.T, sb *t
 		var fldValue = int64(100 + idx)
 		reflectSetInt64Ptr(&in, fldName, &fldValue)
 
-		mapper.RemoteToSchema(&in, testState)
+		setDiags := mapper.RemoteToSchema(&in, testState)
+		assert.Equal(t, 0, len(setDiags))
 
 		readBack := supplier()
 		mapper.SchemaToRemote(testState, &readBack)
 
 		readBackPtr := reflectGetInt64Ptr(&readBack, fldName)
 		assert.NotNil(t, readBackPtr, "read back pointer should not be null at this point")
-		assert.Equal(t, fldValue, *readBackPtr, "mismatching read/write on int field %s", fldName)
+		if readBackPtr != nil {
+			assert.Equal(t, fldValue, *readBackPtr, "mismatching read/write on int field %s", fldName)
+		}
 	}
 }
 

@@ -121,6 +121,24 @@ func (sb *SchemaBuilder[ParentIdent, Ident, MType]) Mapper() *Mapper[ParentIdent
 	}
 }
 
+// MapperExcept get a mapper of this builder excluding the fields that need to be ignored.
+// This method is used in the data source mappers which ignore unusable fields.
+func (sb *SchemaBuilder[ParentIdent, Ident, MType]) MapperExcept(fieldsExcept ...string) *Mapper[ParentIdent, Ident, MType] {
+	var filteredFields []FieldMapper[MType]
+
+	for _, fld := range sb.fields {
+		if mashschema.FindInArray(fld.GetKey(), &fieldsExcept) < 0 {
+			filteredFields = append(filteredFields, fld)
+		}
+	}
+
+	return &Mapper[ParentIdent, Ident, MType]{
+		fields:               filteredFields,
+		identityMapper:       sb.identityMapper,
+		parentIdentityMapper: sb.parentIdentityMapper,
+	}
+}
+
 type Mapper[ParentIdent any, Ident any, MType any] struct {
 	identityMapper       IdentityMapper[Ident]
 	parentIdentityMapper IdentityMapper[ParentIdent]

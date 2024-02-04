@@ -10,6 +10,7 @@ func Provider() *schema.Provider {
 	return &schema.Provider{
 		Schema: mashery.ProviderConfigSchema,
 		ResourcesMap: map[string]*schema.Resource{
+			"mashery_application":                          ApplicationResource.ResourceSchema(),
 			"mashery_service":                              ServiceResource.ResourceSchema(),
 			"mashery_service_cache":                        ServiceCacheResource.ResourceSchema(),
 			"mashery_service_oauth":                        ServiceOAuthResource.ResourceSchema(),
@@ -25,6 +26,10 @@ func Provider() *schema.Provider {
 			"mashery_unique_path":                          mashery.ResourceMasheryUniquePath(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+			"mashery_member":             MemberDataSource.DataSourceSchema(),
+			"mashery_package":            PackageDataSource.DataSourceSchema(),
+			"mashery_package_plan":       PackagePlanDataSource.DataSourceSchema(),
+			"mashery_application":        ApplicationDataSource.DataSourceSchema(),
 			"mashery_organization":       OrganizationDataSource.DataSourceSchema(),
 			"mashery_email_template_set": EmailTemplateSetDataSource.DataSourceSchema(),
 			"mashery_role":               RoleDataSource.DataSourceSchema(),
