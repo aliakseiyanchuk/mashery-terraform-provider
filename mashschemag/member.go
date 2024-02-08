@@ -10,7 +10,11 @@ import (
 var MemberResourceSchemaBuilder = tfmapper.NewSchemaBuilder[tfmapper.Orphan, masherytypes.MemberIdentifier, masherytypes.Member]().
 	Identity(&tfmapper.JsonIdentityMapper[masherytypes.MemberIdentifier]{
 		IdentityFunc: func() masherytypes.MemberIdentifier { return masherytypes.MemberIdentifier{} },
-	})
+		ValidateIdentFunc: func(inp masherytypes.MemberIdentifier) bool {
+			return len(inp.MemberId) > 0 && len(inp.Username) > 0
+		},
+	}).
+	RootIdentity(&tfmapper.RootParentIdentity{})
 
 func init() {
 	MemberResourceSchemaBuilder.Add(&tfmapper.StringFieldMapper[masherytypes.Member]{

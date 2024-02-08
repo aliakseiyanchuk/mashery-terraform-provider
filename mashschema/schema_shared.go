@@ -15,6 +15,7 @@ const (
 
 	// MashDataSourceRequired Whether a foreign object must exist at the moment the query is issued.
 	MashDataSourceRequired = "required"
+	MashDataSourceExists   = "exists"
 
 	MashObjCreated = "created"
 	// MashObjUpdated Universal field for the created timestamp

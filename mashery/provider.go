@@ -204,6 +204,8 @@ func transportLogging(ctx context.Context, wrq *transport.WrappedRequest, wrs *t
 
 	}
 
+	tflog.Debug(ctx, b.String())
+
 	if err != nil {
 		b.WriteString(fmt.Sprintf("[Request Error] %s\n", err.Error()))
 		tflog.Warn(ctx, b.String())
@@ -305,6 +307,9 @@ func ProviderConfigure(ctx context.Context, d *schema.ResourceData) (interface{}
 			Authorizer:    tokenProvider,
 			QPS:           int64(qps),
 			AvgNetLatency: netLatency,
+			HTTPClientParams: transport.HTTPClientParams{
+				ExchangeListener: transportLogging,
+			},
 		}
 
 		cl = v3client.NewHttpClientWithBadRequestAutoRetries(clParams)

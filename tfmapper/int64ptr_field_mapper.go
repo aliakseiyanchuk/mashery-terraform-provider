@@ -8,16 +8,17 @@ import (
 
 type Int64PointerFieldMapper[MType any] struct {
 	FieldMapperBase[MType]
+	NilValue int64
 
 	Locator LocatorFunc[MType, *int64]
 }
 
 func (sfm *Int64PointerFieldMapper[MType]) NilRemote(state *schema.ResourceData) *diag.Diagnostic {
-	return SetKeyWithDiag(state, sfm.Key, 0)
+	return SetKeyWithDiag(state, sfm.Key, sfm.NilValue)
 }
 
 func (sfm *Int64PointerFieldMapper[MType]) RemoteToSchema(remote *MType, state *schema.ResourceData) *diag.Diagnostic {
-	setVal := int64(0)
+	setVal := sfm.NilValue
 
 	if remoteVal := sfm.Locator(remote); remoteVal != nil {
 		if ptr := *remoteVal; ptr != nil {
@@ -29,6 +30,6 @@ func (sfm *Int64PointerFieldMapper[MType]) RemoteToSchema(remote *MType, state *
 }
 
 func (sfm *Int64PointerFieldMapper[MType]) SchemaToRemote(state *schema.ResourceData, remote *MType) {
-	val := mashschema.ExtractInt64Pointer(state, sfm.Key, 0)
+	val := mashschema.ExtractInt64Pointer(state, sfm.Key, sfm.NilValue)
 	*sfm.Locator(remote) = val
 }

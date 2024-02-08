@@ -62,7 +62,7 @@ func init() {
 			Key: mashschema.MashObjName,
 			Schema: &schema.Schema{
 				Type:        schema.TypeString,
-				Computed:    true,
+				Required:    true,
 				Description: "Mashery V3 application name",
 			},
 		},
@@ -347,6 +347,26 @@ func init() {
 				Optional:    true,
 				Computed:    true,
 				Description: "Mashery V3 application OAuth redirect URI",
+			},
+		},
+	})
+}
+
+func init() {
+	ApplicationResourceSchemaBuilder.Add(&tfmapper.StringMapFieldMapper[masherytypes.Application]{
+		Locator: func(in *masherytypes.Application) *tfmapper.StringMap {
+			return (*tfmapper.StringMap)(&in.Eav)
+		},
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.Application]{
+			Key: mashschema.ApplicationExtendedAttributes,
+			Schema: &schema.Schema{
+				Type:     schema.TypeMap,
+				Optional: true,
+				Computed: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+				Description: "Mashery V3 extended attributes",
 			},
 		},
 	})

@@ -88,8 +88,10 @@ func (sdt *SingularDatasourceTemplate[ParentIdent, Ident, MType]) Query(ctx cont
 	} else {
 		if obj != nil {
 			_ = sdt.Mapper.AssignIdentity(ident, d)
+			tfmapper.SetKeyWithDiag(d, mashschema.MashDataSourceExists, true)
 		} else {
-			d.SetId("")
+			d.SetId("nil")
+			tfmapper.SetKeyWithDiag(d, mashschema.MashDataSourceExists, false)
 		}
 		return sdt.Mapper.RemoteToSchema(obj, d)
 	}
@@ -107,6 +109,10 @@ var singularDataSourceSchema = map[string]*schema.Schema{
 		Optional:    true,
 		Default:     true,
 		Description: "If true (default), then exactly a single object must be found. If an element doesn't exist, the error is generated",
+	}, mashschema.MashDataSourceExists: {
+		Type:        schema.TypeBool,
+		Computed:    true,
+		Description: "True if match has been found; and false otherwise",
 	},
 }
 

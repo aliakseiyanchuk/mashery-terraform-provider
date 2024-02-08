@@ -3,6 +3,7 @@ package mashschemag
 import (
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/stretchr/testify/assert"
+	"terraform-provider-mashery/mashschema"
 	"testing"
 )
 
@@ -49,6 +50,8 @@ func TestApplicationPackageKeyBuilderMapperLimitsField(t *testing.T) {
 	}
 
 	dg := mapper.RemoteToSchema(&packageKey, testData)
+	setData := testData.Get(mashschema.ApplicationPackageKeyLimits)
+	assert.NotNil(t, setData)
 	assert.Equal(t, 0, len(dg))
 
 	readBackKey := masherytypes.PackageKey{}
@@ -93,4 +96,40 @@ func TestApplicationPackageKeyBuilderMapperPackagePlan(t *testing.T) {
 
 	assert.NotNil(t, readBackKey.Plan)
 	assert.Equal(t, "plan-id", readBackKey.Plan.Id)
+}
+
+func TestApplicationPackageKeyBuilderMapperCeilings(t *testing.T) {
+	mapper, testData := ApplicationPackageKeyResourceSchemaBuilder.MapperAndTestData()
+
+	testData.Set(mashschema.ApplicationPackageKeyQpsLimitCeiling, 1)
+	testData.Set(mashschema.ApplicationPackageKeyRateLimitCeiling, 2)
+
+	v := masherytypes.PackageKey{}
+	mapper.SchemaToRemote(testData, &v)
+
+	assert.NotNil(t, v.QpsLimitCeiling)
+	assert.NotNil(t, v.RateLimitCeiling)
+
+	assert.Equal(t, int64(1), *v.QpsLimitCeiling)
+	assert.Equal(t, int64(2), *v.RateLimitCeiling)
+}
+
+func TestApplicationPackageKeyBuilderMapperCeilingsWithZero(t *testing.T) {
+	mapper, testData := ApplicationPackageKeyResourceSchemaBuilder.MapperAndTestData()
+
+	var err error
+	err = testData.Set(mashschema.ApplicationPackageKeyQpsLimitCeiling, 0)
+	assert.Nil(t, err)
+
+	err = testData.Set(mashschema.ApplicationPackageKeyRateLimitCeiling, 0)
+	assert.Nil(t, err)
+
+	v := masherytypes.PackageKey{}
+	mapper.SchemaToRemote(testData, &v)
+
+	assert.NotNil(t, v.QpsLimitCeiling)
+	assert.NotNil(t, v.RateLimitCeiling)
+
+	assert.Equal(t, int64(0), *v.QpsLimitCeiling)
+	assert.Equal(t, int64(0), *v.RateLimitCeiling)
 }

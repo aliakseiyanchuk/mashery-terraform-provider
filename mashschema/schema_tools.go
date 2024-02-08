@@ -216,7 +216,7 @@ func ExtractIntPointer(d *schema.ResourceData, key string) *int {
 }
 
 func ExtractInt64Pointer(d *schema.ResourceData, key string, threshold int64) *int64 {
-	if v, exists := d.GetOk(key); exists {
+	if v := d.Get(key); v != nil {
 		if rv, ok := v.(int); ok {
 			rv64 := int64(rv)
 			if rv64 > threshold {

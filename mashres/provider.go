@@ -10,7 +10,9 @@ func Provider() *schema.Provider {
 	return &schema.Provider{
 		Schema: mashery.ProviderConfigSchema,
 		ResourcesMap: map[string]*schema.Resource{
+			"mashery_member":                               MemberResource.ResourceSchema(),
 			"mashery_application":                          ApplicationResource.ResourceSchema(),
+			"mashery_application_package_key":              ApplicationPackageKeyResource.ResourceSchema(),
 			"mashery_service":                              ServiceResource.ResourceSchema(),
 			"mashery_service_cache":                        ServiceCacheResource.ResourceSchema(),
 			"mashery_service_oauth":                        ServiceOAuthResource.ResourceSchema(),

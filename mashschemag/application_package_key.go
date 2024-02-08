@@ -17,6 +17,9 @@ type ApplicationPackageKeyIdentifier struct {
 var ApplicationPackageKeyResourceSchemaBuilder = tfmapper.NewSchemaBuilder[masherytypes.ApplicationIdentifier, ApplicationPackageKeyIdentifier, masherytypes.PackageKey]().
 	Identity(&tfmapper.JsonIdentityMapper[ApplicationPackageKeyIdentifier]{
 		IdentityFunc: func() ApplicationPackageKeyIdentifier { return ApplicationPackageKeyIdentifier{} },
+		ValidateIdentFunc: func(inp ApplicationPackageKeyIdentifier) bool {
+			return len(inp.PackageKeyId) > 0 && len(inp.ApplicationId) > 0
+		},
 	})
 
 // Application parent identity
@@ -109,6 +112,7 @@ func init() {
 			Schema: &schema.Schema{
 				Type:        schema.TypeString,
 				Required:    true,
+				Sensitive:   true,
 				Description: "API key secret",
 			},
 		},
@@ -120,6 +124,7 @@ func init() {
 		Locator: func(in *masherytypes.PackageKey) **int64 {
 			return &in.RateLimitCeiling
 		},
+		NilValue: int64(-1),
 		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.PackageKey]{
 			Key: mashschema.ApplicationPackageKeyRateLimitCeiling,
 			Schema: &schema.Schema{
@@ -137,6 +142,7 @@ func init() {
 		Locator: func(in *masherytypes.PackageKey) **int64 {
 			return &in.QpsLimitCeiling
 		},
+		NilValue: int64(-1),
 		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.PackageKey]{
 			Key: mashschema.ApplicationPackageKeyQpsLimitCeiling,
 			Schema: &schema.Schema{

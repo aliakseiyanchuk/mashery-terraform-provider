@@ -11,7 +11,7 @@ type StringMap map[string]string
 type StringMapFieldMapper[MType any] struct {
 	FieldMapperBase[MType]
 
-	Locator LocatorFunc[MType, *StringMap]
+	Locator LocatorFunc[MType, StringMap]
 }
 
 func (sfm *StringMapFieldMapper[MType]) NilRemote(state *schema.ResourceData) *diag.Diagnostic {
@@ -30,5 +30,5 @@ func (sfm *StringMapFieldMapper[MType]) RemoteToSchema(remote *MType, state *sch
 
 func (sfm *StringMapFieldMapper[MType]) SchemaToRemote(state *schema.ResourceData, remote *MType) {
 	val := mashschema.ExtractStringMap(state, sfm.Key)
-	*sfm.Locator(remote) = (*StringMap)(&val)
+	*sfm.Locator(remote) = val
 }
