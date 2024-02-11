@@ -3,23 +3,20 @@ subcategory: "mashery"
 layout: "mashery"
 page_title: "Mashery: mashery_service"
 description: |-
-Defines Mashery service
+  Defines Mashery service
 ---
 
-# Resource: mashery_service
+# Resource: `mashery_service`
 
-The resource represents [`/services/{serviceId}`](https://developer.mashery.com/docs/read/mashery_api/30/resources/services)
-Mashery V3 API resource. The resource allows configuring:
+The resource represents [API definitions](https://developer.mashery.com/docs/read/mashery_api/30/resources/services)
+configured using Mashery V3 API resource. The resource allows configuring:
 - basic attributes;
-- service cache (`/services/{serviceId}/cache`)
-- security profile (`/services/{serviceId}/securityProfile/oauth`)
-- service roles (`/services/{serviceId}/roles`)
+- service cache
+- service roles.
 
-The error sets (`/services/{serviceId}/errorSets`) and (`/services/{serviceId}/endpoints/{endpointId}`)
-are configured as a separate resources.
+Service OAuth security profile is configured as a separate resource, `mashery_service_oauth`. Error sets
+are configured via resource `mashery_service_error_set`.
 
-The service (called API Definition in Mashery control center UI) is the starting point for exposing
-an API. The service is effectively a collection of endpoints. 
 
 ## Example Usage
 
@@ -37,39 +34,10 @@ The service accepts the following arguments:
 - `qps_limit_overall`: maximum number of calls this service can handle. Defaults to -1 for unlimited
 - `rfc3986_encode`: whether Mashery should use RFC 3986 specification for URL syntax
 - `cache_ttl`: whether to set caching TTL for included endpoints. Defaults to 0
-- `oauth`: OAuth profile settings for this service. If absent, OAuth support is not enabled.
 - `iodocs_accessed_by`: a set of roles permissions that are granted access to the I/O docs.
+- `organization`: an id of organization this service belongs.
 
-### OAuth Policy
-The OAuth policy object represents configuration entered in Mashery [API Definition Security
-Settings UI](http://docs.mashery.com/design/GUID-2D1DEABD-0630-41BA-807C-FD139B80482B.html).
 
-```hcl
-resource mashery_service "demo-service" {
-  name_prefix = "TFDemo"
-
-  oauth {
-    access_token_ttl_enabled = true
-    access_token_ttl = "1h"
-    access_token_type = "bearer"
-    allow_multiple_token = true
-    authorization_code_ttl = 300
-    forwarded_headers = toset(["access-token", "client-id", "scope", "user-context"])
-    mashery_token_api_enabled = false
-    refresh_token_enabled = true
-    refresh_token_ttl = "345h"
-    enable_refresh_token_ttl = true
-    token_based_rate_limits_enabled = true
-    force_oauth_redirect_url = true
-    force_ssl_redirect_url_enabled = false
-    grant_types = toset(["authorization-code", "implicit", "password", "client-credentials"])
-    mac_algorithm = ""
-    qps_limit_ceiling = -1
-    rate_limit_ceiling = -1
-    secure_tokens_enabled= false
-  }
-}
-```
 
 ### Enabling caching
 If your area supports caching, the caching is enabled for the service by `cache_ttl` key:

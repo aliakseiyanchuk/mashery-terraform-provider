@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/transport"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"log"
 	"os"
 	"strconv"
+	"strings"
+	"terraform-provider-mashery/mashschema"
 	"time"
 )
 
@@ -28,44 +30,50 @@ import (
 // retrieving all package key/secret combination.
 
 const (
+	envVaultAddress = "VAULT_ADDR" // Re-use vault integration
+
 	envVaultToken = "TF_MASHERY_VAULT_TOKEN"
+	envVaultMount = "TF_MASHERY_VAULT_MOUNT"
+	envVaultRole  = "TF_MASHERY_VAULT_ROLE"
 	envV3Token    = "TF_MASHERY_V3_ACCESS_TOKEN"
-	envV3QPS      = "TF_MASHERY_V3_QPS"
-	envV3Latency  = "TF_MASHERY_V3_NETWORK_LATENCY"
+	envV3QPS      = "TF_MASHERY_QPS"
+	envV3Latency  = "TF_MASHERY_NETWORK_LATENCY"
 
 	vaultAddrField      = "vault_addr"
 	vaultMountPathField = "vault_mount"
-	vaultRoleField      = "vault_role"
+	engineRoleField     = "role"
 	vaultTokenField     = "vault_token"
+	vaultProxyMode      = "vault_proxy_mode"
 
 	providerQPSField            = "qps"
 	providerNetworkLatencyField = "network_latency"
 	providerV3Token             = "v3_token"
 )
 
-var providerConfigSchema = map[string]*schema.Schema{
-	"log_file": {
-		Type:        schema.TypeString,
-		Optional:    true,
-		Description: "Log file where detailed Mashery session information will be saved",
-	},
+var ProviderConfigSchema = map[string]*schema.Schema{
 	vaultAddrField: {
 		Type:        schema.TypeString,
 		Optional:    true,
 		Description: "Vault server address that will function as a V3 proxy",
-		Default:     "",
+		DefaultFunc: schema.EnvDefaultFunc(envVaultAddress, ""),
 	},
 	vaultMountPathField: {
 		Type:        schema.TypeString,
 		Optional:    true,
 		Description: "Vault server mount path",
-		Default:     "mash-creds",
+		DefaultFunc: schema.EnvDefaultFunc(envVaultMount, "mash-auth"),
 	},
-	vaultRoleField: {
+	engineRoleField: {
 		Type:        schema.TypeString,
 		Optional:    true,
 		Description: "Role name to use with this provider",
-		Default:     "",
+		Default:     schema.EnvDefaultFunc(envVaultRole, "mash-auth"),
+	},
+	vaultProxyMode: {
+		Type:        schema.TypeBool,
+		Optional:    true,
+		Description: "Whether the provider should operate in Vault proxy mode (i.e. delegate all operations to Vault)",
+		Default:     false,
 	},
 	vaultTokenField: {
 		Type:        schema.TypeString,
@@ -76,16 +84,17 @@ var providerConfigSchema = map[string]*schema.Schema{
 	providerQPSField: {
 		Type:        schema.TypeInt,
 		Optional:    true,
-		DefaultFunc: intValueFromVariable(envV3QPS, 2),
-		Description: "Queries per second to observe. Default to 2 queries per second",
+		DefaultFunc: initValueFromVariable(envV3QPS, 1),
+		Description: "Queries per second to observe. Default to 1 queries per second",
 	},
 	providerNetworkLatencyField: {
-		Type:        schema.TypeString,
-		Optional:    true,
-		DefaultFunc: schema.EnvDefaultFunc(envV3Latency, "173ms"),
-		Description: "Mean travel time between machine where the Terraform is running and Mashery API. Defaults to 173 (milliseconds).",
+		Type:             schema.TypeString,
+		Optional:         true,
+		DefaultFunc:      schema.EnvDefaultFunc(envV3Latency, "173ms"),
+		ValidateDiagFunc: mashschema.ValidateDuration,
+		Description:      "Mean travel time between machine where the Terraform is running and Mashery API. Defaults to 173 (milliseconds).",
 	},
-	"token": {
+	providerV3Token: {
 		Type:        schema.TypeString,
 		Optional:    true,
 		DefaultFunc: schema.EnvDefaultFunc(envV3Token, ""),
@@ -96,45 +105,38 @@ var providerConfigSchema = map[string]*schema.Schema{
 // ----------------------------------------------------------------------------------------------
 // Vault proxy mode configuration
 
-type VaultProxyModeConfiguration struct {
-	addr     string
-	mount    string
-	roleName string
-	token    string
+type VaultPairingConfiguration struct {
+	addr      string
+	mount     string
+	roleName  string
+	proxyMode bool
+	token     string
 }
 
-func (vpm *VaultProxyModeConfiguration) isComplete() bool {
-	return len(vpm.addr) > 0 && len(vpm.mount) > 0 && len(vpm.roleName) > 0 && len(vpm.token) > 0
+func (vpm *VaultPairingConfiguration) isCompleteForProxyMode() bool {
+	return len(vpm.addr) > 0 && len(vpm.mount) > 0 && len(vpm.roleName) > 0 && len(vpm.token) > 0 && vpm.proxyMode
 }
 
-func (vpm *VaultProxyModeConfiguration) fullAddress() string {
+func (vpm *VaultPairingConfiguration) isCompleteForResourceFetch() bool {
+	return len(vpm.addr) > 0 && len(vpm.mount) > 0 && len(vpm.roleName) > 0 && len(vpm.token) > 0 && !vpm.proxyMode
+}
+
+func (vpm *VaultPairingConfiguration) fullAddress() string {
 	return fmt.Sprintf("%s/v1/%s/roles/%s/proxy/v3", vpm.addr, vpm.mount, vpm.roleName)
 }
 
-// --------------------------------------------------------------------------------------------
-// Vault authorizer
-
-type VaultAuthorizer struct {
-	transport.Authorizer
-
-	vaultAuth map[string]string
+func (vpm *VaultPairingConfiguration) tokenAddress() string {
+	return fmt.Sprintf("%s/v1/%s/roles/%s/token", vpm.addr, vpm.mount, vpm.roleName)
 }
 
-func (va VaultAuthorizer) HeaderAuthorization() (map[string]string, error) {
-	return va.vaultAuth, nil
-}
-func (va VaultAuthorizer) QueryStringAuthorization() (map[string]string, error) {
-	return nil, nil
-}
-
-func (va VaultAuthorizer) Close() {
-	// Do nothing
+func (vpm *VaultPairingConfiguration) vaultToken() transport.VaultToken {
+	return transport.VaultToken(vpm.token)
 }
 
 // -----------------------------------------------------------------------------
 // Implementation
 
-func intValueFromVariable(envVar string, defaultVal int) schema.SchemaDefaultFunc {
+func initValueFromVariable(envVar string, defaultVal int) schema.SchemaDefaultFunc {
 	return func() (interface{}, error) {
 		if v := os.Getenv(envVar); v != "" {
 			return strconv.ParseInt(v, 10, 0)
@@ -144,46 +146,39 @@ func intValueFromVariable(envVar string, defaultVal int) schema.SchemaDefaultFun
 	}
 }
 
-var logger *log.Logger
-var encoder *json.Encoder
-
 // Send a message to the log file if it exists
-func doLogf(format string, params ...interface{}) {
-	if logger != nil {
-		logger.Printf(format, params...)
-	}
-}
 
-func doLogJson(msg string, obj interface{}) {
-	if logger != nil {
-		logger.Println(msg)
-		if obj != nil {
-			if b, err := json.Marshal(obj); err != nil {
-				logger.Println(err.Error())
-			} else {
-				logger.Println(string(b))
-			}
-		} else {
-			logger.Print("NULL JSON")
-		}
+func vaultPairingConfiguration(d *schema.ResourceData) VaultPairingConfiguration {
+	rv := VaultPairingConfiguration{
+		addr:      d.Get(vaultAddrField).(string),
+		mount:     d.Get(vaultMountPathField).(string),
+		roleName:  d.Get(engineRoleField).(string),
+		proxyMode: d.Get(vaultProxyMode).(bool),
+		token:     d.Get(vaultTokenField).(string),
 	}
-}
 
-func vaultProxyConfiguration(d *schema.ResourceData) VaultProxyModeConfiguration {
-	rv := VaultProxyModeConfiguration{
-		addr:     d.Get(vaultAddrField).(string),
-		mount:    d.Get(vaultMountPathField).(string),
-		roleName: d.Get(vaultRoleField).(string),
-		token:    d.Get(vaultTokenField).(string),
+	if tknFromEnv := os.Getenv(envVaultToken); len(tknFromEnv) > 0 {
+		rv.token = tknFromEnv
 	}
 
 	return rv
 }
 
 func transportLogging(ctx context.Context, wrq *transport.WrappedRequest, wrs *transport.WrappedResponse, err error) {
-	doLogf("-> %s %s", wrq.Request.Method, wrq.Request.URL)
+	var b strings.Builder
+
+	b.WriteString("\n")
+	b.WriteString(fmt.Sprintf("-> %s %s\n", wrq.Request.Method, wrq.Request.URL))
 	for k, v := range wrq.Request.Header {
-		doLogf("H> %s = %s", k, v)
+		// The Authorization and X-Vault-Token header value is never written into the logs.
+		// All other headers are written into the logs with their value as-is.
+		switch strings.ToLower(k) {
+		case "authorization":
+		case "x-vault-token":
+			b.WriteString(fmt.Sprintf("H> %s = %s\n", k, "****<REDACTED>****"))
+		default:
+			b.WriteString(fmt.Sprintf("H> %s = %s\n", k, v))
+		}
 	}
 	if wrq.Body != nil {
 		bodyOut := wrq.Body
@@ -192,48 +187,59 @@ func transportLogging(ctx context.Context, wrq *transport.WrappedRequest, wrs *t
 			bodyOut = str
 		}
 
-		doLogf("B>\n%s", bodyOut)
+		b.WriteString(fmt.Sprintf("B>\n%s\n", bodyOut))
 	}
 
 	if wrs != nil {
-		doLogf("<- %d", wrs.StatusCode)
+		b.WriteString(fmt.Sprintf("<- %d\n", wrs.StatusCode))
 		for k, v := range wrs.Header {
-			doLogf("<H %s = %s", k, v)
+			b.WriteString(fmt.Sprintf("<H %s = %s\n", k, v))
 		}
 
 		if body, err := wrs.Body(); err != nil {
-			doLogf("<H Can't read body: %s", err.Error())
+			b.WriteString(fmt.Sprintf("<H Can't read body: %s\n", err.Error()))
 		} else if len(body) > 0 {
-			doLogf("<H Response body:%s\n", string(body))
+			b.WriteString(fmt.Sprintf("<H Response body:%s\n", string(body)))
 		}
 
 	}
 
+	tflog.Debug(ctx, b.String())
+
 	if err != nil {
-		doLogf("Error: %s", err.Error())
+		b.WriteString(fmt.Sprintf("[Request Error] %s\n", err.Error()))
+		tflog.Warn(ctx, b.String())
+	} else {
+		tflog.Trace(ctx, b.String())
 	}
+
 }
 
-func providerConfigure(_ context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
+func ProviderConfigure(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
 
 	var diags diag.Diagnostics
-	logFile := d.Get("log_file").(string)
-	if len(logFile) > 0 {
-		encoder = new(json.Encoder)
-		encoder.SetIndent("", "  ")
-
-		now := time.Now()
-		f, _ := os.Create(fmt.Sprintf("%s_%d%d%d_%d%d%d.log", logFile, now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second()))
-		logger = log.New(f, "TF_MASHERY :", log.LstdFlags)
-	}
 
 	var tokenProvider v3client.V3AccessTokenProvider
 	qps := d.Get(providerQPSField).(int)
 
-	// Prefer to use Vault proxy mode, if sufficiently configured.
-	if vaultProxyMode := vaultProxyConfiguration(d); vaultProxyMode.isComplete() {
-		doLogf("Provider was initialized with the Vault proxy mode, proxy=%s", vaultProxyMode.fullAddress())
+	requestedLatencyCompensation := mashschema.ExtractString(d, providerNetworkLatencyField, "173ms")
+	netLatency, err := time.ParseDuration(requestedLatencyCompensation)
 
+	tflog.Info(ctx, fmt.Sprintf("Requested observed QPS: %d", qps))
+	tflog.Info(ctx, fmt.Sprintf("Requested network latency compensation: %s", netLatency))
+
+	if err != nil {
+		tflog.Error(ctx, fmt.Sprintf("Network latency compensation is not valid: %s", err.Error()))
+
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "invalid network latency format",
+			Detail:   fmt.Sprintf("network compensation value must be a valid Go time format. Supplied value %s is not valid: %s", requestedLatencyCompensation, err.Error()),
+		})
+	}
+
+	// Prefer to use Vault proxy mode, if sufficiently configured.
+	if vaultPairingCfg := vaultPairingConfiguration(d); vaultPairingCfg.isCompleteForProxyMode() {
 		clParams := v3client.Params{
 			HTTPClientParams: transport.HTTPClientParams{
 				// Since the connection is made to Vault, the client will trust whatever the system
@@ -241,32 +247,35 @@ func providerConfigure(_ context.Context, d *schema.ResourceData) (interface{}, 
 				TLSConfigDelegateSystem: true,
 				ExchangeListener:        transportLogging,
 			},
-			Authorizer: VaultAuthorizer{
-				vaultAuth: map[string]string{
-					"X-Vault-Token": vaultProxyMode.token,
-				},
-			},
-			QPS:          int64(qps),
-			MashEndpoint: vaultProxyMode.fullAddress(),
+			Authorizer:    transport.NewVaultAuthorizer(vaultPairingCfg.vaultToken()),
+			QPS:           int64(qps),
+			AvgNetLatency: netLatency,
+			MashEndpoint:  vaultPairingCfg.fullAddress(),
 		}
 
 		cl := v3client.NewHttpClient(clParams)
+
+		tflog.Info(ctx, fmt.Sprintf("Provider initialized with the Vault *proxy* mode, proxy=%s", vaultPairingCfg.fullAddress()))
+		return cl, diags
+	} else if vaultPairingCfg.isCompleteForResourceFetch() {
+		clParams := v3client.Params{
+			HTTPClientParams: transport.HTTPClientParams{
+				TLSConfigDelegateSystem: true,
+				ExchangeListener:        transportLogging,
+			},
+			Authorizer:    transport.NewVaultTokenResourceAuthorizer(vaultPairingCfg.tokenAddress(), vaultPairingCfg.vaultToken()),
+			QPS:           int64(qps),
+			AvgNetLatency: netLatency,
+			// No Mashery endpoint override is necessary here: the connection is established
+			// directly to the Mashery API
+		}
+
+		cl := v3client.NewHttpClient(clParams)
+
+		tflog.Info(ctx, fmt.Sprintf("Provider initialized with the Vault *token fetch* mode, token endpoint=%s", vaultPairingCfg.tokenAddress()))
 		return cl, diags
 	} else {
-		doLogf("Provider configuration does not meet Vault proxy mode requirements")
-	}
-
-	// If Vault proxy mode is not configured, then Mashery V3 token should be supplied
-
-	cfgNetLatency := d.Get(providerNetworkLatencyField).(string)
-
-	travelComp, latErr := time.ParseDuration(cfgNetLatency)
-
-	if latErr != nil {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  fmt.Sprintf("Not a valid network latency: %s (%s)", cfgNetLatency, latErr),
-		})
+		tflog.Info(ctx, "Provider configuration does not meet Vault proxy mode requirements")
 	}
 
 	if tknRaw, ok := d.GetOk(providerV3Token); ok {
@@ -275,6 +284,7 @@ func providerConfigure(_ context.Context, d *schema.ResourceData) (interface{}, 
 		// developer passing invalid tokens
 		if len(tkn) > 20 {
 			tokenProvider = v3client.NewFixedTokenProvider(tkn)
+			tflog.Info(ctx, "Provider is initialized with explicitly supplied token.")
 		} else {
 			diags = append(diags, diag.Diagnostic{
 				Severity: diag.Error,
@@ -283,51 +293,31 @@ func providerConfigure(_ context.Context, d *schema.ResourceData) (interface{}, 
 		}
 	}
 
+	if tokenProvider == nil {
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  fmt.Sprintf("no suitable methods provided to authenticate to Mashery API"),
+		})
+	}
+
 	var cl v3client.Client
 
 	if len(diags) == 0 {
 		clParams := v3client.Params{
 			Authorizer:    tokenProvider,
 			QPS:           int64(qps),
-			AvgNetLatency: travelComp,
+			AvgNetLatency: netLatency,
+			HTTPClientParams: transport.HTTPClientParams{
+				ExchangeListener: transportLogging,
+			},
 		}
 
-		cl = v3client.NewHttpClient(clParams)
-		doLogf("Provider is initialized with explicitly supplied token")
-	} else {
-		doLogf("WARN: no suitable provider authentication methods exist")
+		cl = v3client.NewHttpClientWithBadRequestAutoRetries(clParams)
 	}
 
+	tflog.Info(ctx, "Provider initialized completed", map[string]interface{}{
+		"diagnostic_count": len(diags),
+		"diagnostic_error": diags.HasError(),
+	})
 	return cl, diags
-}
-
-// Provider Mashery Terraform Provider mashschema definition
-func Provider() *schema.Provider {
-	return &schema.Provider{
-		Schema: providerConfigSchema,
-		ResourcesMap: map[string]*schema.Resource{
-			"mashery_service":                      resourceMasheryService(),
-			"mashery_service_error_set":            resourceMasheryErrorSet(),
-			"mashery_processor_chain":              resourceMasheryProcessorChain(),
-			"mashery_endpoint":                     EndpointResource.TFDataSourceSchema(),
-			"mashery_endpoint_method":              EndpointMethodResource.TFDataSourceSchema(),
-			"mashery_endpoint_method_filter":       EndpointMethodFilterResponse.TFDataSourceSchema(),
-			"mashery_package":                      PackageResource.TFDataSourceSchema(),
-			"mashery_package_plan":                 PackagePlanResource.TFDataSourceSchema(),
-			"mashery_package_plan_service":         PackagePlanServiceResource.TFDataSourceSchema(),
-			"mashery_package_plan_endpoint":        PackagePlanServiceEndpointResource.TFDataSourceSchema(),
-			"mashery_package_plan_endpoint_method": resourceMasheryPlanMethod(),
-			"mashery_member":                       MemberResource.TFDataSourceSchema(),
-			"mashery_application":                  ApplicationResource.TFDataSourceSchema(),
-			"mashery_package_key":                  PackageKeyResource.TFDataSourceSchema(),
-			"mashery_unique_path":                  resourceMasheryUniquePath(),
-		},
-		DataSourcesMap: map[string]*schema.Resource{
-			"mashery_system_domains":     systemDomainsDataSource.TFDataSourceSchema(),
-			"mashery_public_domains":     publicDomainsDataSource.TFDataSourceSchema(),
-			"mashery_email_template_set": emailTemplateSet.TFDataSourceSchema(),
-			"mashery_role":               roleDataSource.TFDataSourceSchema(),
-		},
-		ConfigureContextFunc: providerConfigure,
-	}
 }

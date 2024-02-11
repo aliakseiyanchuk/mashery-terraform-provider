@@ -14,7 +14,7 @@ const (
 	MashUniquePath       = "path"
 )
 
-func resourceMasheryUniquePath() *schema.Resource {
+func ResourceMasheryUniquePath() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: createUniquePath,
 		ReadContext:   schema.NoopContext,

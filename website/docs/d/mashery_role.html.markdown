@@ -8,7 +8,7 @@ Retrieves the Mashery Id of a given a role (aka portal access group) name.
 
 # Data Source: mashery_role
 
-This data source queries Mashery's for the details of the particular role. Mashery refers also to
+This data source queries Mashery area for the details of the particular role. Mashery refers also to
 these as "Portal Access Groups".
 
 The primary purpose of the role is to supply access controls on Mashery developer portal. In practice,
@@ -23,9 +23,23 @@ This data source allows retrieving Mashery Id of a role by role's name (as seen 
 ```hcl
 data "mashery_role" "my_role" {
   search = {
-    name: var.role_name
+    name: "Acme Department"
   }
 }
+
+# Specify IODocs access roles for the portal
+resource "mashery_service" "srv" {
+   name_prefix="tf-demo"
+   iodocs_accessed_by = toset([data.mashery_role.my_role.id])
+}
+
+# Specify portal access role for a package plan (the parent package is omitted in this example)
+resource "mashery_package_plan" "default" {
+   package_ref = mashery_package.oauth.id
+   name = "Default"
+   portal_access_roles = toset([data.mashery_role.my_role.id])
+}
+
 ```
 
 ## Argument Reference
@@ -43,5 +57,4 @@ The data source provides the following attributes:
 - `predefined_role`: whether this role is pre-defined;
 - `org_role`: whether this role is an org-role;
 - `assignable_role`: whether this role is assignable.
-- `read_permission`: a role permission object that can be passed to service I/O docs parameter (`iodocs_accessed_by`) and to 
-   package plan visibility (`plan_visible_to` parameter).
+

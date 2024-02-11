@@ -3,10 +3,10 @@ subcategory: "mashery"
 layout: "mashery"
 page_title: "Mashery: mashery_service"
 description: |-
-Defines a custom error set for a given API service definition
+  Defines a custom error set for a given API service definition
 ---
 
-# Resource: mashery_error_set
+# Resource: `mashery_error_set`
 
 Mashery resource for defining a custom [error set](http://docs.mashery.com/design/GUID-0CD66EB0-A62E-4834-8C8A-FB1F72B3D4CB.html) 
 associated with a service. 
@@ -18,7 +18,7 @@ messages as desired. The drift is detected (and corrected) only for messages tha
 
 ```hcl
 resource mashery_error_set "svc_a_tfset" {
-  service_id = mashery_service.srv.id
+  service_ref = mashery_service.srv.id
   name = "Terraform Set"
 
   error_message {
@@ -44,7 +44,7 @@ resource mashery_endpoint "custom_error" {
 
 ## Argument Reference
 The resource requires the following arguments to be provided:
-- `service_id`: id of the service containing this error set;
+- `service_ref`: id of the service containing this error set;
 - `name`: name of this set.
   
 The resource accepts optional arguments:
@@ -89,6 +89,6 @@ The error message ids must be withing the following set:
 
 In addition to all arguments above, the following attributes are exposed:
 
-* `id`: compound id of this error set. The id has `<service_id>::<error-set-uuid>` format;
+* `id`: compound id of this error set.
 * `created`: date this error set was first created;
 * `updated`: date this error set was last updated.
