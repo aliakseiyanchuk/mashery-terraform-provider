@@ -5,10 +5,9 @@ import (
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
 	"terraform-provider-mashery/mashschemag"
-	"terraform-provider-mashery/tfmapper"
 )
 
-var PackageDataSource *SingularDatasourceTemplate[tfmapper.Orphan, masherytypes.PackageIdentifier, masherytypes.Package] = CreateSingularDataSource(
+var PackageDataSource = CreateSingularDataSource(
 	mashschemag.PackageResourceSchemaBuilder,
 	queryPackage,
 )

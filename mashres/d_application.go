@@ -7,9 +7,7 @@ import (
 	"terraform-provider-mashery/mashschemag"
 )
 
-var ApplicationDataSource *SingularDatasourceTemplate[masherytypes.MemberIdentifier,
-	mashschemag.ApplicationOfMemberIdentifier,
-	masherytypes.Application] = CreateSingularDataSource(
+var ApplicationDataSource = CreateSingularDataSource(
 	mashschemag.ApplicationResourceSchemaBuilder,
 	queryApplication,
 )
