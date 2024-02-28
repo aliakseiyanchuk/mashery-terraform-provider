@@ -69,9 +69,9 @@ func init() {
 						updatedApp.Eav = updatedEavs
 					}
 				}
-			}
 
-			return client.UpdateApplication(ctx, application)
+				return updatedApp, updateErr
+			}
 		},
 
 		DoDelete: func(ctx context.Context, client v3client.Client, identifier mashschemag.ApplicationOfMemberIdentifier) error {
