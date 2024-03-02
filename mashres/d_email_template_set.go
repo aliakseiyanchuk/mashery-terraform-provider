@@ -7,7 +7,7 @@ import (
 	"terraform-provider-mashery/mashschemag"
 )
 
-var EmailTemplateSetDataSource = CreateSingularDataSource(mashschemag.EmailTemplateSetResourceSchemaBuilder, queryEmailTemplateSet)
+var EmailTemplateSetDataSource = CreateSingularDataSource("emailtemplateset", mashschemag.EmailTemplateSetResourceSchemaBuilder, queryEmailTemplateSet)
 
 func queryEmailTemplateSet(ctx context.Context, client v3client.Client, m map[string]string) (string, *masherytypes.EmailTemplateSet, error) {
 	if sets, err := client.ListEmailTemplateSetsFiltered(ctx, m); err != nil {

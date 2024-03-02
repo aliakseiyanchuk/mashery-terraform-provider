@@ -2,11 +2,16 @@ package mashres
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/v3client"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"sort"
+	"strings"
 	"terraform-provider-mashery/mashschema"
 	"terraform-provider-mashery/tfmapper"
 )
@@ -30,6 +35,39 @@ type SingularDatasourceTemplate[ParentIdent any, Ident any, MType any] struct {
 
 	DoQuery       QueryFunc[Ident, MType]
 	DoParentQuery ParentQueryFunc[ParentIdent, Ident, MType]
+
+	ResourcePrefix string
+}
+
+func (sdt *SingularDatasourceTemplate[ParentIdent, Ident, MType]) CacheKeyOf(ident interface{}, query map[string]string) string {
+	sb := strings.Builder{}
+
+	if ident != nil {
+		b, _ := json.Marshal(ident)
+		sb.Write(b)
+		sb.WriteString("---")
+	}
+
+	keys := make([]string, len(query))
+
+	idx := 0
+	for k := range query {
+		keys[idx] = k
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		sb.WriteString(k)
+		sb.WriteString("=")
+		sb.WriteString(query[k])
+		sb.WriteString(";;")
+	}
+
+	h := sha256.New()
+	h.Write([]byte(sb.String()))
+	bs := h.Sum(nil)
+
+	return fmt.Sprintf("%s_%x", sdt.ResourcePrefix, bs)
 }
 
 func (sdt *SingularDatasourceTemplate[ParentIdent, Ident, MType]) DatasourceMapper() *tfmapper.Mapper[ParentIdent, Ident, MType] {
@@ -56,8 +94,50 @@ func (sdt *SingularDatasourceTemplate[ParentIdent, Ident, MType]) isMatchRequire
 	return rv
 }
 
+func (sdt *SingularDatasourceTemplate[ParentIdent, Ident, MType]) DoCachedParentQuery(ctx context.Context, v3Cl v3client.Client, parentIdent ParentIdent, searchParams map[string]string) (Ident, *MType, error) {
+	cacheKey := sdt.CacheKeyOf(parentIdent, searchParams)
+
+	cachedIdent, cachedData := GetFromCache[Ident, MType](ctx, cacheKey)
+	if cachedIdent != nil && cachedData != nil {
+		tflog.Info(ctx, fmt.Sprintf("%s of %s with search params %s is served from cache", sdt.ResourcePrefix, parentIdent, searchParams))
+		return *cachedIdent, cachedData, nil
+	}
+
+	rvIdent, rvData, err := sdt.DoParentQuery(ctx, v3Cl, parentIdent, searchParams)
+	if err == nil && rvData != nil {
+		tflog.Info(ctx, fmt.Sprintf("%s of %s with search params %s is now stored in cache", sdt.ResourcePrefix, parentIdent, searchParams))
+		StoreInCacheDefault(ctx, cacheKey, rvIdent, rvData)
+	}
+
+	return rvIdent, rvData, err
+}
+
+func (sdt *SingularDatasourceTemplate[ParentIdent, Ident, MType]) DoCacheQuery(ctx context.Context, v3Cl v3client.Client, searchParams map[string]string) (Ident, *MType, error) {
+	cacheKey := sdt.CacheKeyOf(nil, searchParams)
+
+	cachedIdent, cachedData := GetFromCache[Ident, MType](ctx, cacheKey)
+	if cachedIdent != nil && cachedData != nil {
+		tflog.Info(ctx, fmt.Sprintf("%s with search params %s is served from cache", sdt.ResourcePrefix, searchParams))
+
+		return *cachedIdent, cachedData, nil
+	}
+
+	rvIdent, rvData, err := sdt.DoQuery(ctx, v3Cl, searchParams)
+	if err == nil && rvData != nil {
+		tflog.Info(ctx, fmt.Sprintf("%s with search params %s is now stored in cache", sdt.ResourcePrefix, searchParams))
+		StoreInCacheDefault(ctx, cacheKey, rvIdent, rvData)
+	}
+
+	return rvIdent, rvData, err
+}
+
 func (sdt *SingularDatasourceTemplate[ParentIdent, Ident, MType]) ExecQuery(ctx context.Context, v3Cl v3client.Client, data *schema.ResourceData) (Ident, *MType, error) {
 	query := mashschema.ExtractStringMap(data, mashschema.MashDataSourceSearch)
+	if len(query) == 0 {
+		rvIdent := new(Ident)
+		rvType := new(MType)
+		return *rvIdent, rvType, errors.New("search criteria must be specified")
+	}
 
 	if sdt.DoParentQuery != nil {
 		if parentIdent, identErr := sdt.Mapper.ParentIdentity(data); identErr != nil {
@@ -65,11 +145,11 @@ func (sdt *SingularDatasourceTemplate[ParentIdent, Ident, MType]) ExecQuery(ctx 
 			rvType := new(MType)
 			return *rvIdent, rvType, errors.New("identity must be read at this point")
 		} else {
-			return sdt.DoParentQuery(ctx, v3Cl, parentIdent, query)
+			return sdt.DoCachedParentQuery(ctx, v3Cl, parentIdent, query)
 		}
 	}
 
-	return sdt.DoQuery(ctx, v3Cl, query)
+	return sdt.DoCacheQuery(ctx, v3Cl, query)
 }
 
 func (sdt *SingularDatasourceTemplate[ParentIdent, Ident, MType]) Query(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -117,21 +197,24 @@ var singularDataSourceSchema = map[string]*schema.Schema{
 }
 
 func CreateSingularDataSource[ParentIdent any, Ident any, MType any](
+	resourcePrefix string,
 	builder *tfmapper.SchemaBuilder[ParentIdent, Ident, MType],
 	queryFunc QueryFunc[Ident, MType]) *SingularDatasourceTemplate[ParentIdent, Ident, MType] {
 
 	mapperSchema := tfmapper.MergeSchemas(mashschema.CloneAsComputed(builder.ResourceSchema()), singularDataSourceSchema)
 
 	rv := SingularDatasourceTemplate[ParentIdent, Ident, MType]{
-		Schema:  mapperSchema,
-		Mapper:  builder.Mapper(),
-		DoQuery: queryFunc,
+		Schema:         mapperSchema,
+		Mapper:         builder.Mapper(),
+		DoQuery:        queryFunc,
+		ResourcePrefix: resourcePrefix,
 	}
 
 	return &rv
 }
 
 func CreateSingularParentScopedDataSource[ParentIdent any, Ident any, MType any](
+	resourcePrefix string,
 	builder *tfmapper.SchemaBuilder[ParentIdent, Ident, MType],
 	parentElementSchemaKey string,
 	queryFunc ParentQueryFunc[ParentIdent, Ident, MType]) *SingularDatasourceTemplate[ParentIdent, Ident, MType] {
@@ -139,9 +222,10 @@ func CreateSingularParentScopedDataSource[ParentIdent any, Ident any, MType any]
 	mapperSchema := tfmapper.MergeSchemas(mashschema.CloneAsComputedExcept(builder.ResourceSchema(), parentElementSchemaKey), singularDataSourceSchema)
 
 	rv := SingularDatasourceTemplate[ParentIdent, Ident, MType]{
-		Schema:        mapperSchema,
-		Mapper:        builder.Mapper(),
-		DoParentQuery: queryFunc,
+		Schema:         mapperSchema,
+		Mapper:         builder.Mapper(),
+		DoParentQuery:  queryFunc,
+		ResourcePrefix: resourcePrefix,
 	}
 
 	return &rv

@@ -32,12 +32,14 @@ import (
 const (
 	envVaultAddress = "VAULT_ADDR" // Re-use vault integration
 
-	envVaultToken = "TF_MASHERY_VAULT_TOKEN"
-	envVaultMount = "TF_MASHERY_VAULT_MOUNT"
-	envVaultRole  = "TF_MASHERY_VAULT_ROLE"
-	envV3Token    = "TF_MASHERY_V3_ACCESS_TOKEN"
-	envV3QPS      = "TF_MASHERY_QPS"
-	envV3Latency  = "TF_MASHERY_NETWORK_LATENCY"
+	envVaultToken    = "TF_MASHERY_VAULT_TOKEN"
+	envVaultMount    = "TF_MASHERY_VAULT_MOUNT"
+	envVaultRole     = "TF_MASHERY_VAULT_ROLE"
+	envV3Token       = "TF_MASHERY_V3_ACCESS_TOKEN"
+	envV3QPS         = "TF_MASHERY_QPS"
+	envV3Latency     = "TF_MASHERY_NETWORK_LATENCY"
+	envCacheServer   = "TF_MASHERY_REDIS_SERVER"
+	envCacheDuration = "TF_MASHERY_CACHE_DURATION"
 
 	vaultAddrField      = "vault_addr"
 	vaultMountPathField = "vault_mount"
@@ -48,6 +50,9 @@ const (
 	providerQPSField            = "qps"
 	providerNetworkLatencyField = "network_latency"
 	providerV3Token             = "v3_token"
+
+	ProviderRedisCacheField = "redis_url"
+	ProviderCacheDuration   = "cache_duration"
 )
 
 var ProviderConfigSchema = map[string]*schema.Schema{
@@ -99,6 +104,18 @@ var ProviderConfigSchema = map[string]*schema.Schema{
 		Optional:    true,
 		DefaultFunc: schema.EnvDefaultFunc(envV3Token, ""),
 		Description: "Actual access token to be used. For best use, obtain this from Vault",
+	},
+	ProviderRedisCacheField: {
+		Type:        schema.TypeString,
+		Optional:    true,
+		DefaultFunc: schema.EnvDefaultFunc(envCacheServer, ""),
+		Description: "URL to the Redis cache server and database to use",
+	},
+	ProviderCacheDuration: {
+		Type:        schema.TypeString,
+		Optional:    true,
+		DefaultFunc: schema.EnvDefaultFunc(envCacheDuration, "24h"),
+		Description: "Duration of data source caches; defaults to 24h if not specified",
 	},
 }
 

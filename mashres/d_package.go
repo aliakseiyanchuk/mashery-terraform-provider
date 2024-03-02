@@ -8,6 +8,7 @@ import (
 )
 
 var PackageDataSource = CreateSingularDataSource(
+	"package",
 	mashschemag.PackageResourceSchemaBuilder,
 	queryPackage,
 )

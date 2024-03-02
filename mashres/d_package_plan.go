@@ -9,6 +9,7 @@ import (
 )
 
 var PackagePlanDataSource *SingularDatasourceTemplate[masherytypes.PackageIdentifier, masherytypes.PackagePlanIdentifier, masherytypes.Plan] = CreateSingularParentScopedDataSource(
+	"package.plan",
 	mashschemag.PackagePlanResourceSchemaBuilder,
 	mashschema.MashPackageRef,
 	queryPackagePlans,

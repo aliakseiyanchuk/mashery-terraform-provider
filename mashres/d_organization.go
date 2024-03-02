@@ -7,7 +7,7 @@ import (
 	"terraform-provider-mashery/mashschemag"
 )
 
-var OrganizationDataSource = CreateSingularDataSource(mashschemag.OrganizationResourceSchemaBuilder, queryOrganization)
+var OrganizationDataSource = CreateSingularDataSource("organization", mashschemag.OrganizationResourceSchemaBuilder, queryOrganization)
 
 func queryOrganization(ctx context.Context, client v3client.Client, m map[string]string) (string, *masherytypes.Organization, error) {
 	if sets, err := client.ListOrganizationsFiltered(ctx, m); err != nil {

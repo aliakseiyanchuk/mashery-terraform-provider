@@ -7,7 +7,7 @@ import (
 	"terraform-provider-mashery/mashschemag"
 )
 
-var MemberDataSource = CreateSingularDataSource(mashschemag.MemberResourceSchemaBuilder, queryMember)
+var MemberDataSource = CreateSingularDataSource("member", mashschemag.MemberResourceSchemaBuilder, queryMember)
 
 func queryMember(ctx context.Context, client v3client.Client, m map[string]string) (masherytypes.MemberIdentifier, *masherytypes.Member, error) {
 	if sets, err := client.ListMembersFiltered(ctx, m); err != nil {

@@ -34,6 +34,10 @@ func init() {
 
 		DoUpdate: func(ctx context.Context, client v3client.Client, identifier mashschemag.ApplicationPackageKeyIdentifier, pacakgeKey masherytypes.PackageKey) (masherytypes.PackageKey, error) {
 			pacakgeKey.Id = identifier.PackageKeyId
+
+			// Delete the reference to the package during update. The mapper is responsible for checking
+			// that the package identifier has not changed.
+			pacakgeKey.Package = nil
 			return client.UpdatePackageKey(ctx, pacakgeKey)
 		},
 

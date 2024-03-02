@@ -7,7 +7,7 @@ import (
 	"terraform-provider-mashery/mashschemag"
 )
 
-var RoleDataSource = CreateSingularDataSource(mashschemag.RoleResourceSchemaBuilder, queryRole)
+var RoleDataSource = CreateSingularDataSource("role", mashschemag.RoleResourceSchemaBuilder, queryRole)
 
 func queryRole(ctx context.Context, client v3client.Client, m map[string]string) (string, *masherytypes.Role, error) {
 	if sets, err := client.ListRolesFiltered(ctx, m); err != nil {

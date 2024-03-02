@@ -8,6 +8,7 @@ import (
 )
 
 var ApplicationDataSource = CreateSingularDataSource(
+	"application",
 	mashschemag.ApplicationResourceSchemaBuilder,
 	queryApplication,
 )

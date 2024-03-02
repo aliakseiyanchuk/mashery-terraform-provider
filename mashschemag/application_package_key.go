@@ -30,6 +30,7 @@ func init() {
 			Type:        schema.TypeString,
 			Required:    true,
 			Description: "Application reference, to which this application belongs",
+			ForceNew:    true,
 		},
 		IdentityFunc: func() masherytypes.ApplicationIdentifier {
 			return masherytypes.ApplicationIdentifier{}
@@ -287,6 +288,27 @@ func init() {
 				Type:        schema.TypeString,
 				Required:    true,
 				Description: "Package plan reference of this package key",
+			},
+			ValidateFunc: func(in *schema.ResourceData, key string) (bool, string) {
+				if in.HasChange(key) {
+					previous, current := in.GetChange(key)
+					previousIdent := masherytypes.PackagePlanIdentifier{}
+					currentIdent := masherytypes.PackagePlanIdentifier{}
+
+					errP := tfmapper.UnwrapJSON(previous.(string), &previousIdent)
+					errC := tfmapper.UnwrapJSON(current.(string), &currentIdent)
+
+					if errP != nil || errC != nil {
+						return false, "package plan identity is malformed"
+					}
+					if previousIdent.PackageId != currentIdent.PackageId {
+						return false, fmt.Sprintf(
+							"moving package key from package %s to package % is not possible; taint this resource to have the package key deleted and re-created",
+							previousIdent.PackageId,
+							currentIdent.PackageId)
+					}
+				}
+				return true, ""
 			},
 		},
 		RemoteToSchemaFunc: func(remote *masherytypes.PackageKey, key string, state *schema.ResourceData) *diag.Diagnostic {
