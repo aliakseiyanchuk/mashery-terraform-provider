@@ -9,15 +9,12 @@ import (
 	"terraform-provider-mashery/tfmapper"
 )
 
-type ApplicationPackageKeyIdentifier struct {
-	masherytypes.ApplicationIdentifier
-	masherytypes.PackageKeyIdentifier
-}
-
-var ApplicationPackageKeyResourceSchemaBuilder = tfmapper.NewSchemaBuilder[masherytypes.ApplicationIdentifier, ApplicationPackageKeyIdentifier, masherytypes.PackageKey]().
-	Identity(&tfmapper.JsonIdentityMapper[ApplicationPackageKeyIdentifier]{
-		IdentityFunc: func() ApplicationPackageKeyIdentifier { return ApplicationPackageKeyIdentifier{} },
-		ValidateIdentFunc: func(inp ApplicationPackageKeyIdentifier) bool {
+var ApplicationPackageKeyResourceSchemaBuilder = tfmapper.NewSchemaBuilder[masherytypes.ApplicationIdentifier, masherytypes.ApplicationPackageKeyIdentifier, masherytypes.ApplicationPackageKey]().
+	Identity(&tfmapper.JsonIdentityMapper[masherytypes.ApplicationPackageKeyIdentifier]{
+		IdentityFunc: func() masherytypes.ApplicationPackageKeyIdentifier {
+			return masherytypes.ApplicationPackageKeyIdentifier{}
+		},
+		ValidateIdentFunc: func(inp masherytypes.ApplicationPackageKeyIdentifier) bool {
 			return len(inp.PackageKeyId) > 0 && len(inp.ApplicationId) > 0
 		},
 	})
@@ -44,11 +41,11 @@ func init() {
 }
 
 func init() {
-	ApplicationPackageKeyResourceSchemaBuilder.Add(&tfmapper.StringFieldMapper[masherytypes.PackageKey]{
-		Locator: func(in *masherytypes.PackageKey) *string {
+	ApplicationPackageKeyResourceSchemaBuilder.Add(&tfmapper.StringFieldMapper[masherytypes.ApplicationPackageKey]{
+		Locator: func(in *masherytypes.ApplicationPackageKey) *string {
 			return &in.Id
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.PackageKey]{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.ApplicationPackageKey]{
 			Key: mashschema.ApplicationPackageKeyId,
 			Schema: &schema.Schema{
 				Type:        schema.TypeString,
@@ -60,11 +57,11 @@ func init() {
 }
 
 func init() {
-	ApplicationPackageKeyResourceSchemaBuilder.Add(&tfmapper.DateMapper[masherytypes.PackageKey]{
-		Locator: func(in *masherytypes.PackageKey) *masherytypes.MasheryJSONTime {
+	ApplicationPackageKeyResourceSchemaBuilder.Add(&tfmapper.DateMapper[masherytypes.ApplicationPackageKey]{
+		Locator: func(in *masherytypes.ApplicationPackageKey) *masherytypes.MasheryJSONTime {
 			return in.Created
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.PackageKey]{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.ApplicationPackageKey]{
 			Key: mashschema.MashPackCreated,
 			Schema: &schema.Schema{
 				Type:        schema.TypeString,
@@ -72,11 +69,11 @@ func init() {
 				Description: "Date/time the object was created",
 			},
 		},
-	}).Add(&tfmapper.DateMapper[masherytypes.PackageKey]{
-		Locator: func(in *masherytypes.PackageKey) *masherytypes.MasheryJSONTime {
+	}).Add(&tfmapper.DateMapper[masherytypes.ApplicationPackageKey]{
+		Locator: func(in *masherytypes.ApplicationPackageKey) *masherytypes.MasheryJSONTime {
 			return in.Updated
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.PackageKey]{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.ApplicationPackageKey]{
 			Key: mashschema.MashPackUpdated,
 			Schema: &schema.Schema{
 				Type:        schema.TypeString,
@@ -88,11 +85,11 @@ func init() {
 }
 
 func init() {
-	ApplicationPackageKeyResourceSchemaBuilder.Add(&tfmapper.StringPtrFieldMapper[masherytypes.PackageKey]{
-		Locator: func(in *masherytypes.PackageKey) **string {
+	ApplicationPackageKeyResourceSchemaBuilder.Add(&tfmapper.StringPtrFieldMapper[masherytypes.ApplicationPackageKey]{
+		Locator: func(in *masherytypes.ApplicationPackageKey) **string {
 			return &in.Apikey
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.PackageKey]{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.ApplicationPackageKey]{
 			Key: mashschema.ApplicationPackageKeyApiKey,
 			Schema: &schema.Schema{
 				Type:        schema.TypeString,
@@ -104,11 +101,11 @@ func init() {
 }
 
 func init() {
-	ApplicationPackageKeyResourceSchemaBuilder.Add(&tfmapper.StringPtrFieldMapper[masherytypes.PackageKey]{
-		Locator: func(in *masherytypes.PackageKey) **string {
+	ApplicationPackageKeyResourceSchemaBuilder.Add(&tfmapper.StringPtrFieldMapper[masherytypes.ApplicationPackageKey]{
+		Locator: func(in *masherytypes.ApplicationPackageKey) **string {
 			return &in.Secret
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.PackageKey]{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.ApplicationPackageKey]{
 			Key: mashschema.ApplicationPackageKeySecret,
 			Schema: &schema.Schema{
 				Type:        schema.TypeString,
@@ -121,12 +118,12 @@ func init() {
 }
 
 func init() {
-	ApplicationPackageKeyResourceSchemaBuilder.Add(&tfmapper.Int64PointerFieldMapper[masherytypes.PackageKey]{
-		Locator: func(in *masherytypes.PackageKey) **int64 {
+	ApplicationPackageKeyResourceSchemaBuilder.Add(&tfmapper.Int64PointerFieldMapper[masherytypes.ApplicationPackageKey]{
+		Locator: func(in *masherytypes.ApplicationPackageKey) **int64 {
 			return &in.RateLimitCeiling
 		},
 		NilValue: int64(-1),
-		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.PackageKey]{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.ApplicationPackageKey]{
 			Key: mashschema.ApplicationPackageKeyRateLimitCeiling,
 			Schema: &schema.Schema{
 				Type:        schema.TypeInt,
@@ -139,12 +136,12 @@ func init() {
 }
 
 func init() {
-	ApplicationPackageKeyResourceSchemaBuilder.Add(&tfmapper.Int64PointerFieldMapper[masherytypes.PackageKey]{
-		Locator: func(in *masherytypes.PackageKey) **int64 {
+	ApplicationPackageKeyResourceSchemaBuilder.Add(&tfmapper.Int64PointerFieldMapper[masherytypes.ApplicationPackageKey]{
+		Locator: func(in *masherytypes.ApplicationPackageKey) **int64 {
 			return &in.QpsLimitCeiling
 		},
 		NilValue: int64(-1),
-		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.PackageKey]{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.ApplicationPackageKey]{
 			Key: mashschema.ApplicationPackageKeyQpsLimitCeiling,
 			Schema: &schema.Schema{
 				Type:        schema.TypeInt,
@@ -157,11 +154,11 @@ func init() {
 }
 
 func init() {
-	ApplicationPackageKeyResourceSchemaBuilder.Add(&tfmapper.BoolFieldMapper[masherytypes.PackageKey]{
-		Locator: func(in *masherytypes.PackageKey) *bool {
+	ApplicationPackageKeyResourceSchemaBuilder.Add(&tfmapper.BoolFieldMapper[masherytypes.ApplicationPackageKey]{
+		Locator: func(in *masherytypes.ApplicationPackageKey) *bool {
 			return &in.RateLimitExempt
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.PackageKey]{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.ApplicationPackageKey]{
 			Key: mashschema.ApplicationPackageKeyRateLimitExempt,
 			Schema: &schema.Schema{
 				Type:        schema.TypeBool,
@@ -174,11 +171,11 @@ func init() {
 }
 
 func init() {
-	ApplicationPackageKeyResourceSchemaBuilder.Add(&tfmapper.BoolFieldMapper[masherytypes.PackageKey]{
-		Locator: func(in *masherytypes.PackageKey) *bool {
+	ApplicationPackageKeyResourceSchemaBuilder.Add(&tfmapper.BoolFieldMapper[masherytypes.ApplicationPackageKey]{
+		Locator: func(in *masherytypes.ApplicationPackageKey) *bool {
 			return &in.QpsLimitExempt
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.PackageKey]{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.ApplicationPackageKey]{
 			Key: mashschema.ApplicationPackageKeyQpsLimitExempt,
 			Schema: &schema.Schema{
 				Type:        schema.TypeBool,
@@ -191,11 +188,11 @@ func init() {
 }
 
 func init() {
-	ApplicationPackageKeyResourceSchemaBuilder.Add(&tfmapper.StringFieldMapper[masherytypes.PackageKey]{
-		Locator: func(in *masherytypes.PackageKey) *string {
+	ApplicationPackageKeyResourceSchemaBuilder.Add(&tfmapper.StringFieldMapper[masherytypes.ApplicationPackageKey]{
+		Locator: func(in *masherytypes.ApplicationPackageKey) *string {
 			return &in.Status
 		},
-		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.PackageKey]{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.ApplicationPackageKey]{
 			Key: mashschema.ApplicationPackageKeyStatus,
 			Schema: &schema.Schema{
 				Type:        schema.TypeString,
@@ -208,8 +205,8 @@ func init() {
 }
 
 func init() {
-	ApplicationPackageKeyResourceSchemaBuilder.Add(&tfmapper.PluggableFiledMapperBase[masherytypes.PackageKey]{
-		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.PackageKey]{
+	ApplicationPackageKeyResourceSchemaBuilder.Add(&tfmapper.PluggableFiledMapperBase[masherytypes.ApplicationPackageKey]{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.ApplicationPackageKey]{
 			Key: mashschema.ApplicationPackageKeyLimits,
 			Schema: &schema.Schema{
 				Type:     schema.TypeList,
@@ -235,7 +232,7 @@ func init() {
 				},
 			},
 		},
-		RemoteToSchemaFunc: func(remote *masherytypes.PackageKey, key string, state *schema.ResourceData) *diag.Diagnostic {
+		RemoteToSchemaFunc: func(remote *masherytypes.ApplicationPackageKey, key string, state *schema.ResourceData) *diag.Diagnostic {
 			var v []interface{}
 
 			if remote.Limits != nil {
@@ -259,7 +256,7 @@ func init() {
 
 			return tfmapper.SetKeyWithDiag(state, key, v)
 		},
-		SchemaToRemoteFunc: func(state *schema.ResourceData, key string, remote *masherytypes.PackageKey) {
+		SchemaToRemoteFunc: func(state *schema.ResourceData, key string, remote *masherytypes.ApplicationPackageKey) {
 			if limitsArray, exists := state.GetOk(key); exists {
 				tfLimits := mashschema.UnwrapStructArrayFromTerraformSet(limitsArray)
 
@@ -274,15 +271,16 @@ func init() {
 					limits = append(limits, l)
 				}
 
-				remote.Limits = &limits
+				// Limits are not necessary -- these need to be changed after the migration project.
+				// remote.Limits = &limits
 			}
 		},
 	})
 }
 
 func init() {
-	ApplicationPackageKeyResourceSchemaBuilder.Add(&tfmapper.PluggableFiledMapperBase[masherytypes.PackageKey]{
-		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.PackageKey]{
+	ApplicationPackageKeyResourceSchemaBuilder.Add(&tfmapper.PluggableFiledMapperBase[masherytypes.ApplicationPackageKey]{
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.ApplicationPackageKey]{
 			Key: mashschema.ApplicationPackageKeyPackagePlanRef,
 			Schema: &schema.Schema{
 				Type:        schema.TypeString,
@@ -311,7 +309,7 @@ func init() {
 				return true, ""
 			},
 		},
-		RemoteToSchemaFunc: func(remote *masherytypes.PackageKey, key string, state *schema.ResourceData) *diag.Diagnostic {
+		RemoteToSchemaFunc: func(remote *masherytypes.ApplicationPackageKey, key string, state *schema.ResourceData) *diag.Diagnostic {
 			if remote.Package != nil && remote.Plan != nil {
 				ident := masherytypes.PackagePlanIdentifier{
 					PackageIdentifier: masherytypes.PackageIdentifier{
@@ -325,7 +323,7 @@ func init() {
 			}
 
 		},
-		SchemaToRemoteFunc: func(state *schema.ResourceData, key string, remote *masherytypes.PackageKey) {
+		SchemaToRemoteFunc: func(state *schema.ResourceData, key string, remote *masherytypes.ApplicationPackageKey) {
 			v := mashschema.ExtractString(state, key, "")
 			ident := masherytypes.PackagePlanIdentifier{}
 
@@ -341,6 +339,24 @@ func init() {
 					},
 				}
 			}
+		},
+	})
+}
+
+func init() {
+	ApplicationPackageKeyResourceSchemaBuilder.Add(&tfmapper.StringFieldMapper[masherytypes.ApplicationPackageKey]{
+		Locator: func(in *masherytypes.ApplicationPackageKey) *string {
+			return &in.Expires
+		},
+		FieldMapperBase: tfmapper.FieldMapperBase[masherytypes.ApplicationPackageKey]{
+			Key: mashschema.ApplicationPackageKeyExpires,
+			Schema: &schema.Schema{
+				Type:             schema.TypeString,
+				Optional:         true,
+				Computed:         true,
+				Description:      "Expiry date of this key (if desired)",
+				ValidateDiagFunc: mashschema.ValidateRegExp("\\d{4}-\\d{2}-\\d{2}"),
+			},
 		},
 	})
 }

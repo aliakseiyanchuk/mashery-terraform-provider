@@ -9,6 +9,7 @@ const (
 	ApplicationPackageKeyQpsLimitCeiling  = "qps_limit_ceiling"
 	ApplicationPackageKeyQpsLimitExempt   = "qps_limit_exempt"
 	ApplicationPackageKeyStatus           = "status"
+	ApplicationPackageKeyExpires          = "expires"
 	ApplicationPackageKeyLimits           = "limits"
 	ApplicationPackageKeyLimitPeriod      = "period"
 	ApplicationPackageKeyLimitSource      = "source"

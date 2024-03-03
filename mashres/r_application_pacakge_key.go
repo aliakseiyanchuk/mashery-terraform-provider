@@ -7,41 +7,38 @@ import (
 	"terraform-provider-mashery/mashschemag"
 )
 
-var ApplicationPackageKeyResource *ResourceTemplate[masherytypes.ApplicationIdentifier, mashschemag.ApplicationPackageKeyIdentifier, masherytypes.PackageKey]
+var ApplicationPackageKeyResource *ResourceTemplate[masherytypes.ApplicationIdentifier, masherytypes.ApplicationPackageKeyIdentifier, masherytypes.ApplicationPackageKey]
 
 func init() {
-	ApplicationPackageKeyResource = &ResourceTemplate[masherytypes.ApplicationIdentifier, mashschemag.ApplicationPackageKeyIdentifier, masherytypes.PackageKey]{
+	ApplicationPackageKeyResource = &ResourceTemplate[masherytypes.ApplicationIdentifier, masherytypes.ApplicationPackageKeyIdentifier, masherytypes.ApplicationPackageKey]{
 		Schema: mashschemag.ApplicationPackageKeyResourceSchemaBuilder.ResourceSchema(),
 		Mapper: mashschemag.ApplicationPackageKeyResourceSchemaBuilder.Mapper(),
 
-		UpsertableFunc: func() masherytypes.PackageKey { return masherytypes.PackageKey{} },
+		UpsertableFunc: func() masherytypes.ApplicationPackageKey { return masherytypes.ApplicationPackageKey{} },
 
-		DoRead: func(ctx context.Context, client v3client.Client, identifier mashschemag.ApplicationPackageKeyIdentifier) (masherytypes.PackageKey, bool, error) {
-			return client.GetPackageKey(ctx, identifier.PackageKeyIdentifier)
+		DoRead: func(ctx context.Context, client v3client.Client, identifier masherytypes.ApplicationPackageKeyIdentifier) (masherytypes.ApplicationPackageKey, bool, error) {
+			return client.GetApplicationPackageKey(ctx, identifier)
 		},
 
-		DoCreate: func(ctx context.Context, client v3client.Client, parent masherytypes.ApplicationIdentifier, application masherytypes.PackageKey) (masherytypes.PackageKey, mashschemag.ApplicationPackageKeyIdentifier, error) {
-			if createApp, err := client.CreatePackageKey(ctx, parent, application); err != nil {
-				return masherytypes.PackageKey{}, mashschemag.ApplicationPackageKeyIdentifier{}, err
+		DoCreate: func(ctx context.Context, client v3client.Client, parent masherytypes.ApplicationIdentifier, appKey masherytypes.ApplicationPackageKey) (masherytypes.ApplicationPackageKey, masherytypes.ApplicationPackageKeyIdentifier, error) {
+			if createApp, err := client.CreateApplicationPackageKey(ctx, parent, appKey); err != nil {
+				return masherytypes.ApplicationPackageKey{}, masherytypes.ApplicationPackageKeyIdentifier{}, err
 			} else {
-				rvIdent := mashschemag.ApplicationPackageKeyIdentifier{
-					ApplicationIdentifier: parent,
-					PackageKeyIdentifier:  createApp.Identifier(),
-				}
-				return createApp, rvIdent, err
+				return createApp, createApp.Identifier(), err
 			}
 		},
 
-		DoUpdate: func(ctx context.Context, client v3client.Client, identifier mashschemag.ApplicationPackageKeyIdentifier, pacakgeKey masherytypes.PackageKey) (masherytypes.PackageKey, error) {
+		DoUpdate: func(ctx context.Context, client v3client.Client, identifier masherytypes.ApplicationPackageKeyIdentifier, pacakgeKey masherytypes.ApplicationPackageKey) (masherytypes.ApplicationPackageKey, error) {
 			pacakgeKey.Id = identifier.PackageKeyId
+			pacakgeKey.ParentApplicationId = identifier.ApplicationIdentifier
 
 			// Delete the reference to the package during update. The mapper is responsible for checking
 			// that the package identifier has not changed.
 			pacakgeKey.Package = nil
-			return client.UpdatePackageKey(ctx, pacakgeKey)
+			return client.UpdateApplicationPackageKey(ctx, pacakgeKey)
 		},
 
-		DoDelete: func(ctx context.Context, client v3client.Client, identifier mashschemag.ApplicationPackageKeyIdentifier) error {
+		DoDelete: func(ctx context.Context, client v3client.Client, identifier masherytypes.ApplicationPackageKeyIdentifier) error {
 			return client.DeletePackageKey(ctx, identifier.PackageKeyIdentifier)
 		},
 
