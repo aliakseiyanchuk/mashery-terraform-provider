@@ -289,21 +289,33 @@ func init() {
 			},
 			ValidateFunc: func(in *schema.ResourceData, key string) (bool, string) {
 				if in.HasChange(key) {
-					previous, current := in.GetChange(key)
-					previousIdent := masherytypes.PackagePlanIdentifier{}
-					currentIdent := masherytypes.PackagePlanIdentifier{}
+					p, c := in.GetChange(key)
 
-					errP := tfmapper.UnwrapJSON(previous.(string), &previousIdent)
-					errC := tfmapper.UnwrapJSON(current.(string), &currentIdent)
+					previous := p.(string)
+					current := c.(string)
+					if len(previous) > 0 {
+						previousIdent := masherytypes.PackagePlanIdentifier{}
+						currentIdent := masherytypes.PackagePlanIdentifier{}
 
-					if errP != nil || errC != nil {
-						return false, "package plan identity is malformed"
-					}
-					if previousIdent.PackageId != currentIdent.PackageId {
-						return false, fmt.Sprintf(
-							"moving package key from package %s to package % is not possible; taint this resource to have the package key deleted and re-created",
-							previousIdent.PackageId,
-							currentIdent.PackageId)
+						errP := tfmapper.UnwrapJSON(previous, &previousIdent)
+						errC := tfmapper.UnwrapJSON(current, &currentIdent)
+
+						if errP != nil {
+							return false, fmt.Sprintf("previous package plan identity is malformed (%s)", previous)
+						}
+						if errC != nil {
+							return false, fmt.Sprintf("updated package plan identity is malformed (%s)", current)
+						}
+
+						if errP != nil || errC != nil {
+							return false, "package plan identity is malformed"
+						}
+						if previousIdent.PackageId != currentIdent.PackageId {
+							return false, fmt.Sprintf(
+								"moving package key from package %s to package % is not possible; taint this resource to have the package key deleted and re-created",
+								previousIdent.PackageId,
+								currentIdent.PackageId)
+						}
 					}
 				}
 				return true, ""
