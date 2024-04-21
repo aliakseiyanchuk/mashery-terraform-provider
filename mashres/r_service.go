@@ -14,6 +14,11 @@ func init() {
 	ServiceResource = &ResourceTemplate[tfmapper.Orphan, masherytypes.ServiceIdentifier, masherytypes.Service]{
 		Schema: mashschemag.ServiceResourceSchemaBuilder.ResourceSchema(),
 		Mapper: mashschemag.ServiceResourceSchemaBuilder.Mapper(),
+
+		ImportIdentityParser: regexpImportIdentityParser("/services/(.+)", masherytypes.ServiceIdentifier{}, func(items []string) masherytypes.ServiceIdentifier {
+			return masherytypes.ServiceIdentifier{ServiceId: items[1]}
+		}),
+
 		UpsertableFunc: func() masherytypes.Service {
 			return masherytypes.Service{}
 		},

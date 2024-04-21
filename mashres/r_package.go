@@ -15,6 +15,10 @@ func init() {
 		Schema: mashschemag.PackageResourceSchemaBuilder.ResourceSchema(),
 		Mapper: mashschemag.PackageResourceSchemaBuilder.Mapper(),
 
+		ImportIdentityParser: regexpImportIdentityParser("/packages/(.+)", masherytypes.PackageIdentifier{}, func(items []string) masherytypes.PackageIdentifier {
+			return masherytypes.PackageIdentifier{PackageId: items[1]}
+		}),
+
 		UpsertableFunc: func() masherytypes.Package {
 			return masherytypes.Package{}
 		},

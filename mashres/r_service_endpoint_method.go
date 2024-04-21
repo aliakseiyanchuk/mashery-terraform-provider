@@ -14,6 +14,17 @@ func init() {
 		Schema: mashschemag.ServiceEndpointMethodResourceSchemaBuilder.ResourceSchema(),
 		Mapper: mashschemag.ServiceEndpointMethodResourceSchemaBuilder.Mapper(),
 
+		ImportIdentityParser: regexpImportIdentityParser("/services/(.+)/endpoints/(.+)/methods/(.+)",
+			masherytypes.ServiceEndpointMethodIdentifier{},
+			func(items []string) masherytypes.ServiceEndpointMethodIdentifier {
+				rv := masherytypes.ServiceEndpointMethodIdentifier{}
+				rv.ServiceId = items[1]
+				rv.EndpointId = items[2]
+				rv.MethodId = items[3]
+
+				return rv
+			}),
+
 		UpsertableFunc: func() masherytypes.ServiceEndpointMethod {
 			return masherytypes.ServiceEndpointMethod{}
 		},

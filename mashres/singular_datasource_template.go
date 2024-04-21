@@ -99,13 +99,13 @@ func (sdt *SingularDatasourceTemplate[ParentIdent, Ident, MType]) DoCachedParent
 
 	cachedIdent, cachedData := GetFromCache[Ident, MType](ctx, cacheKey)
 	if cachedIdent != nil && cachedData != nil {
-		tflog.Info(ctx, fmt.Sprintf("%s of %s with search params %s is served from cache", sdt.ResourcePrefix, parentIdent, searchParams))
+		//tflog.Info(ctx, fmt.Sprintf("%s of %s with search params %s is served from cache", sdt.ResourcePrefix, parentIdent, searchParams))
 		return *cachedIdent, cachedData, nil
 	}
 
 	rvIdent, rvData, err := sdt.DoParentQuery(ctx, v3Cl, parentIdent, searchParams)
 	if err == nil && rvData != nil {
-		tflog.Info(ctx, fmt.Sprintf("%s of %s with search params %s is now stored in cache", sdt.ResourcePrefix, parentIdent, searchParams))
+		//tflog.Info(ctx, fmt.Sprintf("%s of %s with search params %s is now stored in cache", sdt.ResourcePrefix, parentIdent, searchParams))
 		StoreInCacheDefault(ctx, cacheKey, rvIdent, rvData)
 	}
 

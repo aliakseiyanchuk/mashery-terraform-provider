@@ -14,6 +14,10 @@ func init() {
 		Schema: mashschemag.ServiceCacheResourceSchemaBuilder.ResourceSchema(),
 		Mapper: mashschemag.ServiceCacheResourceSchemaBuilder.Mapper(),
 
+		ImportIdentityParser: regexpImportIdentityParser("/services/(.+)/cache", masherytypes.ServiceIdentifier{}, func(items []string) masherytypes.ServiceIdentifier {
+			return masherytypes.ServiceIdentifier{ServiceId: items[1]}
+		}),
+
 		UpsertableFunc: func() masherytypes.ServiceCache {
 			return masherytypes.ServiceCache{}
 		},

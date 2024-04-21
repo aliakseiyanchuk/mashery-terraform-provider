@@ -14,6 +14,19 @@ func init() {
 		Schema: mashschemag.PackagePlanServiceEndpointMethodResourceSchemaBuilder.ResourceSchema(),
 		Mapper: mashschemag.PackagePlanServiceEndpointMethodResourceSchemaBuilder.Mapper(),
 
+		ImportIdentityParser: regexpImportIdentityParser("/packages/(.+)/plans/(.+)/services/(.+)/endpoints/(.+)/methods/(.+)",
+			masherytypes.PackagePlanServiceEndpointMethodIdentifier{},
+			func(items []string) masherytypes.PackagePlanServiceEndpointMethodIdentifier {
+				rv := masherytypes.PackagePlanServiceEndpointMethodIdentifier{}
+				rv.PackageId = items[1]
+				rv.PlanId = items[2]
+				rv.ServiceId = items[3]
+				rv.EndpointId = items[4]
+				rv.MethodId = items[5]
+
+				return rv
+			}),
+
 		UpsertableFunc: func() mashschemag.PackagePlanServiceEndpointMethodParam {
 			return mashschemag.PackagePlanServiceEndpointMethodParam{}
 		},

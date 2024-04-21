@@ -14,10 +14,13 @@ type CreatorFunc[ParentIdent any, Ident any, MType any] func(context.Context, v3
 type UpdaterFunc[Ident any, MType any] func(context.Context, v3client.Client, Ident, MType) (MType, error)
 type DeleterFunc[Ident any] func(context.Context, v3client.Client, Ident) error
 type OffendersCounterFunc[Ident any] func(context.Context, v3client.Client, Ident) (int64, error)
+type ImportIdentityFunc[Ident any] func(string) (Ident, error)
 
 type ResourceTemplate[ParentIdent any, Ident any, MType any] struct {
-	Schema map[string]*schema.Schema
-	Mapper *tfmapper.Mapper[ParentIdent, Ident, MType]
+	Schema               map[string]*schema.Schema
+	Mapper               *tfmapper.Mapper[ParentIdent, Ident, MType]
+	ImportIdentityParser ImportIdentityFunc[Ident]
+	Importer             *ResourceImporter[ParentIdent, Ident, MType]
 
 	UpsertableFunc func() MType
 
@@ -42,12 +45,22 @@ func (rt *ResourceTemplate[ParentIdent, Ident, MType]) ResourceSchema() *schema.
 		updateCtx = nil
 	}
 
+	var schmaImporter *schema.ResourceImporter
+
+	// The import identity parser function is essential for importing objects to translate user's CLI inputs
+	// into a format that can be read.
+	if rt.ImportIdentityParser != nil {
+		rt.Importer = newResourceImporter(rt)
+		schmaImporter = rt.Importer.AsSchemaImporter()
+	}
+
 	return &schema.Resource{
 		ReadContext:   rt.Read,
 		CreateContext: rt.Create,
 		UpdateContext: updateCtx,
 		DeleteContext: rt.Delete,
 		Schema:        rt.Schema,
+		Importer:      schmaImporter,
 	}
 }
 
@@ -75,7 +88,7 @@ func (rt *ResourceTemplate[ParentIdent, Ident, MType]) Read(ctx context.Context,
 		return diag.Diagnostics{diag.Diagnostic{
 			Severity: diag.Error,
 			Summary:  fmt.Sprintf("invalid resource identifier"),
-			Detail:   fmt.Sprintf("attempt to parse identified returned this error: %s", err.Error()),
+			Detail:   fmt.Sprintf("attempt to parse identifier (%s) returned this error: %s", state.Id(), err.Error()),
 		}}
 	}
 

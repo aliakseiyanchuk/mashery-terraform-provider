@@ -14,6 +14,18 @@ func init() {
 		Schema: mashschemag.ServiceEndpointMethodFilterResourceSchemaBuilder.ResourceSchema(),
 		Mapper: mashschemag.ServiceEndpointMethodFilterResourceSchemaBuilder.Mapper(),
 
+		ImportIdentityParser: regexpImportIdentityParser("/services/(.+)/endpoints/(.+)/methods/(.+)/filters/(.+)",
+			masherytypes.ServiceEndpointMethodFilterIdentifier{},
+			func(items []string) masherytypes.ServiceEndpointMethodFilterIdentifier {
+				rv := masherytypes.ServiceEndpointMethodFilterIdentifier{}
+				rv.ServiceId = items[1]
+				rv.EndpointId = items[2]
+				rv.MethodId = items[3]
+				rv.FilterId = items[4]
+
+				return rv
+			}),
+
 		UpsertableFunc: func() masherytypes.ServiceEndpointMethodFilter {
 			return masherytypes.ServiceEndpointMethodFilter{}
 		},

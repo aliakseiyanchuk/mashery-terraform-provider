@@ -12,6 +12,11 @@ type MockClient struct {
 	mock.Mock
 }
 
+func (mc *MockClient) GetEndpoint(ctx context.Context, ident masherytypes.ServiceEndpointIdentifier) (masherytypes.Endpoint, bool, error) {
+	args := mc.Called(ctx, ident)
+	return args.Get(0).(masherytypes.Endpoint), args.Bool(1), args.Error(2)
+}
+
 func (mc *MockClient) ListMembersFiltered(ctx context.Context, params map[string]string) ([]masherytypes.Member, error) {
 	args := mc.Called(ctx, params)
 	return args.Get(0).([]masherytypes.Member), args.Error(1)
