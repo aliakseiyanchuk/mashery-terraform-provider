@@ -14,6 +14,16 @@ func init() {
 		Schema: mashschemag.PackagePlanResourceSchemaBuilder.ResourceSchema(),
 		Mapper: mashschemag.PackagePlanResourceSchemaBuilder.Mapper(),
 
+		ImportIdentityParser: regexpImportIdentityParser("/packages/(.)/plans/(.+)",
+			masherytypes.PackagePlanIdentifier{},
+			func(items []string) masherytypes.PackagePlanIdentifier {
+				rv := masherytypes.PackagePlanIdentifier{}
+				rv.PackageId = items[1]
+				rv.PlanId = items[2]
+
+				return rv
+			}),
+
 		UpsertableFunc: func() masherytypes.Plan {
 			return masherytypes.Plan{}
 		},

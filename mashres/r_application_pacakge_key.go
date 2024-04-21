@@ -14,6 +14,16 @@ func init() {
 		Schema: mashschemag.ApplicationPackageKeyResourceSchemaBuilder.ResourceSchema(),
 		Mapper: mashschemag.ApplicationPackageKeyResourceSchemaBuilder.Mapper(),
 
+		ImportIdentityParser: regexpImportIdentityParser("/applications/(.+)/packageKeys/(.+)",
+			masherytypes.ApplicationPackageKeyIdentifier{},
+			func(items []string) masherytypes.ApplicationPackageKeyIdentifier {
+				rv := masherytypes.ApplicationPackageKeyIdentifier{}
+				rv.ApplicationId = items[1]
+				rv.PackageKeyId = items[2]
+
+				return rv
+			}),
+
 		UpsertableFunc: func() masherytypes.ApplicationPackageKey { return masherytypes.ApplicationPackageKey{} },
 
 		DoRead: func(ctx context.Context, client v3client.Client, identifier masherytypes.ApplicationPackageKeyIdentifier) (masherytypes.ApplicationPackageKey, bool, error) {

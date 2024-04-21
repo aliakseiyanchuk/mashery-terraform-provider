@@ -113,6 +113,13 @@ func (rthm *ResourceTemplateMockHelper[Parent, Ident, MTYpe]) thenExecutingRead(
 	rthm.assertEmptyDiagnostic(t, dg)
 }
 
+func (rthm *ResourceTemplateMockHelper[Parent, Ident, MTYpe]) thenExecutingImport(t *testing.T, id string, verifier func([]*schema.ResourceData) error) {
+	rthm.data.SetId(id)
+	dg, impoerErr := rthm.template.Importer.Import(context.TODO(), rthm.data, &rthm.mockCl)
+	rthm.assertNoError(t, impoerErr)
+	assert.Nil(t, verifier(dg))
+}
+
 func (rthm *ResourceTemplateMockHelper[Parent, Ident, MTYpe]) thenExecutingReadWillYieldDiagnostic(t *testing.T, text string) {
 	dg := rthm.template.Read(context.TODO(), rthm.data, &rthm.mockCl)
 	rthm.assertDiagnostic(t, dg, text)
@@ -147,6 +154,12 @@ func (rthm *ResourceTemplateMockHelper[Parent, Ident, MTYpe]) assertDiagnostic(t
 	assert.True(t, len(dg) == 1)
 	assert.Equal(t, diag.Error, dg[0].Severity)
 	assert.Equal(t, text, dg[0].Summary)
+
+	rthm.mockCl.AssertExpectations(t)
+}
+
+func (rthm *ResourceTemplateMockHelper[Parent, Ident, MTYpe]) assertNoError(t *testing.T, err error) {
+	assert.Nil(t, err)
 
 	rthm.mockCl.AssertExpectations(t)
 }

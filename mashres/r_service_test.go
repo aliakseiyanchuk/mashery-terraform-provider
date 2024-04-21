@@ -3,6 +3,7 @@ package mashres
 import (
 	"errors"
 	"github.com/aliakseiyanchuk/mashery-v3-go-client/masherytypes"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"terraform-provider-mashery/mashschema"
@@ -10,6 +11,29 @@ import (
 	"testing"
 	"time"
 )
+
+func TestImportServiceWillSucceed(t *testing.T) {
+	h := CreateTestResource(ServiceResource)
+	assert.NotNil(t, h.template.Importer)
+
+	serviceId := masherytypes.ServiceIdentifier{
+		ServiceId: "abcdefg",
+	}
+
+	givenReadServiceSucceeds(h, serviceId)
+	givenReadingServiceRolesYieldsNothing(h, serviceId)
+
+	h.thenExecutingImport(t, "abcdefg", func(data []*schema.ResourceData) error {
+		if len(data) != 1 {
+			return errors.New("expected 1 result")
+		} else if data[0].Id() != "abcdefg" {
+			return errors.New("received an unexpected service identifier")
+		}
+
+		return nil
+	})
+	// It just works.
+}
 
 func TestCreatingServiceWillSucceed(t *testing.T) {
 	h := CreateTestResource(ServiceResource)

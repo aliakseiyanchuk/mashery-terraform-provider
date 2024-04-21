@@ -14,6 +14,16 @@ func init() {
 		Schema: mashschemag.ApplicationResourceSchemaBuilder.ResourceSchema(),
 		Mapper: mashschemag.ApplicationResourceSchemaBuilder.Mapper(),
 
+		ImportIdentityParser: regexpImportIdentityParser("/members/(.+)/applications/(.+)",
+			mashschemag.ApplicationOfMemberIdentifier{},
+			func(items []string) mashschemag.ApplicationOfMemberIdentifier {
+				rv := mashschemag.ApplicationOfMemberIdentifier{}
+				rv.MemberId = items[1]
+				rv.ApplicationId = items[2]
+
+				return rv
+			}),
+
 		UpsertableFunc: func() masherytypes.Application { return masherytypes.Application{} },
 
 		DoRead: func(ctx context.Context, client v3client.Client, identifier mashschemag.ApplicationOfMemberIdentifier) (masherytypes.Application, bool, error) {

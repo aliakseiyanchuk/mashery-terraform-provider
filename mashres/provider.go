@@ -67,6 +67,7 @@ func Provider() *schema.Provider {
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"mashery_member":             MemberDataSource.DataSourceSchema(),
+			"mashery_service":            ServiceDataSource.DataSourceSchema(),
 			"mashery_package":            PackageDataSource.DataSourceSchema(),
 			"mashery_package_plan":       PackagePlanDataSource.DataSourceSchema(),
 			"mashery_application":        ApplicationDataSource.DataSourceSchema(),

@@ -15,6 +15,10 @@ func init() {
 		Schema: mashschemag.MemberResourceSchemaBuilder.ResourceSchema(),
 		Mapper: mashschemag.MemberResourceSchemaBuilder.Mapper(),
 
+		ImportIdentityParser: regexpImportIdentityParser("/members/(.+)", masherytypes.MemberIdentifier{}, func(items []string) masherytypes.MemberIdentifier {
+			return masherytypes.MemberIdentifier{MemberId: items[1]}
+		}),
+
 		UpsertableFunc: func() masherytypes.Member {
 			return masherytypes.Member{}
 		},

@@ -14,6 +14,10 @@ func init() {
 		Schema: mashschemag.ServiceOAuthResourceSchemaBuilder.ResourceSchema(),
 		Mapper: mashschemag.ServiceOAuthResourceSchemaBuilder.Mapper(),
 
+		ImportIdentityParser: regexpImportIdentityParser("/services/(.+)/oauth", masherytypes.ServiceIdentifier{}, func(items []string) masherytypes.ServiceIdentifier {
+			return masherytypes.ServiceIdentifier{ServiceId: items[1]}
+		}),
+
 		UpsertableFunc: func() masherytypes.MasheryOAuth {
 			return masherytypes.MasheryOAuth{}
 		},

@@ -14,6 +14,14 @@ func init() {
 		Schema: mashschemag.ServiceErrorSetResourceSchemaBuilder.ResourceSchema(),
 		Mapper: mashschemag.ServiceErrorSetResourceSchemaBuilder.Mapper(),
 
+		ImportIdentityParser: regexpImportIdentityParser("/services/(.+)/errorSets/(.+)", masherytypes.ErrorSetIdentifier{}, func(items []string) masherytypes.ErrorSetIdentifier {
+			rv := masherytypes.ErrorSetIdentifier{}
+			rv.ServiceId = items[1]
+			rv.ErrorSetId = items[2]
+
+			return rv
+		}),
+
 		UpsertableFunc: func() masherytypes.ErrorSet {
 			return masherytypes.ErrorSet{}
 		},
